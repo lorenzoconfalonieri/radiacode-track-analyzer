@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "default": "opensky",
+  "providers": [
+    {
+      "id": "opensky",
+      "name": "OpenSky Network",
+      "base_url": "https://opensky-network.org/api",
+      "token_url": "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token",
+      "altitude_kind": "barometric",
+      "needs_credentials": true,
+      "credential_env": ["OPENSKY_CLIENT_ID", "OPENSKY_CLIENT_SECRET"],
+      "signup_url": "https://opensky-network.org/index.php?option=com_users&view=registration",
+      "attribution": "Trajectory data © The OpenSky Network, https://opensky-network.org",
+      "citation": "Bringing up OpenSky: A large-scale ADS-B sensor network for research. Schäfer et al., ACM/IEEE IPSN 2014.",
+      "policy_note": "Free for non-commercial and research use, and it asks to be cited in publications. Historical flights and tracks are refused to anonymous callers with HTTP 403, so credentials are not optional for a flight that is already over. The API budget is metered per account, so this client caches every response, derives its query window from the track's own timestamps rather than scanning a whole day, and never retries more than twice."
+    },
+    {
+      "id": "file",
+      "name": "Local trajectory file",
+      "base_url": "",
+      "token_url": "",
+      "altitude_kind": "unknown",
+      "needs_credentials": false,
+      "credential_env": [],
+      "signup_url": "",
+      "attribution": "",
+      "citation": "",
+      "policy_note": "Reads a trajectory that is already on disk: a cached OpenSky response, or a CSV exported from any flight tracker. This is what makes the module work with no network and no account at all, and it is the path the test suite uses. It is a first-class mode, not an error state."
+    }
+  ]
+}

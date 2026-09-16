@@ -1,0 +1,48 @@
+[build-system]
+# 77 is where PEP 639 license expressions land; the SPDX string below needs it.
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rcta"
+version = "0.1.0"
+description = "Radiacode Track Analyzer - GPS radiation track analysis for handheld CsI(Tl) scintillators"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{name = "Lorenzo Confalonieri"}]
+license = "MIT"
+# The bundled airport table is ODbL rather than MIT, because its timezone
+# column derives from OpenFlights and share-alike follows the data. Both
+# files ship in the wheel so the terms travel with what they cover.
+license-files = ["LICENSE", "src/rcta/data/LICENSE"]
+keywords = ["radiacode", "gamma-spectrometry", "dosimetry", "gps",
+            "scintillator", "cosmic-rays"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+# tzdata only where the OS ships no zone database of its own: --date is a
+# calendar day at the departure airport, and zoneinfo cannot resolve one on
+# Windows without it.
+dependencies = ["numpy>=1.26", "scipy>=1.11",
+                "tzdata; platform_system == 'Windows'"]
+
+[project.optional-dependencies]
+gui = ["PySide6>=6.8", "pyqtgraph>=0.13.7"]
+dev = ["pytest>=7"]
+
+[project.scripts]
+rcta = "rcta.gui.app:main"
+rcta-cli = "rcta.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"rcta.data" = ["*.json", "LICENSE"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

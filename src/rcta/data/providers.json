@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "default": "osm",
+  "providers": [
+    {
+      "id": "osm",
+      "name": "OpenStreetMap",
+      "url": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+      "max_zoom": 19,
+      "attribution": "© OpenStreetMap contributors",
+      "attribution_export": "Basemap © OpenStreetMap contributors, ODbL — map tiles CC-BY-SA",
+      "allow_export": true,
+      "api_key_setting": "",
+      "policy_note": "Requires a unique User-Agent naming this application. No bulk downloading, no pre-emptive fetching of tiles the user is not viewing, and attribution must remain visible."
+    },
+    {
+      "id": "opentopo",
+      "name": "OpenTopoMap",
+      "url": "https://tile.opentopomap.org/{z}/{x}/{y}.png",
+      "max_zoom": 17,
+      "attribution": "© OpenStreetMap contributors, SRTM | © OpenTopoMap (CC-BY-SA)",
+      "attribution_export": "Kartendaten: © OpenStreetMap-Mitwirkende, SRTM | Kartendarstellung: © OpenTopoMap (CC-BY-SA)",
+      "allow_export": true,
+      "api_key_setting": "",
+      "policy_note": "Volunteer-run and explicitly asks not to be hit with mass downloads. Useful for terrain context on a walking survey."
+    },
+    {
+      "id": "esri_imagery",
+      "name": "Esri World Imagery",
+      "url": "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      "max_zoom": 19,
+      "attribution": "Imagery © Esri",
+      "attribution_export": "Imagery © Esri, Maxar, Earthstar Geographics",
+      "allow_export": false,
+      "api_key_setting": "",
+      "policy_note": "Esri's terms tie World Imagery to an ArcGIS licence and restrict commercial use, so it is excluded from image exports."
+    },
+    {
+      "id": "carto_positron",
+      "name": "CARTO Positron",
+      "url": "",
+      "max_zoom": 19,
+      "attribution": "© OpenStreetMap contributors © CARTO",
+      "attribution_export": "© OpenStreetMap contributors © CARTO",
+      "allow_export": true,
+      "api_key_setting": "carto_api_key",
+      "policy_note": "Visually the best recessive basemap, but CARTO now requires a per-customer API key that must not be shared, so none is embedded here."
+    }
+  ]
+}

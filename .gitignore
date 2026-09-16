@@ -1,0 +1,83 @@
+# Credentials first, because this is the entry that matters.
+#
+# rcta reads OpenSky OAuth2 client credentials from the environment, and
+# failing that from a JSON file -- ~/.config/rcta/flight_credentials.json by
+# default, but RCTA_FLIGHT_CREDENTIALS can point anywhere, including here.
+# A secret in a file is a secret that gets committed; these patterns are the
+# backstop for when it lands in the working tree anyway.
+flight_credentials.json
+*credentials*.json
+.env
+.env.*
+
+# macOS Finder metadata. Present throughout this tree already.
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Packaging. src/rcta.egg-info is created by `pip install -e .`, which the
+# README tells you to run, so it appears on a clean checkout of a clean repo.
+build/
+dist/
+*.egg-info/
+*.egg
+wheels/
+.installed.cfg
+MANIFEST
+
+# Test and tool caches
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.ruff_cache/
+.mypy_cache/
+.dmypy.json
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Editors and IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.ipynb_checkpoints/
+
+# Response and tile caches, which normally live in the platform cache
+# directory but follow RCTA_FLIGHT_CACHE / RCTA_TILE_CACHE wherever they are
+# pointed. A cached OpenSky response is somebody else's metered request and a
+# cached tile is somebody else's bandwidth; neither belongs in version control.
+.cache/
+*-cache/
+
+# Outputs of the commands in the README, which write into the working
+# directory. Named individually rather than by extension on purpose: *.json
+# would swallow the bundled tables in src/rcta/data/ and the sample
+# trajectory, all of which are tracked deliberately.
+report.json
+track.geojson
+track.gpx
+track.csv
+samples.csv
+profile.csv
+anomalies.csv
+hotspots.csv
+trajectory.csv
+
+# Draft manuscript. The paper describing this software is written in the tree
+# so it can pull figures from docs/ and numbers from the CLI, but it is not
+# part of the software and its build artefacts are not either.
+paper/

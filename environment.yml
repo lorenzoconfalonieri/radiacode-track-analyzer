@@ -1,0 +1,12 @@
+name: rcta
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python=3.12
+  - numpy>=2.1
+  - scipy>=1.14
+  - pyside6>=6.8,<6.10
+  - pyqtgraph>=0.13.7
+  - pytest
+  - pip

@@ -1,0 +1,36 @@
+MIT License
+
+Copyright (c) 2026 Lorenzo Confalonieri
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+--------------------------------------------------------------------------
+
+The MIT terms above cover the software: everything under src/, tests/, docs/
+and the sample tracks under sample-data/.
+
+They do NOT cover one bundled data file. src/rcta/data/airports.json is a
+database derived in part from OpenFlights, which is published under the Open
+Database License, and share-alike follows the data rather than the code. That
+file is therefore licensed under ODbL 1.0; see src/rcta/data/LICENSE for the
+terms and the attributions that go with it.
+
+Nothing else in src/rcta/data/ is affected: airlines.json, providers.json and
+flight_providers.json are this project's own work and are MIT like the rest.
