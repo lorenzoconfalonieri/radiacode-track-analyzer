@@ -89,11 +89,11 @@ This is the whole point of the tool, so it is the first example. Running
 no anomalies above L_C at 4.57 sigma
 
 minimum detectable dose rate, by window:
-    1 samples (     2 s):  1160.02 nSv/h
-   64 samples (   128 s):   132.60 nSv/h
+    1 samples (     2 s):  1159.97 nSv/h
+   64 samples (   128 s):   132.56 nSv/h
 
 1 candidate(s) excluded by flags:
-     506 s  31.04148N  98.49739W  net +1.59 cps (+82 nSv/h)  8.48 sigma
+     506 s  31.04148N  98.49739W  net   +1.59 cps (   +81.5 nSv/h)    8.48 sigma
        [trend, poor-gps, gap-adjacent]
 ```
 
