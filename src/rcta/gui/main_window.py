@@ -559,6 +559,11 @@ class MainWindow(QtWidgets.QMainWindow):
         provider = self._providers[provider_id]
         self.tiles.set_provider(provider)
         self.map.clear_basemap()
+        # Strictly before enabling, which is what requests the tiles. recess()
+        # runs at decode time, and a tile already on disk is delivered
+        # synchronously inside that request -- so setting the amounts
+        # afterwards would discard the tiles just decoded and never ask again.
+        self.map.set_basemap_recession(provider.desaturate, provider.lighten)
         self.map.set_basemap_enabled(True, provider.max_zoom)
         # Attribution is drawn inside the view and has no visibility toggle.
         self.map.set_attribution(provider.attribution)

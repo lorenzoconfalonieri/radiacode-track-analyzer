@@ -19,6 +19,7 @@ os.environ.setdefault("RCTA_TILE_CACHE", "/tmp/rcta-test-tiles")
 pytest.importorskip("PySide6")
 pytest.importorskip("pyqtgraph")
 
+from PySide6 import QtCore  # noqa: E402
 from PySide6.QtCore import Qt  # noqa: E402
 
 
@@ -1311,3 +1312,61 @@ def test_the_view_menu_does_not_also_toggle_the_bottom_panels(window):
     for dock in window._panel_docks:
         assert dock.windowTitle() not in toggles
     assert "Track" in toggles and "Display" in toggles
+
+
+# ---- basemap recession is a property of the provider ----------------------
+
+
+def test_a_satellite_layer_gets_a_lighter_recession_than_a_map(window):
+    """Aerial imagery is already muted; the cartographic treatment erases it."""
+    window._set_provider("osm")
+    osm = (window.map.basemap._desaturate, window.map.basemap._lighten)
+    window._set_provider("usgs_imagery")
+    sat = (window.map.basemap._desaturate, window.map.basemap._lighten)
+    assert sat[0] < osm[0] and sat[1] < osm[1]
+
+
+def test_the_recession_is_set_before_the_tiles_are_requested(window, monkeypatch):
+    """Order matters, and getting it wrong produces a blank map, not an error.
+
+    ``set_basemap_enabled`` is what triggers the tile request, and a tile
+    already in the disk cache is delivered synchronously inside that call.
+    recess() runs at decode time and changing the amounts clears the decoded
+    pixmaps, so setting them afterwards discards exactly the tiles just
+    decoded -- and nothing asks for them again, because the fetcher considers
+    them served. The map goes white with no warning anywhere.
+    """
+    order = []
+    real_recession = window.map.set_basemap_recession
+    real_enabled = window.map.set_basemap_enabled
+
+    def recession(*a, **k):
+        order.append("recession")
+        return real_recession(*a, **k)
+
+    def enabled(*a, **k):
+        order.append("enabled")
+        return real_enabled(*a, **k)
+
+    monkeypatch.setattr(window.map, "set_basemap_recession", recession)
+    monkeypatch.setattr(window.map, "set_basemap_enabled", enabled)
+    window._set_provider("usgs_imagery")
+    assert order == ["recession", "enabled"]
+
+
+def test_switching_basemap_does_not_leave_stale_decoded_tiles(window):
+    """The decoded cache is treated at the old amounts and must be dropped."""
+    from rcta.gui.tiles import TileKey
+    from PySide6 import QtGui
+
+    window._set_provider("osm")
+    image = QtGui.QImage(256, 256, QtGui.QImage.Format.Format_RGB32)
+    image.fill(QtGui.QColor(20, 120, 60))
+    buf = QtCore.QBuffer()
+    buf.open(QtCore.QIODevice.OpenModeFlag.WriteOnly)
+    image.save(buf, "PNG")
+    assert window.map.set_tile(TileKey(12, 1, 1), bytes(buf.data()))
+    assert window.map.basemap.has(TileKey(12, 1, 1))
+
+    window._set_provider("usgs_imagery")
+    assert not window.map.basemap.has(TileKey(12, 1, 1))

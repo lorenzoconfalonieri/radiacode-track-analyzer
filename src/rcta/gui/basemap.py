@@ -24,6 +24,17 @@ decode time, not by lowering opacity. Opacity preserves hue, so OpenStreetMap's
 green landuse and blue water would still read as *data* colours competing with
 the viridis ramp. Desaturating frees the entire colour axis for dose rate,
 while the contrast lift keeps roads and coastlines legible as grey structure.
+
+How much recession is right depends on the layer, which is why the amount is a
+property of the provider rather than a constant. A cartographic basemap is
+drawn in saturated, categorical colour -- OSM's motorway orange and water blue
+are chosen to be noticed -- and needs the full treatment to stop competing.
+Aerial imagery is not: it is already a muted continuous field of greys, greens
+and browns that no viridis sample resembles, and applying the same recession
+to it removes the only thing it was selected for, leaving a pale grey wash
+that is neither decorative nor informative. Satellite layers therefore declare
+a lighter touch, and the defaults in :mod:`rcta.gui.theme` remain what a
+provider gets when it says nothing.
 """
 
 from __future__ import annotations
@@ -43,15 +54,25 @@ __all__ = ["BasemapItem", "recess"]
 MAX_PARENT_LEVELS = 5
 
 
-def recess(image: QtGui.QImage) -> QtGui.QPixmap:
-    """Desaturate and lift toward white so the basemap cannot compete."""
+def recess(image: QtGui.QImage, desaturate: float | None = None,
+           lighten: float | None = None) -> QtGui.QPixmap:
+    """Desaturate and lift toward white so the basemap cannot compete.
+
+    ``None`` for either amount means the theme default, so a caller that does
+    not care about the distinction keeps the treatment tuned for a
+    cartographic layer.
+    """
+    if desaturate is None:
+        desaturate = theme.BASEMAP_DESATURATE
+    if lighten is None:
+        lighten = theme.BASEMAP_LIGHTEN
     img = image.convertToFormat(QtGui.QImage.Format.Format_RGB32).copy()
     array = pg.imageToArray(img, copy=False, transpose=False)
     rgb = array[..., :3].astype(np.float32)
     # BGRA memory order, hence the reversed luminance weights.
     grey = rgb @ np.array([0.0722, 0.7152, 0.2126], dtype=np.float32)
-    out = rgb + (grey[..., None] - rgb) * theme.BASEMAP_DESATURATE
-    out = 255.0 - (255.0 - out) * (1.0 - theme.BASEMAP_LIGHTEN)
+    out = rgb + (grey[..., None] - rgb) * float(desaturate)
+    out = 255.0 - (255.0 - out) * (1.0 - float(lighten))
     array[..., :3] = np.clip(out, 0, 255).astype(np.uint8)
     return QtGui.QPixmap.fromImage(img)
 
@@ -66,6 +87,7 @@ class BasemapItem(pg.GraphicsObject):
         self._visible_keys: list = []
         self._pixmaps: OrderedDict = OrderedDict()
         self._lighten = theme.BASEMAP_LIGHTEN
+        self._desaturate = theme.BASEMAP_DESATURATE
 
     # ---- required by GraphicsObject ---------------------------------------
 
@@ -114,7 +136,7 @@ class BasemapItem(pg.GraphicsObject):
         image = QtGui.QImage()
         if not image.loadFromData(data):
             return False
-        self._pixmaps[key] = recess(image)
+        self._pixmaps[key] = recess(image, self._desaturate, self._lighten)
         self._pixmaps.move_to_end(key)
         while len(self._pixmaps) > theme.BASEMAP_MEMORY_TILES:
             self._pixmaps.popitem(last=False)
@@ -122,9 +144,26 @@ class BasemapItem(pg.GraphicsObject):
         return True
 
     def set_lighten(self, value: float) -> None:
-        """Change the recessive treatment. Invalidates the decoded cache."""
+        """Change the lift alone. Invalidates the decoded cache."""
         self._lighten = float(value)
-        theme.BASEMAP_LIGHTEN = float(value)
+        self._pixmaps.clear()
+        self.update()
+
+    def set_recession(self, desaturate: float, lighten: float) -> None:
+        """Both amounts at once, for a provider that declares its own.
+
+        The decoded cache holds pixmaps already treated at the old amounts, so
+        it has to go; the tile cache on disk holds the untouched originals and
+        does not, which is why switching basemap style costs no requests.
+
+        Deliberately does *not* write the amounts back into :mod:`rcta.gui.theme`.
+        They are per-layer, and the theme constants are what a layer inherits
+        when it declares nothing -- so letting a satellite layer overwrite them
+        would mean the next cartographic basemap silently kept the satellite
+        treatment, and "the default" would depend on click order.
+        """
+        self._desaturate = float(desaturate)
+        self._lighten = float(lighten)
         self._pixmaps.clear()
         self.update()
 

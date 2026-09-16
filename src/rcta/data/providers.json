@@ -33,7 +33,35 @@
       "attribution_export": "Imagery © Esri, Maxar, Earthstar Geographics",
       "allow_export": false,
       "api_key_setting": "",
-      "policy_note": "Esri's terms tie World Imagery to an ArcGIS licence and restrict commercial use, so it is excluded from image exports."
+      "policy_note": "Esri's terms tie World Imagery to an ArcGIS licence and restrict commercial use, so it is excluded from image exports.",
+      "desaturate": 0.25,
+      "lighten": 0.12
+    },
+    {
+      "id": "usgs_imagery",
+      "name": "USGS National Map imagery",
+      "url": "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}",
+      "max_zoom": 16,
+      "attribution": "Imagery courtesy of the U.S. Geological Survey",
+      "attribution_export": "Imagery courtesy of the U.S. Geological Survey (public domain)",
+      "allow_export": true,
+      "api_key_setting": "",
+      "policy_note": "Aerial imagery produced by a United States government agency and therefore in the public domain: it may be reproduced in a publication or redistributed with no licence condition at all, which is why this is the satellite layer the project's own figures use. Two limits are real and measured rather than quoted: coverage is the United States and its territories only, and the cached service stops at zoom 16 -- zoom 17 returns HTTP 404 over both Salt Lake City and Austin. Note the {y}/{x} order in the URL, which is ArcGIS convention and the reverse of the slippy map one.",
+      "desaturate": 0.25,
+      "lighten": 0.12
+    },
+    {
+      "id": "s2cloudless",
+      "name": "Sentinel-2 cloudless",
+      "url": "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2020_3857/default/g/{z}/{y}/{x}.jpg",
+      "max_zoom": 16,
+      "attribution": "Sentinel-2 cloudless © EOX IT Services GmbH",
+      "attribution_export": "Sentinel-2 cloudless (2020) by EOX IT Services GmbH, CC BY 4.0, containing modified Copernicus Sentinel data",
+      "allow_export": true,
+      "api_key_setting": "",
+      "policy_note": "A cloud-free Sentinel-2 mosaic served under CC BY 4.0, so it may be published provided the attribution travels with the image. Unlike the USGS layer it is worldwide, which is what makes it worth carrying alongside. Its pixels are 10 m, so it is genuinely sharp only to about zoom 14; the server will answer to zoom 18, and the cap is set at 16 because past that the tiles are upsampled and imply a detail the data do not contain.",
+      "desaturate": 0.25,
+      "lighten": 0.12
     },
     {
       "id": "carto_positron",

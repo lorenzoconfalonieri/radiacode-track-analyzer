@@ -305,6 +305,13 @@ class MapPanel(QtWidgets.QWidget):
         else:
             self._retile()
 
+    def set_basemap_recession(self, desaturate, lighten) -> None:
+        """How strongly to push this basemap back. None means the default."""
+        from rcta.gui import theme
+        self.basemap.set_recession(
+            theme.BASEMAP_DESATURATE if desaturate is None else desaturate,
+            theme.BASEMAP_LIGHTEN if lighten is None else lighten)
+
     def set_tile(self, key, data: bytes) -> bool:
         return self.basemap.set_tile(key, data)
 

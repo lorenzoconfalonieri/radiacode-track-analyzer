@@ -78,6 +78,11 @@ class TileProvider:
     allow_export: bool = True
     api_key_setting: str = ""
     policy_note: str = ""
+    #: How far to desaturate and lift this layer before painting it under the
+    #: data. None means the theme default, which is tuned for a cartographic
+    #: basemap; satellite layers override it. See :mod:`rcta.gui.basemap`.
+    desaturate: float | None = None
+    lighten: float | None = None
 
     @property
     def available(self) -> bool:

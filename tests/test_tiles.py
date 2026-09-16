@@ -73,6 +73,56 @@ def test_esri_is_excluded_from_exports():
     assert providers["esri_imagery"].allow_export is False
 
 
+# ---- the satellite layers -------------------------------------------------
+#
+# Three are offered because no single one is both worldwide, high resolution
+# and publishable. The whole point of carrying more than one is that the
+# export flag differs between them, so these tests pin that difference rather
+# than the mere presence of the entries.
+
+
+SATELLITE = ("esri_imagery", "usgs_imagery", "s2cloudless")
+
+
+@pytest.mark.parametrize("pid", SATELLITE)
+def test_the_satellite_layers_are_all_present_and_usable(pid):
+    providers, _ = load_providers()
+    provider = providers[pid]
+    assert provider.available
+    assert "{z}" in provider.url
+
+
+def test_at_least_one_satellite_layer_may_be_exported():
+    """Otherwise a figure in a paper could not carry imagery at all."""
+    providers, _ = load_providers()
+    assert any(providers[p].allow_export for p in SATELLITE)
+
+
+def test_the_exportable_satellite_layers_are_the_openly_licensed_ones():
+    """USGS is public domain and Sentinel-2 cloudless is CC BY 4.0; Esri is
+    neither, and the difference must not quietly erode."""
+    providers, _ = load_providers()
+    assert providers["usgs_imagery"].allow_export is True
+    assert providers["s2cloudless"].allow_export is True
+    assert providers["esri_imagery"].allow_export is False
+
+
+def test_usgs_uses_the_arcgis_y_x_ordering():
+    """Its URL is {z}/{y}/{x}, not the slippy-map {z}/{x}/{y}. Getting this
+    backwards yields tiles that load but show the wrong place."""
+    providers, _ = load_providers()
+    assert providers["usgs_imagery"].tile_url(TileKey(16, 12397, 24574)) == (
+        "https://basemap.nationalmap.gov/arcgis/rest/services/"
+        "USGSImageryOnly/MapServer/tile/16/24574/12397")
+
+
+@pytest.mark.parametrize("pid,zoom", [("usgs_imagery", 16), ("s2cloudless", 16)])
+def test_the_satellite_zoom_caps_are_the_measured_ones(pid, zoom):
+    """USGS returns 404 above 16; s2cloudless serves higher but upsamples."""
+    providers, _ = load_providers()
+    assert providers[pid].max_zoom == zoom
+
+
 def test_a_keyed_provider_is_not_available_without_a_key():
     providers, _ = load_providers()
     carto = providers["carto_positron"]

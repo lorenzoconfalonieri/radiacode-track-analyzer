@@ -324,7 +324,8 @@ src/rcta/data/    bundled tables: airlines; airports, with their IANA
                   timezones; basemap and trajectory providers
 src/rcta/data/LICENSE
                   ODbL 1.0, for airports.json alone -- see Licence below
-tests/            852 tests; run with pytest
+tests/            863 tests; run with pytest
+tools/            maintenance scripts; not part of the package
 docs/FORMAT.md    the reverse-engineered .rctrk specification
 docs/FLIGHT.md    importing altitude for an airborne track
 sample-data/      two real acquisitions and one synthetic trajectory
