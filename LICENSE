@@ -19,18 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
-
---------------------------------------------------------------------------
-
-The MIT terms above cover the software: everything under src/, tests/, docs/
-and the sample tracks under sample-data/.
-
-They do NOT cover one bundled data file. src/rcta/data/airports.json is a
-database derived in part from OpenFlights, which is published under the Open
-Database License, and share-alike follows the data rather than the code. That
-file is therefore licensed under ODbL 1.0; see src/rcta/data/LICENSE for the
-terms and the attributions that go with it.
-
-Nothing else in src/rcta/data/ is affected: airlines.json, providers.json and
-flight_providers.json are this project's own work and are MIT like the rest.

@@ -14,7 +14,7 @@ license = "MIT"
 # The bundled airport table is ODbL rather than MIT, because its timezone
 # column derives from OpenFlights and share-alike follows the data. Both
 # files ship in the wheel so the terms travel with what they cover.
-license-files = ["LICENSE", "src/rcta/data/LICENSE"]
+license-files = ["LICENSE", "NOTICE", "src/rcta/data/LICENSE"]
 keywords = ["radiacode", "gamma-spectrometry", "dosimetry", "gps",
             "scintillator", "cosmic-rays"]
 classifiers = [

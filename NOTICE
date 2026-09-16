@@ -1,0 +1,36 @@
+Radiacode Track Analyzer
+Copyright (c) 2026 Lorenzo Confalonieri
+
+This product is licensed under the MIT License (see LICENSE), with one
+exception, stated here because a licence file that is not verbatim MIT is a
+licence file no tool can identify.
+
+    src/rcta/data/airports.json  --  ODbL 1.0, not MIT
+
+That file is a derivative database. Its coordinates and codes come from
+OurAirports (https://ourairports.com), which is public domain. Its IANA
+timezone column comes from OpenFlights (https://openflights.org/data), which
+is published under the Open Database License. Share-alike attaches to the
+database rather than to the code that reads it, so the joined result is ODbL
+even though half of its inputs are not.
+
+The full ODbL text, the attributions, and what the licence does and does not
+oblige are in src/rcta/data/LICENSE. In short: running this program does not
+make your results ODbL -- a profile, an export, a plot or a paper is a
+Produced Work and is yours to license as you please. The obligation applies
+only if you redistribute airports.json itself.
+
+The other bundled tables -- airlines.json, providers.json and
+flight_providers.json -- are this project's own work and are MIT.
+
+Two further attributions are asked for rather than legally required, and the
+program prints both where they belong:
+
+  OpenSky Network (https://opensky-network.org) is free for non-commercial
+  and research use and asks to be cited in publications:
+      Bringing up OpenSky: A large-scale ADS-B sensor network for research.
+      Schafer, Strohmeier, Lenders, Martinovic and Wilhelm, ACM/IEEE IPSN 2014.
+
+  OpenStreetMap and OpenTopoMap tiles are fetched at run time and are not
+  redistributed here. Their attribution is drawn inside the map view and
+  baked into every exported image.

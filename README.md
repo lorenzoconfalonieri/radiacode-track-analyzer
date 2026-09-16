@@ -328,7 +328,8 @@ tests/            852 tests; run with pytest
 docs/FORMAT.md    the reverse-engineered .rctrk specification
 docs/FLIGHT.md    importing altitude for an airborne track
 sample-data/      two real acquisitions and one synthetic trajectory
-LICENSE           MIT, for everything except the airport table
+LICENSE           MIT
+NOTICE            the one file that is not MIT, and why
 ```
 
 `tests/test_architecture.py` enforces the boundaries mechanically: no Qt or
@@ -372,7 +373,7 @@ threading confined to `gui/worker.py`, and a length floor on every `core/` and
 ## Licence
 
 The software is **MIT**: all the code, the tests, the docs and the sample
-tracks. See `LICENSE`.
+tracks. See `LICENSE`, and `NOTICE` for the one exception below.
 
 Exactly one file is carved out. `src/rcta/data/airports.json` is a derivative
 database — its coordinates come from [OurAirports](https://ourairports.com),
