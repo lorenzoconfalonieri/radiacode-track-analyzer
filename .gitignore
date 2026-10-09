@@ -77,7 +77,8 @@ anomalies.csv
 hotspots.csv
 trajectory.csv
 
-# Draft manuscript. The paper describing this software is written in the tree
-# so it can pull figures from docs/ and numbers from the CLI, but it is not
-# part of the software and its build artefacts are not either.
-paper/
+# Paper build by-products. The source and the built PDF are tracked.
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/pg*.png
