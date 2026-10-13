@@ -1530,7 +1530,8 @@ def test_a_map_exported_from_the_dark_theme_is_light(app, loaded):
 
 def test_the_theme_icons_ship_with_the_package():
     from rcta.gui import theme
-    for name in ("check", "up_light", "down_light", "up_dark", "down_dark"):
+    for name in ("check", "up_light", "down_light", "up_dark", "down_dark",
+                 "rcta"):
         assert (theme._ICONS / f"{name}.svg").is_file()
 
 
@@ -1573,3 +1574,11 @@ def test_changing_the_unit_does_not_rerun_the_analysis(loaded):
     before = loaded._analysis
     loaded.display_dock.unit.setCurrentText("uR/h")
     assert loaded._analysis is before
+
+
+def test_the_app_icon_renders(app):
+    from rcta.gui import theme
+    icon = theme.app_icon()
+    assert not icon.isNull()
+    image = icon.pixmap(64, 64).toImage()
+    assert image.pixelColor(32, 32).alpha() == 255

@@ -15,6 +15,7 @@ def main(argv=None) -> int:
     app = QtWidgets.QApplication(argv)
     app.setApplicationName("Radiacode Track Analyzer")
     app.setOrganizationName("rcta")
+    app.setWindowIcon(theme.app_icon())
     theme.apply(app, str(QtCore.QSettings().value("ui/theme", "System")))
     theme.follow_system(app)
 

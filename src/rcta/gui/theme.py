@@ -335,6 +335,11 @@ QLabel[class="chip-muted"] {{ background: {t.alt}; color: {t.muted}; border: 1px
 """
 
 
+def app_icon() -> QtGui.QIcon:
+    """The application icon: a surveyed track on a map tile, in viridis."""
+    return QtGui.QIcon(str(_ICONS / "rcta.svg"))
+
+
 def polish(widget, cls: str):
     """Set a stylesheet class (QSS ``[class="..."]``) and re-polish."""
     widget.setProperty("class", cls)

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <!-- Radiacode Track Analyzer: a surveyed track on a map tile, coloured along
+       the viridis ramp the map uses, ending in a hotspot. -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#1e3a8a"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fde725" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#fde725" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="clip">
+      <rect x="8" y="8" width="240" height="240" rx="54"/>
+    </clipPath>
+  </defs>
+
+  <rect x="8" y="8" width="240" height="240" rx="54" fill="url(#tile)"/>
+
+  <g clip-path="url(#clip)" stroke="#ffffff" stroke-opacity="0.12" stroke-width="2">
+    <path d="M8 72H248M8 128H248M8 184H248M72 8V248M128 8V248M184 8V248"/>
+  </g>
+
+  <path d="M44 206 C 70 196, 78 168, 104 160 S 132 150, 136 124 S 150 88, 186 78"
+        fill="none" stroke="#ffffff" stroke-opacity="0.5" stroke-width="7"
+        stroke-linecap="round"/>
+
+  <circle cx="186" cy="78" r="46" fill="url(#glow)"/>
+  <circle cx="186" cy="78" r="30" fill="none" stroke="#fde725" stroke-opacity="0.55" stroke-width="3"/>
+
+  <circle cx="44"  cy="206" r="11" fill="#440154" stroke="#ffffff" stroke-width="3"/>
+  <circle cx="80"  cy="182" r="11" fill="#3b528b" stroke="#ffffff" stroke-width="3"/>
+  <circle cx="110" cy="158" r="11" fill="#21918c" stroke="#ffffff" stroke-width="3"/>
+  <circle cx="136" cy="126" r="11" fill="#5ec962" stroke="#ffffff" stroke-width="3"/>
+  <circle cx="186" cy="78"  r="17" fill="#fde725" stroke="#ffffff" stroke-width="4"/>
+</svg>
