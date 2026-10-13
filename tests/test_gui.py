@@ -1388,3 +1388,36 @@ def test_a_failed_load_analysis_leaves_nothing_to_export(loaded, tmp_path,
     assert loaded._analysis is None
     assert not any(a.isEnabled() for a in loaded._needs_track)
 
+
+# ---- theme ---------------------------------------------------------------
+
+
+def test_switching_theme_restyles_the_open_plots(app, loaded):
+    from rcta.gui import theme
+    try:
+        theme.apply(app, "Dark")
+        assert loaded.map._glw.backgroundBrush().color().name() == theme.DARK.plot_bg
+        assert loaded.series._glw.backgroundBrush().color().name() == theme.DARK.plot_bg
+        assert app.palette().color(app.palette().ColorRole.Window).name() \
+            == theme.DARK.window
+    finally:
+        theme.apply(app, "Light")
+    assert loaded.map._glw.backgroundBrush().color().name() == theme.LIGHT.plot_bg
+
+
+def test_a_map_exported_from_the_dark_theme_is_light(app, loaded):
+    """A figure lands on a white page; the screen goes back to dark after."""
+    from rcta.gui import map_export, theme
+    try:
+        theme.apply(app, "Dark")
+        image = map_export.render_image(loaded.map, 400, 300)
+        assert image.pixelColor(200, 5).lightness() > 240
+        assert loaded.map._glw.backgroundBrush().color().name() == theme.DARK.plot_bg
+    finally:
+        theme.apply(app, "Light")
+
+
+def test_the_theme_icons_ship_with_the_package():
+    from rcta.gui import theme
+    for name in ("check", "up_light", "down_light", "up_dark", "down_dark"):
+        assert (theme._ICONS / f"{name}.svg").is_file()

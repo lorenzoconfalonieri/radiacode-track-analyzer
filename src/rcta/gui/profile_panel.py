@@ -99,6 +99,18 @@ class ProfilePanel(QtWidgets.QWidget):
         self.caption.setWordWrap(True)
         self.caption.setContentsMargins(6, 2, 6, 4)
         layout.addWidget(self.caption)
+        theme.follow(self)
+
+    def restyle(self, t) -> None:
+        """Colours that have to change with the theme to stay visible."""
+        theme.style_graphics_view(self._glw, t)
+        fill = pg.mkColor(t.dose)
+        self._profile_curve.setPen(pg.mkPen(t.dose, width=1.4))
+        fill.setAlpha(90)
+        self._hist_curve.setPen(pg.mkPen(t.dose, width=1.0))
+        self._hist_curve.setBrush(pg.mkBrush(fill))
+        fill.setAlpha(70)
+        self._scatter.setBrush(pg.mkBrush(fill))
 
     # ---- public API (never emits) -----------------------------------------
 

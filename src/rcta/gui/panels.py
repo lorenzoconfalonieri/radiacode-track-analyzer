@@ -139,6 +139,7 @@ class AnalysisDock(QtWidgets.QWidget):
         form.addRow("", self.auto_run)
 
         self.run_button = QtWidgets.QPushButton("Analyse now")
+        theme.polish(self.run_button, "primary")
         self.run_button.clicked.connect(self.runRequested)
         form.addRow("", self.run_button)
 
@@ -368,7 +369,7 @@ class LogDock(QtWidgets.QPlainTextEdit):
 
     def log(self, message: str, level: str = "info") -> None:
         stamp = datetime.now(tz=timezone.utc).strftime("%H:%M:%S")
-        colour = theme.LOG_COLORS.get(level, theme.LOG_COLORS["info"])
+        colour = theme.log_color(level)
         prefix = {"warning": "! ", "error": "x "}.get(level, "  ")
         for line in str(message).rstrip().splitlines() or [""]:
             self.appendHtml(f'<span style="color:{colour}">'

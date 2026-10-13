@@ -95,6 +95,14 @@ class SeriesPanel(QtWidgets.QWidget):
         self._caption = QtWidgets.QLabel("")
         self._caption.setContentsMargins(6, 0, 6, 2)
         layout.addWidget(self._caption)
+        theme.follow(self)
+
+    def restyle(self, t) -> None:
+        """Colours that have to change with the theme to stay visible."""
+        theme.style_graphics_view(self._glw, t)
+        self._curves["dose"].setPen(pg.mkPen(t.dose, width=1.2))
+        self._curves["count"].setPen(pg.mkPen(t.count, width=1.2))
+        self._hover_line.setPen(pg.mkPen(t.hover, width=0.8))
 
     # ---- construction -----------------------------------------------------
 

@@ -184,6 +184,20 @@ class MapPanel(QtWidgets.QWidget):
 
         self.vb.sigRangeChanged.connect(self._on_range_changed)
         self._glw.scene().sigMouseMoved.connect(self._on_mouse_moved)
+        theme.follow(self)
+
+    def restyle(self, t) -> None:
+        """Colours that have to change with the theme to stay visible."""
+        theme.style_graphics_view(self._glw, t)
+        self.line.setPen(pg.mkPen(t.track_line, width=theme.TRACK_LINE_WIDTH,
+                                  cosmetic=True))
+        self.gap_line.setPen(pg.mkPen(t.track_gap, width=1.0,
+                                      style=Qt.PenStyle.DotLine, cosmetic=True))
+        self.hover.setPen(pg.mkPen(t.hover, width=1.5))
+        self.attribution.setBrush(pg.mkBrush(
+            t.plot_fg if t.dark else theme.ATTRIBUTION_COLOR))
+        self.scalebar.bar.setBrush(pg.mkBrush(t.plot_fg))
+        self.scalebar.text.setColor(t.plot_fg)
 
     # ---- construction -----------------------------------------------------
 

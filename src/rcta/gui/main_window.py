@@ -382,6 +382,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._action(view_menu, "&Select mode (or hold Shift)",
                      self.map.set_select_mode, "Ctrl+E", checkable=True)
         view_menu.addSeparator()
+        self._make_theme_menu(view_menu.addMenu("T&heme"))
         self._make_panel_menu(view_menu.addMenu("&Panels"))
         view_menu.addSeparator()
         for dock in self.findChildren(QtWidgets.QDockWidget):
@@ -392,6 +393,21 @@ class MainWindow(QtWidgets.QMainWindow):
         self._action(help_menu, "&About / limitations", self._about)
 
         self._update_actions()
+
+    def _make_theme_menu(self, menu) -> None:
+        menu.setToolTipsVisible(True)
+        group = QtGui.QActionGroup(self)
+        for name in theme.THEMES:
+            action = QtGui.QAction(name, self, checkable=True,
+                                   checked=name == theme.choice())
+            action.triggered.connect(
+                lambda _=False, n=name: self._set_theme(n))
+            group.addAction(action)
+            menu.addAction(action)
+
+    def _set_theme(self, name: str) -> None:
+        QtCore.QSettings().setValue("ui/theme", name)
+        theme.apply(QtWidgets.QApplication.instance(), name)
 
     def _update_actions(self) -> None:
         """Enable exactly the actions whose precondition is satisfied.
@@ -927,7 +943,7 @@ class MainWindow(QtWidgets.QMainWindow):
             report = exc.report
             self.flight.set_join(None)
             self.flight.set_status(
-                "<b style='color:#B00020'>Refusing this trajectory.</b> "
+                f"<b style='color:{theme.current().bad}'>Refusing this trajectory.</b> "
                 + report.describe().replace("\n", "<br>"))
             self.log.log(str(exc), "error")
             self.log.log(report.describe(), "warning")
@@ -1123,7 +1139,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # so the same failure reads the same way in both front ends.
         explanation = message.partition("\n\n")[0].strip()
         self.flight.set_status(
-            "<b style='color:#B00020'>Could not fetch that flight.</b> "
+            f"<b style='color:{theme.current().bad}'>Could not fetch that flight.</b> "
             + _rich(explanation)
             + "<br>The <b>From file...</b> button beside <b>Fetch</b> reads a "
               "trajectory already on disk, which needs no account and no "

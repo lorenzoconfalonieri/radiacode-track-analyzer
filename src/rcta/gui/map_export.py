@@ -109,12 +109,15 @@ def render_image(map_panel, width: int, height: int, *, lines=()) -> QtGui.QImag
     if source.isEmpty():
         source = view.scene().sceneRect()
 
+    # A figure goes onto a white page, so it is drawn in the light theme
+    # whatever the screen is showing.
     painter = QtGui.QPainter(image)
     try:
         painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing, True)
         target = QtCore.QRectF(0, 0, image.width(), image.height() - band)
-        view.scene().render(painter, target, source,
-                            QtCore.Qt.AspectRatioMode.IgnoreAspectRatio)
+        with theme.plots_in(map_panel, theme.LIGHT):
+            view.scene().render(painter, target, source,
+                                QtCore.Qt.AspectRatioMode.IgnoreAspectRatio)
     finally:
         painter.end()
 
@@ -127,4 +130,5 @@ def render_svg(map_panel, path) -> None:
     from pyqtgraph import exporters
 
     exporter = exporters.SVGExporter(map_panel.plot)
-    exporter.export(str(path))
+    with theme.plots_in(map_panel, theme.LIGHT):
+        exporter.export(str(path))

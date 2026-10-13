@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sys
 
-from PySide6 import QtWidgets
+from PySide6 import QtCore, QtWidgets
 
 from rcta.gui import theme
 from rcta.gui.main_window import MainWindow
@@ -14,7 +14,9 @@ def main(argv=None) -> int:
     argv = list(sys.argv if argv is None else argv)
     app = QtWidgets.QApplication(argv)
     app.setApplicationName("Radiacode Track Analyzer")
-    theme.apply(app)
+    app.setOrganizationName("rcta")
+    theme.apply(app, str(QtCore.QSettings().value("ui/theme", "System")))
+    theme.follow_system(app)
 
     window = MainWindow(offline="--offline" in argv)
     window.show()

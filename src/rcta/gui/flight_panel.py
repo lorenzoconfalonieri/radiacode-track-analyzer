@@ -122,7 +122,7 @@ class FlightPanel(QtWidgets.QWidget):
             self._series[branch] = (item, bars)
 
         self._fit_curve = self.plot.plot(
-            pen=pg.mkPen("#444444", width=1.2, style=Qt.PenStyle.DashLine),
+            pen=pg.mkPen(theme.LIGHT.fit, width=1.2, style=Qt.PenStyle.DashLine),
             name="fitted exponential")
 
         self.caption = QtWidgets.QLabel("")
@@ -142,6 +142,13 @@ class FlightPanel(QtWidgets.QWidget):
         self.caption.setContentsMargins(6, 2, 6, 4)
         layout.addWidget(self.caption)
         self.set_join(None)
+        theme.follow(self)
+
+    def restyle(self, t) -> None:
+        """Colours that have to change with the theme to stay visible."""
+        theme.style_graphics_view(self._glw, t)
+        self._fit_curve.setPen(pg.mkPen(t.fit, width=1.2,
+                                        style=Qt.PenStyle.DashLine))
 
     # ---- construction -----------------------------------------------------
 
@@ -456,7 +463,7 @@ class FlightPanel(QtWidgets.QWidget):
         parts = []
         if match.forced:
             parts.append(
-                "<b style='color:#B00020'>Position match FORCED</b>: the "
+                f"<b style='color:{theme.current().bad}'>Position match FORCED</b>: the "
                 f"trajectory sits {match.residual_median_m / 1000.0:.0f} km "
                 "from the recorded fixes. This is very likely not the flight "
                 "that produced this track, and everything below is fiction.")

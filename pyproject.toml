@@ -43,6 +43,7 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "rcta.data" = ["*.json", "LICENSE"]
+"rcta.gui" = ["icons/*.svg"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
