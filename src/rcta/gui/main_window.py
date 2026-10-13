@@ -623,6 +623,12 @@ class MainWindow(QtWidgets.QMainWindow):
             self.log.log(f"cannot read {path}: {exc}", "error")
             return False
 
+        # Anything still computing belongs to the previous file, and so does
+        # its analysis: if the new file's analysis fails, the exports must
+        # have nothing to write rather than the last file's results under
+        # this file's name.
+        self.jobs.cancel_all()
+        self._analysis = None
         self._track = track
         self._selection = Selection.empty(track.n)
         self._grid = None
@@ -668,7 +674,6 @@ class MainWindow(QtWidgets.QMainWindow):
             scan=self.analysis_dock.scan_params(),
             integration_time_s=self.analysis_dock.integration_time(),
             unit=self._unit,
-            n_boot=300,
         )
 
     def analyse(self) -> None:
@@ -696,7 +701,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.map.set_track(track, analysis.quality)
         self.series.set_track(track, analysis.background, trace, threshold)
-        self.profile.set_track(track)
+        self.profile.set_track(track, analysis.speed_dose)
 
         self.anomaly_model.set_rows(analysis.anomalies)
         self.hotspot_model.set_rows(analysis.hotspots)
@@ -1189,7 +1194,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 floor_m=float(self.flight.floor.value())),
         }
         try:
-            Path(path).write_text(writers[kind]())
+            Path(path).write_text(writers[kind](), encoding="utf-8")
         except OSError as exc:
             self.log.log(f"could not write {path}: {exc}", "error")
             return

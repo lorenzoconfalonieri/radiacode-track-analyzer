@@ -171,20 +171,21 @@ def accumulated_dose(track: Track, *, quality=None, max_gap_s: float = 30.0,
 
     time_s = track.time_s
     rate = track.dose_rate
+    valid = track.valid_mask
     if mask is not None:
         mask = np.asarray(mask, dtype=bool)
         if mask.size != track.n:
             raise ValueError(f"mask has {mask.size} entries, expected {track.n}")
         if mask.sum() < 2:
             raise ValueError("need at least two samples to integrate a dose")
-        time_s, rate = time_s[mask], rate[mask]
+        time_s, rate, valid = time_s[mask], rate[mask], valid[mask]
 
     n = time_s.size
+    peak = float(rate[valid].max()) if valid.any() else 0.0
     if n < 2:
         return DoseSummary(total_nsv=0.0, naive_total_nsv=0.0, covered_time_s=0.0,
                            span_time_s=0.0, n_gaps_excluded=0,
-                           max_dose_rate=float(rate.max()) if n else 0.0,
-                           unit=unit)
+                           max_dose_rate=peak, unit=unit)
 
     dt = np.diff(time_s)
     # Trapezoid over each interval: nSv/h * s / 3600 = nSv.
@@ -195,12 +196,19 @@ def accumulated_dose(track: Track, *, quality=None, max_gap_s: float = 30.0,
     else:
         is_gap = dt > max_gap_s
 
+    # An interval with a masked end has no reading to integrate, so it is
+    # unobserved time exactly like a dropout. The naive total bridges it from
+    # the readings on either side, as it bridges a dropout.
+    observed = ~is_gap & valid[:-1] & valid[1:]
+    t_ok, r_ok = time_s[valid], rate[valid]
+    naive = float((0.5 * (r_ok[:-1] + r_ok[1:]) * np.diff(t_ok)).sum() / 3600.0)
+
     return DoseSummary(
-        total_nsv=float(per_interval[~is_gap].sum()),
-        naive_total_nsv=float(per_interval.sum()),
-        covered_time_s=float(dt[~is_gap].sum()),
+        total_nsv=float(per_interval[observed].sum()),
+        naive_total_nsv=naive,
+        covered_time_s=float(dt[observed].sum()),
         span_time_s=float(time_s[-1] - time_s[0]),
         n_gaps_excluded=int(is_gap.sum()),
-        max_dose_rate=float(rate.max()),
+        max_dose_rate=peak,
         unit=unit,
     )

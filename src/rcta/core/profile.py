@@ -104,6 +104,11 @@ class SummaryStats:
         return "\n".join(lines)
 
 
+def _stat(reduce, values) -> float:
+    """``reduce(values)`` as a float, or NaN when there is nothing to reduce."""
+    return float(reduce(values)) if values.size else float("nan")
+
+
 def summarise(track: Track, *, mask=None, quality=None) -> SummaryStats:
     """Headline statistics over the whole track or a selection.
 
@@ -129,23 +134,28 @@ def summarise(track: Track, *, mask=None, quality=None) -> SummaryStats:
         accumulated, coverage = 0.0, 1.0
 
     distance = float(sub.distance_along_m[-1]) if contiguous else float("nan")
+    # Readings only from samples that have one; a selection of nothing but
+    # masked samples reports NaN rather than a fabricated zero.
+    dose = sub.dose_rate[sub.valid_mask]
+    cps = sub.count_rate[sub.valid_mask]
+    accuracy = sub.accuracy_m[np.isfinite(sub.accuracy_m)]
     return SummaryStats(
         n=sub.n,
         n_valid=int(sub.valid_mask.sum()),
         n_poor_position=int((~sub.position_mask).sum()),
         duration_s=float(sub.time_s[-1] - sub.time_s[0]) if sub.n > 1 else 0.0,
         distance_m=distance,
-        dose_min=float(sub.dose_rate.min()), dose_max=float(sub.dose_rate.max()),
-        dose_mean=float(sub.dose_rate.mean()),
-        dose_median=float(np.median(sub.dose_rate)),
-        dose_p95=float(np.percentile(sub.dose_rate, 95)),
-        count_min=float(sub.count_rate.min()), count_max=float(sub.count_rate.max()),
-        count_mean=float(sub.count_rate.mean()),
-        count_median=float(np.median(sub.count_rate)),
+        dose_min=_stat(np.min, dose), dose_max=_stat(np.max, dose),
+        dose_mean=_stat(np.mean, dose),
+        dose_median=_stat(np.median, dose),
+        dose_p95=_stat(lambda v: np.percentile(v, 95), dose),
+        count_min=_stat(np.min, cps), count_max=_stat(np.max, cps),
+        count_mean=_stat(np.mean, cps),
+        count_median=_stat(np.median, cps),
         speed_median=float(np.median(sub.speed_m_s)),
         speed_max=float(sub.speed_m_s.max()),
-        accuracy_median=float(np.median(sub.accuracy_m)),
-        accuracy_max=float(sub.accuracy_m.max()),
+        accuracy_median=_stat(np.median, accuracy),
+        accuracy_max=_stat(np.max, accuracy),
         accumulated_dose_nsv=accumulated,
         coverage=coverage,
         contiguous=contiguous,
@@ -211,8 +221,10 @@ def resample_by_distance(track: Track, *, step_m: float = 100.0,
     sorted_index = index[order]
     starts = np.searchsorted(sorted_index, np.arange(n_bins), side="left")
     stops = np.searchsorted(sorted_index, np.arange(n_bins), side="right")
+    valid = track.valid_mask
     for b in range(n_bins):
         rows = order[starts[b]:stops[b]]
+        rows = rows[valid[rows]]
         if rows.size == 0:
             continue
         n_samples[b] = rows.size
@@ -457,5 +469,9 @@ def correlate_speed_dose(track: Track, **kw) -> Correlation:
                   "speed to dwell time and so to the samples collected; treat "
                   "this as confounding, not causation")
     kw.setdefault("caveat", caveat)
-    return correlate(track.speed_m_s[1:], track.dose_rate[1:], track.time_s[1:],
-                     label_x="speed", label_y="dose rate", **kw)
+    # The first speed is a copy of the second, and masked samples have none.
+    keep = track.valid_mask.copy()
+    keep[0] = False
+    return correlate(track.speed_m_s[keep], track.dose_rate[keep],
+                     track.time_s[keep], label_x="speed", label_y="dose rate",
+                     **kw)

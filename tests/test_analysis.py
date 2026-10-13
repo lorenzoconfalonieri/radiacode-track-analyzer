@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import numpy as np
 import pytest
 import synthetic
 
@@ -134,3 +135,73 @@ def test_sample_status_line(sample):
     assert "2964 samples" in line
     assert "1792.21 km" in line
     assert "14 legs" in line
+
+
+# ---- masked samples ------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def corrupted(sample_path, tmp_path_factory):
+    """The real walk with every 97th marker broken, and the same walk without them.
+
+    Masking must change nothing a reading feeds: the masked analysis and an
+    analysis of the file with those markers deleted outright have to agree on
+    every statistic computed from readings.
+    """
+    import json
+
+    from rcta.core.io_radiacode import load_track
+
+    raw = json.loads(sample_path.read_text())
+    broken = dict(raw, markers=[
+        {k: v for k, v in m.items() if k != "doseRate"} if i % 97 == 0 else m
+        for i, m in enumerate(raw["markers"])])
+    dropped = dict(raw, markers=[m for i, m in enumerate(raw["markers"])
+                                 if i % 97 != 0])
+    folder = tmp_path_factory.mktemp("masked")
+    (folder / "broken.rctrk").write_text(json.dumps(broken))
+    (folder / "dropped.rctrk").write_text(json.dumps(dropped))
+    return (load_track(folder / "broken.rctrk"),
+            load_track(folder / "dropped.rctrk"))
+
+
+def test_masked_samples_do_not_move_the_statistics(corrupted):
+    broken, dropped = corrupted
+    assert int((~broken.valid_mask).sum()) == 31
+    params = AnalysisParams(n_boot=50, integration_time_s=10.0)
+    a = analyze_track(broken, params)
+    b = analyze_track(dropped, params)
+
+    for name in ("dose_min", "dose_max", "dose_mean", "dose_median",
+                 "dose_p95", "count_mean", "count_median"):
+        assert getattr(a.summary, name) == pytest.approx(
+            getattr(b.summary, name)), name
+    assert a.dose_distribution.threshold == pytest.approx(
+        b.dose_distribution.threshold)
+    assert a.dose.max_dose_rate == pytest.approx(b.dose.max_dose_rate)
+    assert a.speed_dose.spearman_rho == pytest.approx(b.speed_dose.spearman_rho)
+
+
+def test_masked_samples_leave_no_nan_in_the_results(corrupted):
+    import json
+
+    from rcta.core.io_export import report_to_json, track_to_csv
+
+    broken, _ = corrupted
+    a = analyze_track(broken, AnalysisParams(n_boot=50))
+    assert np.isfinite(a.background.count_rate).all()
+    assert np.isfinite(a.dose.total_nsv) and np.isfinite(a.dose.naive_total_nsv)
+    assert all(np.isfinite(mda) for _, _, mda in a.mda_table)
+    assert "nan" not in a.describe().lower()
+    json.loads(report_to_json(a))
+    csv = track_to_csv(a.track, quality=a.quality, background=a.background)
+    assert "nan" not in csv.lower()
+
+
+def test_a_masked_interval_is_unobserved_time(corrupted):
+    """No reading, no dose: the covered time shrinks rather than bridging it."""
+    broken, _ = corrupted
+    clean = analyze_track(broken.with_mask(valid=np.ones(broken.n, bool)),
+                          AnalysisParams(n_boot=50))
+    masked = analyze_track(broken, AnalysisParams(n_boot=50))
+    assert masked.dose.covered_time_s < clean.quality.covered_time_s

@@ -145,11 +145,12 @@ def cmd_analyze(args) -> int:
     print(analysis.describe())
 
     if args.json:
-        Path(args.json).write_text(report_to_json(analysis))
+        Path(args.json).write_text(report_to_json(analysis), encoding="utf-8")
         print(f"\nwrote {args.json}")
     if args.csv:
-        Path(args.csv).write_text(anomalies_to_csv(analysis.anomalies,
-                                                   unit=args.unit))
+        Path(args.csv).write_text(
+            anomalies_to_csv(analysis.anomalies, unit=args.unit),
+            encoding="utf-8")
         print(f"wrote {args.csv}")
     return 0
 
@@ -170,7 +171,7 @@ def cmd_export(args) -> int:
         "anomalies": lambda: anomalies_to_csv(analysis.anomalies, unit=args.unit),
         "hotspots": lambda: hotspots_to_csv(analysis.hotspots, unit=args.unit),
     }
-    Path(args.output).write_text(writers[args.format]())
+    Path(args.output).write_text(writers[args.format](), encoding="utf-8")
     print(f"wrote {args.output} ({args.format})")
     return 0
 
@@ -288,6 +289,9 @@ def _obtain_trajectory(track, args) -> tuple[object, list[str]]:
     notes.extend(warnings)
 
     providers, default = load_flight_providers()
+    if args.provider and args.provider not in providers:
+        raise ValueError(f"unknown --provider {args.provider!r}; "
+                         f"expected one of {sorted(providers)}")
     provider = providers[args.provider or default]
     trajectory = fetch_trajectory(flight, begin_s=begin, end_s=end,
                                   origin=(float(track.lat[0]),
@@ -333,7 +337,8 @@ def cmd_flight(args) -> int:
     print(trajectory.describe())
 
     if args.save_trajectory:
-        Path(args.save_trajectory).write_text(trajectory_to_csv(trajectory))
+        Path(args.save_trajectory).write_text(trajectory_to_csv(trajectory),
+                                              encoding="utf-8")
         print(f"  wrote {args.save_trajectory}")
 
     print()
@@ -380,21 +385,21 @@ def cmd_flight(args) -> int:
     print(compare_branches(join, step_m=args.branch_step).describe())
 
     if args.csv:
-        Path(args.csv).write_text(altitude_profile_to_csv(profile,
-                                                          unit=args.unit))
+        Path(args.csv).write_text(
+            altitude_profile_to_csv(profile, unit=args.unit), encoding="utf-8")
         print(f"\nwrote {args.csv}  ({int(profile.occupied.sum())} occupied "
               f"bins of {args.step:.0f} m)")
     if args.samples_csv:
         text = altitude_samples_to_csv(join, unit=args.unit,
                                        branch=args.branch)
-        Path(args.samples_csv).write_text(text)
+        Path(args.samples_csv).write_text(text, encoding="utf-8")
         print(f"wrote {args.samples_csv}  "
               f"({len(text.splitlines()) - 1} samples, one row each)")
 
     if args.json:
         Path(args.json).write_text(flight_report_to_json(
             join, profile, unit=args.unit, floor_m=args.fit_floor,
-            branch_step_m=args.branch_step))
+            branch_step_m=args.branch_step), encoding="utf-8")
         print(f"wrote {args.json}")
     return 0
 

@@ -49,6 +49,25 @@ __all__ = [
 GPX_NAMESPACE = "https://github.com/rcta/gpx/v1"
 
 
+def _finite(value):
+    """``value`` with every non-finite float replaced by None, recursively.
+
+    ``NaN`` is not JSON, and Python's encoder writes it anyway; a report that
+    a strict reader rejects is worse than one that says "unknown" as null.
+    """
+    if isinstance(value, dict):
+        return {k: _finite(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_finite(v) for v in value]
+    if isinstance(value, (float, np.floating)):
+        return float(value) if np.isfinite(value) else None
+    if isinstance(value, np.integer):
+        return int(value)
+    if isinstance(value, np.bool_):
+        return bool(value)
+    return value
+
+
 def _iso(seconds: float) -> str:
     return datetime.fromtimestamp(float(seconds), tz=timezone.utc).strftime(
         "%Y-%m-%dT%H:%M:%SZ")
@@ -103,7 +122,10 @@ def track_to_csv(track, *, quality=None, background=None, unit="nSv/h") -> str:
               for name, _ in _TRACK_COLUMNS]
     rows = [",".join(header)]
     for i in range(track.n):
-        rows.append(",".join(str(fn(track, i, ctx)) for _, fn in _TRACK_COLUMNS))
+        # A masked sample has no reading; its cells are blank, the same
+        # convention the altitude profile uses for an empty bin.
+        cells = (str(fn(track, i, ctx)) for _, fn in _TRACK_COLUMNS)
+        rows.append(",".join("" if c == "nan" else c for c in cells))
     return "\n".join(rows) + "\n"
 
 
@@ -310,9 +332,10 @@ def report_to_json(analysis, *, indent=2) -> str:
     """
     track = analysis.track
     params = analysis.params
+    applied = analysis.background.params
     unit = params.unit
 
-    return json.dumps({
+    return json.dumps(_finite({
         "generator": "rcta",
         "track": {
             "title": track.meta.title,
@@ -329,24 +352,41 @@ def report_to_json(analysis, *, indent=2) -> str:
             "dose_per_count_nsv_h_per_cps": round(track.dose_per_count, 4),
             "bbox": [round(v, 6) for v in track.bbox],
         },
+        # Every setting that can change a number below, as *applied*: the
+        # background window may have been widened from the one requested, and
+        # a report that quoted the request could not be reproduced from.
         "parameters": {
             "quality": {
                 "max_accuracy_m": params.quality.max_accuracy_m,
                 "gap_threshold_s": params.quality.gap_threshold_s,
+                "gap_threshold_applied_s": analysis.quality.gap_threshold_s,
                 "max_speed_m_s": params.quality.max_speed_m_s,
+                "speed_outlier_factor": params.quality.speed_outlier_factor,
+                "min_jump_m": params.quality.min_jump_m,
+                "smoothing_window_samples": track.smoothing_window,
             },
             "background": {
-                "method": params.background.method,
-                "window_s": params.background.window_s,
-                "trim_fraction": params.background.trim_fraction,
-                "guard_s": params.background.guard_s,
+                "method": applied.method,
+                "window_s": applied.window_s,
+                "window_s_requested": params.background.window_s,
+                "trim_fraction": applied.trim_fraction,
+                "guard_s": applied.guard_s,
+                "min_samples": applied.min_samples,
+                "reference_span": (list(applied.reference_span)
+                                   if applied.reference_span else None),
+                "scale_separation": applied.scale_separation,
             },
             "scan": {
                 "scales": list(params.scan.scales),
                 "alpha": params.scan.alpha,
                 "bonferroni": params.scan.bonferroni,
+                "merge_overlapping": params.scan.merge_overlapping,
                 "trend_flag_ratio": params.scan.trend_flag_ratio,
+                "poor_gps_fraction": params.scan.poor_gps_fraction,
             },
+            "integration_time_s": params.integration_time_s,
+            "cluster_radius_m": params.cluster_radius_m,
+            "n_boot": params.n_boot,
             "unit": unit,
         },
         "quality": {
@@ -419,7 +459,7 @@ def report_to_json(analysis, *, indent=2) -> str:
             "flags": list(h.flags),
         } for h in analysis.hotspots],
         "warnings": list(analysis.warnings),
-    }, indent=indent)
+    }), indent=indent, allow_nan=False)
 
 
 # ---- flight ---------------------------------------------------------------

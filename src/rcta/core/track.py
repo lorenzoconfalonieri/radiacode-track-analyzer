@@ -23,10 +23,14 @@ refuses to exist in the wrong order.
 property can never silently go stale, and a Track can be handed to a worker
 thread with no lock. That second property is load-bearing, not incidental.
 
-Bad samples are masked, never dropped, and there are two masks because the
-failure modes are independent: a fix with 397 m of GPS accuracy still carries
-a perfectly good count rate, so it is excluded from geometry alone. The sample
-count in any summary therefore always matches the sample count in the file.
+Bad samples are masked, never dropped, and there are separate masks because
+the failure modes are independent: a fix with 397 m of GPS accuracy still
+carries a perfectly good count rate, so it is hidden from the map alone. A
+glitched fix -- one the platform could not have reached -- is also bypassed
+when measuring the route; a merely imprecise one is not, because averaging
+its noise away is what the position smoothing is for, and bypassing the 475
+such fixes in the bundled flight would cut 1.8 km of real curvature. The
+sample count in any summary always matches the sample count in the file.
 
 Dose rate is canonically nSv/h everywhere in this package. Every display
 conversion lives in :mod:`rcta.core.dose`; nothing else divides by 1000.
@@ -152,6 +156,11 @@ class Track:
     meta: TrackMeta = field(default_factory=TrackMeta)
     valid_mask: np.ndarray | None = None
     position_mask: np.ndarray | None = None
+    #: Fixes the route is built from. Narrower than ``position_mask``: an
+    #: imprecise fix is hidden from the map but still traces the route, since
+    #: the position smoothing exists for exactly that noise, while a glitched
+    #: one is bypassed. None means every fix.
+    geometry_mask: np.ndarray | None = None
     #: Contiguous recording legs; a new leg starts after every dropout.
     leg_index: np.ndarray | None = None
     #: Detector integration time behind each reported rate. None means infer.
@@ -181,7 +190,7 @@ class Track:
                     f"column length mismatch: time_s has {n}, {name} has {arr.size}")
 
         masks = {}
-        for name in ("valid_mask", "position_mask"):
+        for name in ("valid_mask", "position_mask", "geometry_mask"):
             value = getattr(self, name)
             arr = (np.ones(n, dtype=bool) if value is None
                    else np.asarray(value, dtype=bool))
@@ -264,11 +273,50 @@ class Track:
         """
         if self.position_smoothing is not None:
             return max(int(self.position_smoothing), 1)
-        return geo.choose_smoothing_window(self.lat, self.lon, self.accuracy_m)
+        m = self.trusted_position
+        return geo.choose_smoothing_window(self.lat[m], self.lon[m],
+                                           self.accuracy_m[m])
+
+    @cached_property
+    def trusted_position(self) -> np.ndarray:
+        """Fixes the geometry is built from: a reading, and a believable place.
+
+        A masked sample's place was borrowed from a neighbour and a glitched
+        fix is somewhere the platform never was; letting either into the
+        moving average would smear it over the whole window. Merely
+        imprecise fixes stay in: averaging their noise away is what the
+        smoothing is for.
+        """
+        m = (self.valid_mask & self.geometry_mask
+             & np.isfinite(self.lat) & np.isfinite(self.lon))
+        return m if m.any() else np.ones(self.n, dtype=bool)
 
     @cached_property
     def _smoothed(self):
-        return geo.smooth_positions(self.lat, self.lon, self.smoothing_window)
+        """Positions for geometry: trusted fixes smoothed leg by leg.
+
+        Each leg is smoothed on its own so the average never reaches across a
+        dropout to a point a hundred kilometres away. Longitude is unwrapped
+        first so a leg crossing the antimeridian does not average to zero.
+        Untrusted samples are then placed on the smoothed path by
+        interpolation in time, so they add no distance of their own.
+        """
+        trusted = self.trusted_position
+        lat = np.array(self.lat, dtype=float)
+        lon = np.array(self.lon, dtype=float)
+        starts = np.concatenate(
+            ([0], np.flatnonzero(np.diff(self.leg_index)) + 1, [self.n]))
+        for lo, hi in zip(starts[:-1], starts[1:]):
+            good = np.flatnonzero(trusted[lo:hi]) + lo
+            if good.size == 0:
+                continue
+            unwrapped = np.rad2deg(np.unwrap(np.deg2rad(self.lon[good])))
+            s_lat, s_lon = geo.smooth_positions(self.lat[good], unwrapped,
+                                                self.smoothing_window)
+            t = self.time_s[lo:hi]
+            lat[lo:hi] = np.interp(t, self.time_s[good], s_lat)
+            lon[lo:hi] = np.interp(t, self.time_s[good], s_lon)
+        return lat, (lon + 180.0) % 360.0 - 180.0
 
     @property
     def smooth_lat(self) -> np.ndarray:
@@ -349,12 +397,21 @@ class Track:
 
         Element 0 has no preceding segment and repeats element 1, so that the
         array aligns with every other column and plots without a leading gap.
+
+        Segments run between trusted fixes only. An untrusted sample takes the
+        speed of the trusted segment it falls inside, rather than defining a
+        segment of its own from a place it borrowed or a time it shares.
         """
-        if self.n < 2:
+        trusted = np.flatnonzero(self.trusted_position)
+        if trusted.size < 2:
             return np.zeros(self.n)
+        dt = np.diff(self.time_s[trusted])
+        ds = np.diff(self.distance_along_m[trusted])
         with np.errstate(divide="ignore", invalid="ignore"):
-            speed = np.where(self.dt_s > 0, self.segment_length_m / self.dt_s, 0.0)
-        return np.concatenate(([speed[0]], speed))
+            segment = np.where(dt > 0, ds / dt, 0.0)
+        arrival = np.clip(np.searchsorted(trusted, np.arange(self.n)),
+                          1, trusted.size - 1)
+        return segment[arrival - 1]
 
     @cached_property
     def bearing_deg(self) -> np.ndarray:
@@ -367,7 +424,8 @@ class Track:
     @cached_property
     def bbox(self) -> tuple[float, float, float, float]:
         """(min_lon, min_lat, max_lon, max_lat) over position-valid samples."""
-        m = self.position_mask
+        m = (self.position_mask & self.valid_mask
+             & np.isfinite(self.lat) & np.isfinite(self.lon))
         if not m.any():
             m = np.ones(self.n, dtype=bool)
         return (float(self.lon[m].min()), float(self.lat[m].min()),
@@ -414,12 +472,14 @@ class Track:
         """
         m = (self.count_rate > 0) & self.valid_mask
         if not m.any():
-            return 0.0
+            # Unknown, not zero: a zero ratio would turn every detection
+            # limit into 0 nSv/h, which reads as perfect sensitivity.
+            return float("nan")
         return float(np.median(self.dose_rate[m] / self.count_rate[m]))
 
     # ---- masking and selection -------------------------------------------
 
-    def with_mask(self, *, valid=None, position=None, legs=None,
+    def with_mask(self, *, valid=None, position=None, geometry=None, legs=None,
                   integration_time_s=None, meta=None, smoothing=None) -> "Track":
         """A copy with masks or metadata replaced. Columns are never touched."""
         changes = {}
@@ -427,6 +487,8 @@ class Track:
             changes["valid_mask"] = np.asarray(valid, dtype=bool)
         if position is not None:
             changes["position_mask"] = np.asarray(position, dtype=bool)
+        if geometry is not None:
+            changes["geometry_mask"] = np.asarray(geometry, dtype=bool)
         if legs is not None:
             changes["leg_index"] = np.asarray(legs, dtype=np.int64)
         if integration_time_s is not None:
@@ -454,6 +516,7 @@ class Track:
             accuracy_m=self.accuracy_m[mask], dose_rate=self.dose_rate[mask],
             count_rate=self.count_rate[mask], meta=self.meta,
             valid_mask=self.valid_mask[mask], position_mask=self.position_mask[mask],
+            geometry_mask=self.geometry_mask[mask],
             leg_index=self.leg_index[mask],
             integration_time_s=self.effective_integration_time_s,
             position_smoothing=self.smoothing_window,
@@ -516,14 +579,17 @@ class Track:
         lines.append(f"integration: {self.effective_integration_time_s:.1f} s "
                      f"per sample ({source})")
 
-        lines.append(f"dose rate  : {self.dose_rate.min():.2f} .. "
-                     f"{self.dose_rate.max():.2f} nSv/h   "
-                     f"median {np.median(self.dose_rate):.2f}")
-        lines.append(f"count rate : {self.count_rate.min():.2f} .. "
-                     f"{self.count_rate.max():.2f} cps      "
-                     f"median {np.median(self.count_rate):.2f}")
-        lines.append(f"accuracy   : median {np.median(self.accuracy_m):.0f} m, "
-                     f"max {self.accuracy_m.max():.0f} m")
+        ok = self.valid_mask
+        if ok.any():
+            dose, cps = self.dose_rate[ok], self.count_rate[ok]
+            lines.append(f"dose rate  : {dose.min():.2f} .. {dose.max():.2f} "
+                         f"nSv/h   median {np.median(dose):.2f}")
+            lines.append(f"count rate : {cps.min():.2f} .. {cps.max():.2f} "
+                         f"cps      median {np.median(cps):.2f}")
+        known = self.accuracy_m[np.isfinite(self.accuracy_m)]
+        lines.append(f"accuracy   : median {np.median(known):.0f} m, "
+                     f"max {known.max():.0f} m" if known.size
+                     else "accuracy   : not recorded")
 
         for warning in self.meta.warnings:
             lines.append(f"warning    : {warning}")

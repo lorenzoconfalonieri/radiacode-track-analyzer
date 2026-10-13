@@ -37,6 +37,7 @@ class ProfilePanel(QtWidgets.QWidget):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self._track = None
+        self._correlation = None
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -101,8 +102,13 @@ class ProfilePanel(QtWidgets.QWidget):
 
     # ---- public API (never emits) -----------------------------------------
 
-    def set_track(self, track) -> None:
+    def set_track(self, track, correlation=None) -> None:
+        """Draw ``track``; ``correlation`` is the analysis's own speed/dose
+        result, quoted rather than recomputed so the caption cannot disagree
+        with the report."""
         self._track = track
+        self._correlation = (correlation if correlation is not None or
+                             track is None else correlate_speed_dose(track))
         self._refresh()
 
     def _refresh(self, *_) -> None:
@@ -121,15 +127,17 @@ class ProfilePanel(QtWidgets.QWidget):
         self._profile_curve.setData(profile.distance_m / 1000.0,
                                     profile.dose_rate, connect="finite")
 
-        histogram = distribution(track.dose_rate, unit="nSv/h")
+        readings = track.valid_mask
+        histogram = distribution(track.dose_rate[readings], unit="nSv/h")
         if histogram.counts.size:
             self._hist_curve.setData(histogram.edges, histogram.counts)
 
-        speed = track.speed_m_s[1:]
-        dose = track.dose_rate[1:]
-        self._scatter.setData(speed, dose)
+        readings = readings.copy()
+        readings[0] = False                 # its speed is a copy of the next
+        self._scatter.setData(track.speed_m_s[readings],
+                              track.dose_rate[readings])
 
-        correlation = correlate_speed_dose(track, n_boot=200)
+        correlation = self._correlation
         self.caption.setText(
             f"{profile.describe()}   |   "
             f"speed vs dose: rho = {correlation.spearman_rho:+.3f}, "

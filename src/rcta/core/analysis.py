@@ -52,8 +52,6 @@ class AnalysisParams:
     #: Detector live time per sample. None means infer from the median spacing
     #: and warn -- see Track.effective_integration_time_s.
     integration_time_s: float | None = None
-    #: Intervals longer than this are excluded from the integrated dose.
-    max_dose_gap_s: float = 30.0
     #: Display unit. The canonical stored unit is always nSv/h.
     unit: str = "nSv/h"
     #: Cluster radius for hotspots; None derives it from the GPS accuracy.
@@ -182,8 +180,9 @@ def analyze_track(track: Track, params: AnalysisParams | None = None, *,
     hotspots = find_hotspots(track, anomalies, background,
                              cluster_radius_m=params.cluster_radius_m)
 
-    dose = accumulated_dose(track, quality=quality,
-                            max_gap_s=params.max_dose_gap_s, unit=params.unit)
+    # The dose integral breaks at the same dropouts as the map and the legs,
+    # so its gap rule is QualityParams.gap_threshold_s and nothing else.
+    dose = accumulated_dose(track, quality=quality, unit=params.unit)
     summary = summarise(track, quality=quality)
 
     warnings = list(track.meta.warnings) + list(quality.warnings) \
@@ -198,7 +197,7 @@ def analyze_track(track: Track, params: AnalysisParams | None = None, *,
         track=track, params=params, quality=quality, background=background,
         anomalies=tuple(anomalies), hotspots=tuple(hotspots), dose=dose,
         summary=summary,
-        dose_distribution=bimodality(track.dose_rate),
+        dose_distribution=bimodality(track.dose_rate[track.valid_mask]),
         speed_dose=correlate_speed_dose(track, n_boot=params.n_boot),
         mda_table=tuple(scan_mda(track, background, params.scan)),
         warnings=tuple(warnings),

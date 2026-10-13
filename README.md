@@ -13,7 +13,7 @@ counting noise", which by eye are indistinguishable.
 
 ![a walking survey](docs/screenshot-walk.png)
 
-*A 2 h walk in Salt Lake City: 348 samples, 2.97 km, background 0.072 µSv/h,
+*A 2 h walk in Salt Lake City: 348 samples, 2.99 km, background 0.072 µSv/h,
 with one spot seen elevated on two separate passes.*
 
 ## Install
@@ -128,7 +128,7 @@ scale height : 1.95 +- 0.01 km e-folding
 goodness     : R2 = 0.999, chi2/dof = 10.2
 
 climb vs descent : consistent over 11 shared bin(s)
-  worst bin 1.99 sigma against a 2.61 sigma threshold (Bonferroni over 11 bins)
+  worst bin 1.99 sigma against a 2.84 sigma threshold (two-sided, Bonferroni over 11 bins)
 ```
 
 On the bundled sample the same command reaches the opposite conclusion, and
@@ -139,7 +139,7 @@ that is the point:
 *The bundled flight joined to its bundled trajectory. The position match passes
 — median residual 0.10 km over 2,484 samples — and 2,961 of 2,964 samples get an
 altitude. But the climb and the descent disagree by 33 %, 6.0 σ against a
-2.3 σ threshold, χ²/dof = 31.2, and the control says so instead of quoting a
+2.6 σ threshold, χ²/dof = 31.2, and the control says so instead of quoting a
 tidy scale height. This trajectory's altitude axis is fabricated, which
 inflates the disagreement; on the real fetched trajectory it is 12.5 % and
 4.07 σ, and still there. See `docs/FLIGHT.md`.*

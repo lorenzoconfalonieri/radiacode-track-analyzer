@@ -524,6 +524,26 @@ def test_the_branch_threshold_is_bonferroni_corrected(flight_case):
     assert fine.threshold_sigma > coarse.threshold_sigma
 
 
+def test_the_branch_threshold_is_two_sided(flight_case):
+    """Either branch reading high is a disagreement, so alpha splits across tails."""
+    from scipy import stats
+
+    track, trajectory, _ = flight_case
+    comparison = F.compare_branches(F.join_altitude(track, trajectory),
+                                    step_m=1000.0, alpha=0.05)
+    n = comparison.n_shared
+    assert comparison.threshold_sigma == pytest.approx(
+        stats.norm.isf(0.05 / (2 * n)))
+
+
+def test_a_non_integer_step_still_matches_bins(flight_case):
+    """1000 ft bins have float centres that float equality would not match."""
+    track, trajectory, _ = flight_case
+    join = F.join_altitude(track, trajectory)
+    feet = F.compare_branches(join, step_m=304.8 * 4)
+    assert feet.n_shared >= 3
+
+
 def test_a_missing_branch_is_reported_not_crashed():
     track, trajectory, _ = synthetic.flight_track()
     level = F.Trajectory(time_s=trajectory.time_s, lat=trajectory.lat,

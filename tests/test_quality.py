@@ -125,6 +125,57 @@ def test_a_glitch_is_detected_on_raw_fixes_not_smoothed_ones():
     assert report.n_speed_outliers == 1
 
 
+def test_one_bad_fix_masks_only_itself():
+    """A spike makes both of its segments implausible; the fix after it was fine."""
+    t = _track(n=40, speed_m_s=1.4)
+    lat = t.lat.copy()
+    lat[20] += 0.01            # ~1.1 km out and straight back
+    t = Track(time_s=t.time_s, lat=lat, lon=t.lon, accuracy_m=t.accuracy_m,
+              dose_rate=t.dose_rate, count_rate=t.count_rate)
+    out, report = assess_with_report(t)
+    assert report.n_speed_outliers == 2
+    assert np.flatnonzero(~out.position_mask).tolist() == [20]
+
+
+def test_a_glitch_adds_no_distance():
+    """Bypassed, not smeared: the route is as long as it would be without it."""
+    clean = _track(n=40, speed_m_s=1.4)
+    lat = clean.lat.copy()
+    lat[20] += 0.01
+    glitched = Track(time_s=clean.time_s, lat=lat, lon=clean.lon,
+                     accuracy_m=clean.accuracy_m, dose_rate=clean.dose_rate,
+                     count_rate=clean.count_rate)
+    out, _ = assess_with_report(glitched.with_mask(smoothing=1))
+    assert float(out.distance_along_m[-1]) == pytest.approx(1.4 * 2.0 * 39,
+                                                            rel=1e-3)
+    assert out.speed_m_s.max() < 2.0
+
+
+def test_a_jump_within_one_second_is_not_stationary():
+    """dt = 0 used to read as zero speed, so a same-second teleport slipped by."""
+    t = _track(n=40, speed_m_s=1.4)
+    time_s, lat = t.time_s.copy(), t.lat.copy()
+    time_s[20] = time_s[19]
+    lat[20] += 0.01
+    t = Track(time_s=time_s, lat=lat, lon=t.lon, accuracy_m=t.accuracy_m,
+              dose_rate=t.dose_rate, count_rate=t.count_rate)
+    out, report = assess_with_report(t)
+    assert report.n_speed_outliers >= 1
+    assert not out.position_mask[20]
+
+
+def test_an_imprecise_fix_still_traces_the_route():
+    """Hidden from the map, but smoothing is what handles its noise."""
+    t = _track(n=10)
+    acc = t.accuracy_m.copy()
+    acc[3] = 300.0
+    t = Track(time_s=t.time_s, lat=t.lat, lon=t.lon, accuracy_m=acc,
+              dose_rate=t.dose_rate, count_rate=t.count_rate)
+    out, _ = assess_with_report(t)
+    assert not out.position_mask[3]
+    assert out.trusted_position[3]
+
+
 # ---- polyline ------------------------------------------------------------
 
 

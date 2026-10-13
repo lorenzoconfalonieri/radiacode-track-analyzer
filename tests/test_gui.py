@@ -1370,3 +1370,21 @@ def test_switching_basemap_does_not_leave_stale_decoded_tiles(window):
 
     window._set_provider("usgs_imagery")
     assert not window.map.basemap.has(TileKey(12, 1, 1))
+
+
+def test_a_failed_load_analysis_leaves_nothing_to_export(loaded, tmp_path,
+                                                         monkeypatch):
+    """The last file's results must never be exported under the new file's name."""
+    import rcta.gui.main_window as mw
+
+    def broken(*_, **__):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(mw, "analyze_track", broken)
+    import shutil
+    copy = tmp_path / "other.rctrk"
+    shutil.copy(loaded._path, copy)
+    assert loaded.load(str(copy))
+    assert loaded._analysis is None
+    assert not any(a.isEnabled() for a in loaded._needs_track)
+

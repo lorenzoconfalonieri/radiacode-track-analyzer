@@ -8,10 +8,13 @@ numbers below are set from what a handheld detector carried on a person, in a
 vehicle or on an aircraft can physically do, and the sample is expected to fail
 two of them and say so.
 
-Nothing is ever deleted. Two masks exist because the failure modes are
-independent: a fix with 397 m of horizontal accuracy is useless for geometry
-but its count rate is a real measurement, so it is excluded from the map and
-the distance while remaining in the time series and the statistics.
+Nothing is ever deleted. Separate masks exist because the failure modes are
+independent: a fix with 397 m of horizontal accuracy cannot place a reading
+on the map, but its count rate is a real measurement, so it is hidden from
+the map while remaining in the time series and the statistics. It still
+traces the route, since position smoothing averages exactly that kind of
+noise away. A glitched fix is different -- the platform was never there -- so
+it is bypassed when measuring distance and speed as well.
 
 Speed outliers are the union of two tests, not the intersection. An absolute
 ceiling catches what no platform can do; a *robust relative* bound catches what
@@ -49,7 +52,7 @@ __all__ = ["QualityParams", "QualityReport", "assess", "gap_segments", "polyline
 class QualityParams:
     """Thresholds for GPS quality."""
 
-    #: Fixes worse than this are excluded from geometry only.
+    #: Fixes worse than this are hidden from the map; the series keeps them.
     max_accuracy_m: float = 100.0
     #: An interval above this starts a new leg. None -> max(30, 10 x median).
     gap_threshold_s: float | None = None
@@ -101,7 +104,7 @@ class QualityReport:
             f"{self.n_poor_accuracy} fix(es) worse than "
             f"{self.params.max_accuracy_m:.0f} m",
             f"dropouts   : {self.n_gaps} gap(s) over "
-            f"{self._gap_threshold():.0f} s, longest {self.longest_gap_s:.0f} s",
+            f"{self.gap_threshold_s:.0f} s, longest {self.longest_gap_s:.0f} s",
             f"legs       : {self.n_legs}",
             f"lost       : {self.gap_time_s:.0f} s and "
             f"{self.gap_distance_m / 1000.0:.1f} km inside dropouts",
@@ -112,7 +115,9 @@ class QualityReport:
             lines.append(f"warning    : {warning}")
         return "\n".join(lines)
 
-    def _gap_threshold(self) -> float:
+    @property
+    def gap_threshold_s(self) -> float:
+        """The interval that starts a new leg, as applied to this track."""
         if self.params.gap_threshold_s is not None:
             return self.params.gap_threshold_s
         return max(30.0, 10.0 * self.median_dt_s)
@@ -141,7 +146,8 @@ def assess_with_report(track: Track,
     threshold = (params.gap_threshold_s if params.gap_threshold_s is not None
                  else max(30.0, 10.0 * median_dt))
 
-    position = np.ones(n, dtype=bool)
+    # A masked sample's position was borrowed from a neighbour, not measured.
+    position = track.valid_mask.copy()
 
     poor = track.accuracy_m > params.max_accuracy_m
     position &= ~poor
@@ -149,25 +155,32 @@ def assess_with_report(track: Track,
     if n_poor:
         warnings.append(
             f"{n_poor} fix(es) exceed {params.max_accuracy_m:.0f} m accuracy; "
-            "excluded from geometry, kept in the series")
+            "hidden from the map, kept in the series")
 
     # Raw fixes, and the union of a hard ceiling with a robust relative bound.
-    speed = track.raw_speed_m_s
     step = track.raw_segment_length_m
+    # A jump between two fixes stamped with the same second is infinitely
+    # fast, not stationary; min_jump_m below still forgives a repeated fix.
+    with np.errstate(divide="ignore", invalid="ignore"):
+        speed = np.where(track.dt_s > 0, step / track.dt_s, np.inf)
     outlier = np.zeros(max(n - 1, 0), dtype=bool)
     if speed.size:
         impossible = speed > params.max_speed_m_s
         implausible = speed > params.speed_outlier_factor * geo._robust_max(speed)
         outlier = (impossible | implausible) & (step > params.min_jump_m)
     n_outliers = int(outlier.sum())
+    glitched = _glitched_fixes(outlier) if n_outliers else np.zeros(n, bool)
     if n_outliers:
-        # Only the arrival endpoint is suspect; the departure fix was fine.
-        position[1:] &= ~outlier
+        position &= ~glitched
+        finite = speed[np.isfinite(speed)]
         worst = float(speed[outlier].max())
+        worst_text = (f"worst {worst:.0f} m/s" if np.isfinite(worst)
+                      else "worst a jump within one second")
         warnings.append(
             f"{n_outliers} segment(s) imply an implausible speed "
-            f"(worst {worst:.0f} m/s against a typical "
-            f"{np.median(speed):.1f} m/s); arrival fix excluded from geometry")
+            f"({worst_text} against a typical "
+            f"{np.median(finite) if finite.size else 0.0:.1f} m/s); "
+            "the glitched fixes are excluded from geometry")
 
     gap_after = (track.dt_s > threshold) if track.dt_s.size else np.zeros(0, bool)
     n_gaps = int(gap_after.sum())
@@ -183,11 +196,36 @@ def assess_with_report(track: Track,
         n=n, n_poor_accuracy=n_poor, n_speed_outliers=n_outliers,
         n_gaps=n_gaps, n_legs=int(legs.max()) + 1, gap_time_s=gap_time,
         gap_distance_m=gap_distance, longest_gap_s=longest,
-        median_dt_s=median_dt, median_accuracy_m=float(np.median(track.accuracy_m)),
+        median_dt_s=median_dt,
+        median_accuracy_m=geo.median_accuracy(track.accuracy_m),
         span_time_s=span, leg_index=legs, gap_after=gap_after,
         params=params, warnings=tuple(warnings),
     )
-    return track.with_mask(position=position, legs=legs), report
+    return track.with_mask(position=position, geometry=~glitched,
+                           legs=legs), report
+
+
+def _glitched_fixes(outlier: np.ndarray) -> np.ndarray:
+    """Which fixes to blame for a set of implausible segments, length n.
+
+    A single bad fix B between good fixes A and C makes *both* A->B and B->C
+    implausible. Blaming each segment's arrival fix would also throw away C,
+    which was fine, so a fix flanked by two outlier segments is blamed first
+    and both its segments are then accounted for. Any outlier segment left
+    over -- a jump that stayed, or one at the end of the track -- blames its
+    arrival fix, since the departure fix was already part of a sane path.
+    """
+    n = outlier.size + 1
+    blamed = np.zeros(n, dtype=bool)
+    remaining = outlier.copy()
+    spike = np.zeros(n, dtype=bool)
+    spike[1:-1] = outlier[:-1] & outlier[1:]
+    # A run of consecutive spikes is a run of bad fixes; blame them all.
+    blamed |= spike
+    remaining[spike[1:]] = False     # the segment arriving at a spike
+    remaining[spike[:-1]] = False    # the segment leaving a spike
+    blamed[1:] |= remaining
+    return blamed
 
 
 def polyline(track: Track, report: QualityReport | None = None, *,

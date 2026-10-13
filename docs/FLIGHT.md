@@ -353,7 +353,8 @@ same altitudes twice, hours apart and a continent away. Agreement is evidence
 that the profile is a function of altitude; disagreement bounds how much of it
 is something else — geomagnetic latitude, a solar event, or a join that is
 quietly wrong at one end. The threshold is Bonferroni-corrected over the number
-of shared bins, for the same reason the anomaly scan is.
+of shared bins, for the same reason the anomaly scan is, and two-sided: the
+descent reading high is as much a disagreement as the climb reading high.
 
 ## The bundled example, and why it disagrees
 
@@ -387,7 +388,7 @@ scale height fitted through it is a description of that guess.
 | R², χ²/dof | 0.783, 31.2 | 0.962, 20.8 |
 | shared bins | 5 | 6 |
 | median difference | 101.1 nSv/h (33.4 %) | 20.5 nSv/h (12.5 %) |
-| worst bin | 6.03 σ vs 2.33 σ | 4.07 σ vs 2.39 σ |
+| worst bin | 6.03 σ vs 2.58 σ | 4.07 σ vs 2.64 σ |
 
 The fabricated altitude axis inflates the disagreement, which is what a
 fabricated axis should be expected to do. It does not create it: on the real

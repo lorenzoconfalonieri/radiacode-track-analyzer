@@ -98,6 +98,29 @@ def _utc(seconds) -> datetime:
     return datetime.fromtimestamp(float(seconds), tz=timezone.utc)
 
 
+def _number(value) -> float:
+    """A finite float, or NaN for anything absent, non-numeric or infinite.
+
+    ``bool`` is refused explicitly: it is an int in Python, and ``true`` read
+    as a dose rate of one is exactly the silent coercion this guards against.
+    """
+    if value is None or isinstance(value, bool):
+        return np.nan
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return np.nan
+    return number if np.isfinite(number) else np.nan
+
+
+def _nearest(good: np.ndarray, rows: np.ndarray) -> np.ndarray:
+    """For each of ``rows``, the closest index in the sorted array ``good``."""
+    right = np.clip(np.searchsorted(good, rows), 0, good.size - 1)
+    left = np.clip(right - 1, 0, good.size - 1)
+    return np.where(np.abs(good[left] - rows) <= np.abs(good[right] - rows),
+                    good[left], good[right])
+
+
 def load_track(path) -> Track:
     """Read either ``.rctrk`` dialect, dispatching on content not extension."""
     path = Path(path)
@@ -126,32 +149,33 @@ def load_rctrk_json(path) -> Track:
 
     warnings: list[str] = []
     n = len(markers)
-    time_s = np.zeros(n)
-    lat = np.zeros(n)
-    lon = np.zeros(n)
-    accuracy = np.zeros(n)
-    dose = np.zeros(n)
-    count = np.zeros(n)
+    # A field that is absent or unreadable is NaN, never zero: a zero dose
+    # rate or a zero-metre accuracy is a believable reading, and anything that
+    # forgot to consult the mask would average it in without complaint.
+    time_s = np.full(n, np.nan)
+    lat = np.full(n, np.nan)
+    lon = np.full(n, np.nan)
+    accuracy = np.full(n, np.nan)
+    dose = np.full(n, np.nan)
+    count = np.full(n, np.nan)
     valid = np.ones(n, dtype=bool)
     bad: list[int] = []
 
     for i, marker in enumerate(markers):
-        if not isinstance(marker, dict) or any(k not in marker for k in _REQUIRED):
+        if not isinstance(marker, dict):
             valid[i] = False
             bad.append(i)
             continue
-        try:
-            # Looked up by name, never by position: 81 distinct key orderings
-            # appear in a single file.
-            time_s[i] = float(marker["date"])
-            lat[i] = float(marker["lat"])
-            lon[i] = float(marker["lon"])
-            # Both rate fields arrive as bare ints in a minority of records.
-            # uR/h in the file, nSv/h everywhere else in this package.
-            dose[i] = float(marker["doseRate"]) * RCTRK_DOSE_TO_NSV_H
-            count[i] = float(marker["countRate"])
-            accuracy[i] = float(marker.get("acc", 0.0))
-        except (TypeError, ValueError):
+        # Looked up by name, never by position: 81 distinct key orderings
+        # appear in a single file. Both rate fields arrive as bare ints in a
+        # minority of records, so every field is coerced.
+        field = {key: _number(marker.get(key)) for key in (*_REQUIRED, "acc")}
+        time_s[i], lat[i], lon[i] = field["date"], field["lat"], field["lon"]
+        # uR/h in the file, nSv/h everywhere else in this package.
+        dose[i] = field["doseRate"] * RCTRK_DOSE_TO_NSV_H
+        count[i] = field["countRate"]
+        accuracy[i] = field["acc"]
+        if not all(np.isfinite(field[key]) for key in _REQUIRED):
             valid[i] = False
             bad.append(i)
 
@@ -164,13 +188,18 @@ def load_rctrk_json(path) -> Track:
     if not valid.any():
         raise TrackParseError("no usable markers", path=str(path), key="markers")
 
-    # Fill masked rows with a neighbour's timestamp so sorting stays stable and
-    # a zero epoch does not drag the track to the Gulf of Guinea in 1970.
+    # A masked row still needs a place in time and space so the track can be
+    # sorted and drawn, and nothing a broken marker says can be trusted -- not
+    # even the fields that parsed, since a zero epoch parses fine and drags
+    # the track to the Gulf of Guinea in 1970. So it borrows its neighbour's
+    # place in the file wholesale. Its readings are NaN, so the borrowed place
+    # carries none.
     if bad:
-        good = np.flatnonzero(valid)
-        for i in bad:
-            j = good[np.argmin(np.abs(good - i))]
-            time_s[i], lat[i], lon[i] = time_s[j], lat[j], lon[j]
+        bad_rows = np.asarray(bad)
+        source = _nearest(np.flatnonzero(valid), bad_rows)
+        for column in (time_s, lat, lon):
+            column[bad_rows] = column[source]
+        dose[bad_rows] = count[bad_rows] = accuracy[bad_rows] = np.nan
 
     inversions = int((np.diff(time_s[valid]) < 0).sum())
     if inversions:
@@ -270,7 +299,9 @@ def load_rctrk_tsv(path) -> Track:
             bad += 1
             continue
         for key in rows:
-            rows[key].append(parsed.get(key, 0.0))
+            # Only accuracy is optional, and an unknown accuracy is NaN, not a
+            # perfect zero-metre fix.
+            rows[key].append(parsed.get(key, np.nan))
         valid.append(True)
 
     if bad:

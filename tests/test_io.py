@@ -114,11 +114,33 @@ def test_a_masked_marker_does_not_teleport_the_track_to_1970(tmp_path):
     assert abs(track.lat).max() < 90
 
 
-def test_missing_accuracy_defaults_to_zero(tmp_path):
+def test_missing_accuracy_is_unknown_not_perfect(tmp_path):
+    """Zero metres would read as the best fix in the file."""
     marker = {"date": 100, "lat": 30.0, "lon": -97.0,
               "doseRate": 90.0, "countRate": 18.0}
     track = load_track(_write(tmp_path, {"markers": [marker]}))
-    assert track.accuracy_m.tolist() == [0.0]
+    assert np.isnan(track.accuracy_m).all()
+    assert track.valid_mask.all()
+
+
+def test_a_masked_marker_carries_no_reading(tmp_path):
+    """NaN, not a believable zero, so a consumer that ignores the mask shows it."""
+    bad = {"date": 150, "lat": 30.0, "lon": -97.0, "doseRate": "?",
+           "countRate": 18.0, "acc": 5.0}
+    track = load_track(_write(tmp_path, {
+        "markers": [_marker(100), bad, _marker(200)]}))
+    masked = ~track.valid_mask
+    assert np.isnan(track.dose_rate[masked]).all()
+    assert np.isnan(track.count_rate[masked]).all()
+    assert np.isnan(track.accuracy_m[masked]).all()
+    assert np.isfinite(track.dose_rate[~masked]).all()
+
+
+def test_a_boolean_is_not_a_reading(tmp_path):
+    marker = {"date": 100, "lat": 30.0, "lon": -97.0,
+              "doseRate": True, "countRate": 18.0}
+    track = load_track(_write(tmp_path, {"markers": [marker, _marker(200)]}))
+    assert int((~track.valid_mask).sum()) == 1
 
 
 def test_a_malformed_period_is_ignored_with_a_warning(tmp_path):

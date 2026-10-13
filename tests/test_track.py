@@ -303,3 +303,50 @@ def test_a_selection_inherits_the_parent_smoothing_window():
     track, _ = _walk()
     sub = track.select(np.arange(track.n) < 300)
     assert sub.smoothing_window == track.smoothing_window
+
+
+# ---- geometry from trusted fixes only ------------------------------------
+
+
+def test_smoothing_does_not_reach_across_a_dropout():
+    """Two legs 100 km apart: the first leg's end must stay where it was."""
+    walk, _ = _walk(n=400)
+    lat = walk.lat.copy()
+    lat[200:] += 1.0
+    time_s = walk.time_s.copy()
+    time_s[200:] += 3600.0
+    legs = np.r_[np.zeros(200), np.ones(200)]
+    track = Track(time_s=time_s, lat=lat, lon=walk.lon,
+                  accuracy_m=walk.accuracy_m, dose_rate=walk.dose_rate,
+                  count_rate=walk.count_rate, leg_index=legs)
+    assert track.smoothing_window > 1
+    assert abs(track.smooth_lat[199] - lat[150:200].mean()) < 0.001
+
+
+def test_smoothing_survives_the_antimeridian():
+    """Averaging 179.9 and -179.9 gives zero unless longitude is unwrapped."""
+    n = 200
+
+    def along(lon):
+        return Track(time_s=np.arange(n) * 2.0, lat=np.full(n, 10.0), lon=lon,
+                     accuracy_m=np.full(n, 8.0), dose_rate=np.full(n, 90.0),
+                     count_rate=np.full(n, 18.0), position_smoothing=9)
+
+    crossing = along((np.linspace(179.5, 180.5, n) + 180.0) % 360.0 - 180.0)
+    control = along(np.linspace(-0.5, 0.5, n))
+    assert np.all(np.abs(crossing.smooth_lon) > 179.0)
+    assert crossing.distance_along_m[-1] == pytest.approx(
+        control.distance_along_m[-1], rel=1e-6)
+
+
+def test_a_masked_sample_takes_no_part_in_the_geometry():
+    walk, _ = _walk(n=100)
+    lat = walk.lat.copy()
+    lat[50] = 0.0              # a borrowed place on the far side of the world
+    valid = np.ones(100, bool)
+    valid[50] = False
+    track = Track(time_s=walk.time_s, lat=lat, lon=walk.lon,
+                  accuracy_m=walk.accuracy_m, dose_rate=walk.dose_rate,
+                  count_rate=walk.count_rate, valid_mask=valid)
+    assert track.speed_m_s.max() < 5.0
+    assert track.bbox[1] > 29.0

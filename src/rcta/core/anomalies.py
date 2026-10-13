@@ -141,6 +141,33 @@ def _window_sums(values: np.ndarray, width: int) -> np.ndarray:
     return prefix[width:] - prefix[:-width]
 
 
+def _rates(track: Track) -> np.ndarray:
+    """Count rates with masked samples zeroed, so a prefix sum stays finite.
+
+    The zeros are never tested: :func:`_blocked` excludes every window that
+    contains one.
+    """
+    return np.where(track.valid_mask, track.count_rate, 0.0)
+
+
+def _blocked(track: Track, width: int) -> np.ndarray:
+    """Windows of ``width`` that contain a masked sample and so are not tested."""
+    return _window_sums((~track.valid_mask).astype(float), width) > 0
+
+
+def _threshold(track: Track, params: ScanParams) -> float:
+    """The significance a window must clear, corrected for every window tested.
+
+    Only windows that are actually tested count, so a masked sample removes
+    its windows from the correction as well as from the scan.
+    """
+    if not params.bonferroni:
+        return bonferroni_k(1, params.alpha)
+    n_tests = sum(int((~_blocked(track, s)).sum())
+                  for s in sorted(set(params.scales)) if s <= track.n)
+    return bonferroni_k(n_tests, params.alpha)
+
+
 def significance_trace(track: Track, background: BackgroundEstimate, *,
                        scale: int = 8) -> np.ndarray:
     """Per-sample significance at one width, for the GUI's strip plot.
@@ -150,12 +177,13 @@ def significance_trace(track: Track, background: BackgroundEstimate, *,
     """
     scale = max(int(scale), 1)
     live = track.effective_integration_time_s
-    gross = _window_sums(track.count_rate, scale) * live
+    gross = _window_sums(_rates(track), scale) * live
     back = _window_sums(background.count_rate, scale) * live
     n_bg = np.maximum(_window_sums(background.n_effective.astype(float), scale)
                       / scale, 1.0)
 
     sig = st.net_significance(gross, back, np.full(gross.size, scale), n_bg)
+    sig[_blocked(track, scale)] = 0.0
     # Centre each window's value on its own midpoint so the strip lines up
     # with the series above it.
     out = np.zeros(track.n)
@@ -182,9 +210,8 @@ def scan(track: Track, background: BackgroundEstimate,
     if not usable_scales:
         return []
 
-    n_tests = sum(max(n - s + 1, 0) for s in usable_scales)
-    threshold = (bonferroni_k(n_tests, params.alpha) if params.bonferroni
-                 else bonferroni_k(1, params.alpha))
+    threshold = _threshold(track, params)
+    rates = _rates(track)
 
     found: list[Anomaly] = []
     for step, width in enumerate(usable_scales):
@@ -193,12 +220,13 @@ def scan(track: Track, background: BackgroundEstimate,
         if progress is not None:
             progress(step / len(usable_scales))
 
-        gross = _window_sums(track.count_rate, width) * live
+        gross = _window_sums(rates, width) * live
         back = _window_sums(background.count_rate, width) * live
         support = np.maximum(
             _window_sums(background.n_effective.astype(float), width) / width, 1.0)
         widths = np.full(gross.size, width)
         sig = st.net_significance(gross, back, widths, support)
+        sig[_blocked(track, width)] = -np.inf
 
         candidates = np.flatnonzero(sig > threshold)
         for start in candidates:
@@ -282,6 +310,7 @@ def _is_trend(track, background, start, stop, ratio: float) -> bool:
     left = np.arange(lo, start)
     right = np.arange(stop, hi)
     flanks = np.concatenate([left, right])
+    flanks = flanks[track.valid_mask[flanks]]
     if flanks.size < 4:
         return False
 
@@ -337,10 +366,7 @@ def scan_mda(track: Track, background: BackgroundEstimate,
     """
     params = params or ScanParams()
     live = track.effective_integration_time_s
-    n_tests = sum(max(track.n - s + 1, 0) for s in sorted(set(params.scales))
-                  if s <= track.n)
-    threshold = (bonferroni_k(n_tests, params.alpha) if params.bonferroni
-                 else bonferroni_k(1, params.alpha))
+    threshold = _threshold(track, params)
 
     out = []
     median_support = max(float(np.median(background.n_effective)), 1.0)

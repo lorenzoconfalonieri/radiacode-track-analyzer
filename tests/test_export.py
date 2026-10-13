@@ -335,3 +335,24 @@ def test_every_flight_csv_parses_as_plain_csv(join):
         rows = list(reader)
         assert rows and all(None not in row for row in rows)
         assert not text.lstrip().startswith("#")
+
+
+def test_the_json_report_is_strict_json_even_with_unknowns():
+    """NaN is not JSON; an unknown dose-per-count must come out as null."""
+    import json
+
+    import numpy as np
+
+    from rcta.core.analysis import AnalysisParams, analyze_track
+    from rcta.core.io_export import report_to_json
+    from rcta.core.track import Track
+
+    n = 50
+    silent = Track(time_s=np.arange(n) * 2.0, lat=np.full(n, 30.0),
+                   lon=np.linspace(-97.0, -96.99, n), accuracy_m=np.full(n, 5.0),
+                   dose_rate=np.zeros(n), count_rate=np.zeros(n))
+    analysis = analyze_track(silent, AnalysisParams(n_boot=20))
+    assert np.isnan(silent.dose_per_count)
+    report = json.loads(report_to_json(analysis))
+    assert report["track"]["dose_per_count_nsv_h_per_cps"] is None
+    assert all(row["mda_nsv_h"] is None for row in report["detection_limits"])

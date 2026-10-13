@@ -61,8 +61,8 @@ rcta-cli analyze "sample-data/Track 07 Sep 2026 14-30-57.rctrk"  # the walk
 rcta-cli analyze "sample-data/Track 07 Sep 2026 07-53-59.rctrk"  # the flight
 ```
 
-The walk supplies 348 samples / 2.97 km, the 5.31 cps background, the 7.36 and
-4.57 sigma features, the 153 effective samples and the two dose totals
+The walk supplies 348 samples / 2.99 km, the 5.31 cps background, the 7.36 and
+4.57 sigma features, the 126 effective samples and the two dose totals
 (80.9 vs 153.8 nSv). The flight supplies the MDA table and the 4.57 sigma
 Bonferroni threshold. The 5.2x raw-distance error, the 0.25-quantile bias, the
 0.9985 lag-1 autocorrelation and the 863-test count come from `README.md`,

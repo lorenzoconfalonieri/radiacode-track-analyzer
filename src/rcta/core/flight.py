@@ -1351,7 +1351,7 @@ class BranchComparison:
             f"({self.median_relative_difference * 100.0:.1f} % of the level)",
             f"  worst bin {self.max_abs_z:.2f} sigma against a "
             f"{self.threshold_sigma:.2f} sigma threshold "
-            f"(Bonferroni over {self.n_shared} bins)",
+            f"(two-sided, Bonferroni over {self.n_shared} bins)",
         ]
         if not self.consistent:
             lines.append("  the profile is not a function of altitude alone; "
@@ -1392,14 +1392,21 @@ def compare_branches(join: AltitudeJoin, *, step_m: float = 1000.0,
 
     # Bin edges are anchored on multiples of step_m, so the two grids align on
     # a common lattice and can be intersected by altitude rather than by index.
-    shared = np.intersect1d(climb.altitude_m[climb.n_samples >= min_samples],
-                            descent.altitude_m[descent.n_samples >= min_samples])
-    if shared.size == 0:
+    # Matched on the lattice index, not on float equality, which a step such
+    # as 304.8 m (1000 ft) would break.
+    def lattice(profile):
+        return np.round(profile.altitude_m / step_m * 2.0).astype(np.int64)
+
+    c_key, d_key = lattice(climb), lattice(descent)
+    shared_key = np.intersect1d(c_key[climb.n_samples >= min_samples],
+                                d_key[descent.n_samples >= min_samples])
+    if shared_key.size == 0:
         return empty(f"the climb and descent share no altitude bin with at "
                      f"least {min_samples} samples on both branches")
 
-    ci = np.searchsorted(climb.altitude_m, shared)
-    di = np.searchsorted(descent.altitude_m, shared)
+    ci = np.searchsorted(c_key, shared_key)
+    di = np.searchsorted(d_key, shared_key)
+    shared = climb.altitude_m[ci]
     dose_c, dose_d = climb.dose_rate[ci], descent.dose_rate[di]
     sem_c, sem_d = climb.dose_sem[ci], descent.dose_sem[di]
 
@@ -1409,13 +1416,15 @@ def compare_branches(join: AltitudeJoin, *, step_m: float = 1000.0,
         z = np.where(sigma > 0, difference / sigma, 0.0)
     level = 0.5 * (dose_c + dose_d)
 
-    threshold = bonferroni_k(int(shared.size), alpha)
+    # Two-sided: the descent reading high is as much a disagreement as the
+    # climb reading high, so each bin spends alpha / 2 in each tail.
+    threshold = bonferroni_k(int(shared.size), alpha / 2.0)
     max_abs_z = float(np.nanmax(np.abs(z)))
     return BranchComparison(
         climb=climb, descent=descent, altitude_m=shared,
         difference=difference, sigma=sigma, n_shared=int(shared.size),
         threshold_sigma=float(threshold), max_abs_z=max_abs_z,
-        median_abs_difference=float(np.median(np.abs(difference))),
+        median_abs_difference=float(np.nanmedian(np.abs(difference))),
         median_relative_difference=float(
-            np.median(np.abs(difference) / np.where(level > 0, level, np.nan))),
+            np.nanmedian(np.abs(difference) / np.where(level > 0, level, np.nan))),
         consistent=bool(max_abs_z <= threshold))

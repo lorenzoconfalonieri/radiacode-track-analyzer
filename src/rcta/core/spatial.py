@@ -177,7 +177,7 @@ def interpolate(track: Track, params: GridParams | None = None, *,
 
     bandwidth = params.bandwidth_m
     if bandwidth is None:
-        bandwidth = max(3.0 * float(np.median(track.accuracy_m[usable])), 50.0)
+        bandwidth = max(3.0 * geo.median_accuracy(track.accuracy_m[usable]), 50.0)
     bandwidth_proj = bandwidth * inflation
     max_distance = params.max_distance_m or 2.0 * bandwidth
     max_distance_proj = max_distance * inflation
@@ -371,7 +371,7 @@ def find_hotspots(track: Track, anomalies, background, *,
 
     if cluster_radius_m is None:
         bandwidth = bandwidth_m or max(
-            3.0 * float(np.median(track.accuracy_m)), 50.0)
+            3.0 * geo.median_accuracy(track.accuracy_m), 50.0)
         cluster_radius_m = 3.0 * bandwidth
 
     lat = np.array([a.lat for a in significant])

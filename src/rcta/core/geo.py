@@ -47,6 +47,7 @@ __all__ = [
     "cumulative_distance",
     "haversine",
     "lonlat_to_web_mercator",
+    "median_accuracy",
     "mercator_scale",
     "point_segment_distance",
     "segment_breaks",
@@ -168,6 +169,17 @@ _JITTER_TOLERANCE = 0.3
 _JITTER_BASELINE = 31
 
 
+def median_accuracy(accuracy_m) -> float:
+    """Median of the accuracies a fix actually reported, 0.0 if none did.
+
+    An unrecorded accuracy is NaN rather than zero, so it neither drags the
+    median toward a perfect fix nor poisons it.
+    """
+    accuracy_m = np.asarray(accuracy_m, dtype=float)
+    known = accuracy_m[np.isfinite(accuracy_m)]
+    return float(np.median(known)) if known.size else 0.0
+
+
 def choose_smoothing_window(lat, lon, accuracy_m, *,
                             tolerance: float = _JITTER_TOLERANCE,
                             max_window: int = 121) -> int:
@@ -199,7 +211,8 @@ def choose_smoothing_window(lat, lon, accuracy_m, *,
     """
     lat = np.asarray(lat, dtype=float)
     lon = np.asarray(lon, dtype=float)
-    sigma = float(np.median(np.asarray(accuracy_m, dtype=float)))
+    # No recorded accuracy means no basis for a window; leave positions raw.
+    sigma = median_accuracy(accuracy_m)
     if sigma <= 0 or lat.size < 4:
         return 1
 

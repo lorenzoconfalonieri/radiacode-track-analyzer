@@ -154,9 +154,13 @@ def estimate_background(track: Track, params: BackgroundParams | None = None, *,
     params = params or BackgroundParams()
     warnings: list[str] = []
 
-    rate = track.count_rate
-    time_s = track.time_s
-    n = track.n
+    # Estimated from the samples that carry a reading, then carried onto the
+    # masked ones by interpolation in time, so every sample still has a value
+    # and no masked NaN can reach a window.
+    valid = track.valid_mask
+    rate = track.count_rate[valid]
+    time_s = track.time_s[valid]
+    n = rate.size
 
     if params.method == "global":
         value = float(st._trimmed_mean(rate, params.trim_fraction))
@@ -190,7 +194,12 @@ def estimate_background(track: Track, params: BackgroundParams | None = None, *,
     elif params.method == "flank":
         background, support = _flank_background(rate, time_s, params)
 
-    thin = int((support < params.min_samples).sum())
+    if not valid.all():
+        background = np.interp(track.time_s, time_s, background)
+        support = np.round(np.interp(track.time_s, time_s,
+                                     support)).astype(np.int64)
+
+    thin = int((support[valid] < params.min_samples).sum())
     if thin:
         warnings.append(
             f"{thin} sample(s) had too little local data and fell back to the "

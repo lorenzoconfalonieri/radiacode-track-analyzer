@@ -429,3 +429,26 @@ def test_version_is_reported(capsys):
         main(["--version"])
     assert exit_info.value.code == 0
     assert __version__ in capsys.readouterr().out
+
+
+def test_an_unknown_provider_is_an_error_not_a_traceback(sample_path, capsys):
+    code = main(["flight", str(sample_path), "--flight", "DL2618",
+                 "--provider", "nonesuch", "--offline"])
+    assert code == 1
+    assert "unknown --provider 'nonesuch'" in capsys.readouterr().err
+
+
+def test_the_json_report_records_the_applied_background_window(tmp_path):
+    """The default window is widened on a 10 s walk; the report must say so."""
+    from pathlib import Path
+    walk = Path(__file__).resolve().parents[1] / "sample-data" \
+        / "Track 07 Sep 2026 14-30-57.rctrk"
+    if not walk.exists():
+        pytest.skip("walk sample not present")
+    out = tmp_path / "walk.json"
+    assert main(["analyze", str(walk), "--n-boot", "20",
+                 "--json", str(out)]) == 0
+    background = json.loads(out.read_text(encoding="utf-8"))[
+        "parameters"]["background"]
+    assert background["window_s_requested"] == 900.0
+    assert background["window_s"] > 900.0
