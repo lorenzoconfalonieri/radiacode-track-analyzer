@@ -379,6 +379,40 @@ PyInstaller) so a non-programmer with a RadiaCode can use the GUI without
 conda. Most RadiaCode owners are not Python users, so this decides who the
 audience actually is.
 
+### 6.5 From the October 2026 code review
+
+Fixed already: masked samples leaking zeros into the statistics, GPS glitches
+in distance and speed, a one-sided climb/descent test, the heatmap that was
+computed but never drawn, a PNG export that carried tiles its provider
+forbids, and a Display unit most panels ignored. Still open:
+
+- **Longitude tick labels overlap** on a small extent: on the bundled walk the
+  degree-minute-second labels under the map run into one another.
+  `GeoAxisItem` needs to space ticks by label width, not only by value.
+- **Quoted figures drift.** The README claimed 90 % heatmap coverage on the
+  walk; the program gives 25 %. The figure dated from the initial commit,
+  which makes 6.1 more urgent.
+- **Closed windows are never freed.** Signal connections keep a closed
+  `MainWindow` alive. The test fixture now deletes each window; the app opens
+  only one, but a future "open in new window" would leak.
+- **Features proposed in the review:**
+  - Stop-and-measure dwells reported as long-live-time measurements.
+  - `--fail-on-detection` and a summary table for batch `analyze`.
+  - Shelter/vehicle transitions flagged from jumps in GPS accuracy.
+  - A local dose-per-count ratio instead of one track-wide median.
+  - An exact Poisson tail for windows with few counts.
+  - A detector consistency check (dose with zero counts, ratio jumps).
+  - The device's own recording periods used to split legs.
+  - QSettings, drag-and-drop, sortable tables and session files in the GUI.
+  - A combined significance across a hotspot's passes.
+- **Engineering left from the review:**
+  - A single version source.
+  - An install hint when the `[gui]` extra is missing.
+  - ruff, and layer-direction rules in the architecture test.
+  - Tests for the smoothing helpers.
+  - Vectorised `rolling_trimmed_mean` and `interpolate`.
+  - Splitting `core/flight.py`.
+
 ---
 
 ## 7. Publication and community

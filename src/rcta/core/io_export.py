@@ -38,6 +38,8 @@ __all__ = [
     "altitude_samples_to_csv",
     "anomalies_to_csv",
     "flight_report_to_json",
+    "grid_prj",
+    "grid_to_asc",
     "hotspots_to_csv",
     "hotspots_to_geojson",
     "report_to_json",
@@ -320,6 +322,54 @@ def track_to_gpx(track, *, quality=None, creator="rcta 0.1.0") -> str:
 
 
 # ---- the full report ------------------------------------------------------
+
+
+#: ESRI WKT for EPSG:3857, the CRS the grid is computed in. GIS tools read
+#: the sibling .prj; without it an .asc has no coordinate system at all.
+_WEB_MERCATOR_WKT = (
+    'PROJCS["WGS_1984_Web_Mercator_Auxiliary_Sphere",'
+    'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",'
+    'SPHEROID["WGS_1984",6378137.0,298.257223563]],'
+    'PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],'
+    'PROJECTION["Mercator_Auxiliary_Sphere"],'
+    'PARAMETER["False_Easting",0.0],PARAMETER["False_Northing",0.0],'
+    'PARAMETER["Central_Meridian",0.0],'
+    'PARAMETER["Standard_Parallel_1",0.0],'
+    'PARAMETER["Auxiliary_Sphere_Type",0.0],UNIT["Meter",1.0]]')
+
+_NODATA = -9999
+
+
+def grid_prj() -> str:
+    """The .prj that belongs beside :func:`grid_to_asc` output."""
+    return _WEB_MERCATOR_WKT + "\n"
+
+
+def grid_to_asc(grid, *, unit="nSv/h") -> str:
+    """The heatmap as an ESRI ASCII grid in EPSG:3857 metres.
+
+    Unsupported cells are NODATA, never zero: a blank cell is one the track
+    did not constrain, and writing 0 there would hand a GIS a low reading
+    nobody took. Cells are square in projected metres, so a single
+    ``cellsize`` is exact. Rows run north to south, as the format requires.
+    """
+    if unit not in DOSE_UNITS:
+        raise ValueError(f"unknown dose unit {unit!r}")
+    values = convert_dose_rate(grid.values, unit)
+    ny, nx = values.shape
+    cell = float(grid.x_edges[1] - grid.x_edges[0])
+    lines = [
+        f"ncols {nx}",
+        f"nrows {ny}",
+        f"xllcorner {float(grid.x_edges[0]):.3f}",
+        f"yllcorner {float(grid.y_edges[0]):.3f}",
+        f"cellsize {cell:.6f}",
+        f"NODATA_value {_NODATA}",
+    ]
+    for row in values[::-1]:
+        lines.append(" ".join(f"{v:.6g}" if np.isfinite(v) else str(_NODATA)
+                              for v in row))
+    return "\n".join(lines) + "\n"
 
 
 def report_to_json(analysis, *, indent=2) -> str:

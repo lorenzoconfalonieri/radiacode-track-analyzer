@@ -33,6 +33,7 @@ import pyqtgraph as pg
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from rcta.core import geo
+from rcta.core.dose import convert_dose_rate
 from rcta.core.quality import polyline
 from rcta.gui import theme
 from rcta.gui.basemap import BasemapItem
@@ -130,6 +131,9 @@ class MapPanel(QtWidgets.QWidget):
         self._accuracy_threshold = theme.ACCURACY_THRESHOLD_M
         self._show_gap_connectors = False
         self._palette: list = []
+        self._grid = None
+        self._show_heatmap = True
+        self._unit = "nSv/h"
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -202,6 +206,14 @@ class MapPanel(QtWidgets.QWidget):
     # ---- construction -----------------------------------------------------
 
     def _make_items(self) -> None:
+        # Above the basemap, below everything that marks a measurement: the
+        # surface is an inference from the points, so the points stay on top.
+        self.heatmap = pg.ImageItem()
+        self.heatmap.setZValue(1)
+        self.heatmap.setOpacity(theme.HEATMAP_OPACITY)
+        self.heatmap.hide()
+        self.plot.addItem(self.heatmap)
+
         self.line = QtWidgets.QGraphicsPathItem()
         self.line.setPen(pg.mkPen(theme.TRACK_LINE_COLOR,
                                   width=theme.TRACK_LINE_WIDTH, cosmetic=True))
@@ -281,6 +293,12 @@ class MapPanel(QtWidgets.QWidget):
         self._limits = (float(lo), float(hi))
         self._recolour()
 
+    def set_unit(self, unit: str) -> None:
+        """Display unit for dose rate: the colour bar, its limits, the surface."""
+        self._unit = unit
+        self._update_values()
+        self._recolour()
+
     def set_accuracy_threshold(self, metres: float) -> None:
         self._accuracy_threshold = float(metres)
         self._recolour()
@@ -288,6 +306,22 @@ class MapPanel(QtWidgets.QWidget):
     def set_gap_connectors(self, show: bool) -> None:
         self._show_gap_connectors = bool(show)
         self.gap_line.setVisible(bool(show))
+
+    def set_grid(self, grid) -> None:
+        """The interpolated surface, or None to remove it."""
+        self._grid = grid
+        self._redraw_heatmap()
+
+    def set_heatmap_visible(self, show: bool) -> None:
+        self._show_heatmap = bool(show)
+        self._redraw_heatmap()
+
+    def set_heatmap_opacity(self, opacity: float) -> None:
+        self.heatmap.setOpacity(float(opacity))
+
+    @property
+    def heatmap_shown(self) -> bool:
+        return self.heatmap.isVisible()
 
     def set_selection(self, selection) -> None:
         if self._track is None or selection is None or selection.is_empty:
@@ -390,8 +424,8 @@ class MapPanel(QtWidgets.QWidget):
             self._values = self._track.count_rate
             label, unit = "count rate", "cps"
         else:
-            self._values = self._track.dose_rate
-            label, unit = "dose rate", "nSv/h"
+            self._values = convert_dose_rate(self._track.dose_rate, self._unit)
+            label, unit = "dose rate", self._unit
 
         finite = self._values[np.isfinite(self._values)]
         if finite.size:
@@ -435,18 +469,7 @@ class MapPanel(QtWidgets.QWidget):
         if self._track is None or self._values is None:
             return
         lo, hi = self._limits
-        values = self._values
-
-        if self._scale == "log":
-            positive = values[values > 0]
-            floor = float(positive.min()) if positive.size else 1e-6
-            safe_lo = max(lo, floor)
-            with np.errstate(divide="ignore", invalid="ignore"):
-                u = ((np.log10(np.maximum(values, floor)) - math.log10(safe_lo))
-                     / max(math.log10(hi) - math.log10(safe_lo), 1e-9))
-        else:
-            u = (values - lo) / max(hi - lo, 1e-9)
-
+        u = self._normalise(self._values)
         index = np.clip((np.nan_to_num(u) * (theme.DOSE_COLOR_LEVELS - 1) + 0.5),
                         0, theme.DOSE_COLOR_LEVELS - 1).astype(np.intp)
 
@@ -463,6 +486,8 @@ class MapPanel(QtWidgets.QWidget):
         self.uncertain.setData(self._x[poor], self._y[poor], brush=None, pen=pens,
                                size=theme.POINT_SIZE)
 
+        self._redraw_heatmap()
+
         self._applying_levels = True
         try:
             if self._scale == "log":
@@ -478,6 +503,43 @@ class MapPanel(QtWidgets.QWidget):
                 self.colorbar.axis.setTicks(None)
         finally:
             self._applying_levels = False
+
+    def _normalise(self, values):
+        """Values onto [0, 1] of the colour bar, in its current scale."""
+        lo, hi = self._limits
+        if self._scale == "log":
+            positive = self._values[self._values > 0]
+            floor = float(positive.min()) if positive.size else 1e-6
+            safe_lo = max(lo, floor)
+            with np.errstate(divide="ignore", invalid="ignore"):
+                return ((np.log10(np.maximum(values, floor)) - math.log10(safe_lo))
+                        / max(math.log10(hi) - math.log10(safe_lo), 1e-9))
+        return (values - lo) / max(hi - lo, 1e-9)
+
+    def _redraw_heatmap(self) -> None:
+        """Paint the surface on the points' own colour scale, or hide it.
+
+        It shares the colour bar, so a cell and a point of the same colour
+        are the same dose rate. That only holds while the points are coloured
+        by dose rate; coloured by count rate the bar means something else, and
+        drawing the surface against it would be a legend that lies.
+        """
+        grid = self._grid
+        if (grid is None or not self._show_heatmap or self._values is None
+                or self._field != "dose_rate" or grid.unit != "nSv/h"):
+            self.heatmap.hide()
+            return
+        values = convert_dose_rate(grid.values, self._unit)
+        lut = theme.dose_colormap(self._colormap).getLookupTable(
+            nPts=256, alpha=True)
+        u = np.clip(np.nan_to_num(self._normalise(values)), 0.0, 1.0)
+        rgba = lut[(u * 255 + 0.5).astype(np.intp)].copy()
+        # Blank means unconstrained, not low: transparent, never a colour.
+        rgba[~np.isfinite(values), 3] = 0
+        x0, y0, x1, y1 = grid.extent_3857
+        self.heatmap.setImage(rgba, autoLevels=False)
+        self.heatmap.setRect(QtCore.QRectF(x0, y0, x1 - x0, y1 - y0))
+        self.heatmap.show()
 
     def _on_levels_changed(self) -> None:
         if self._applying_levels:

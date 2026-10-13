@@ -24,6 +24,7 @@ from PySide6 import QtCore, QtWidgets
 
 from rcta.core.profile import (correlate_speed_dose, distribution,
                                resample_by_distance)
+from rcta.core.dose import convert_dose_rate
 from rcta.gui import theme
 
 Qt = QtCore.Qt
@@ -36,6 +37,7 @@ class ProfilePanel(QtWidgets.QWidget):
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
+        self._unit = "nSv/h"
         self._track = None
         self._correlation = None
 
@@ -114,6 +116,11 @@ class ProfilePanel(QtWidgets.QWidget):
 
     # ---- public API (never emits) -----------------------------------------
 
+    def set_unit(self, unit: str) -> None:
+        """Display unit for dose rate. Redraws; never emits."""
+        self._unit = unit
+        self._refresh()
+
     def set_track(self, track, correlation=None) -> None:
         """Draw ``track``; ``correlation`` is the analysis's own speed/dose
         result, quoted rather than recomputed so the caption cannot disagree
@@ -136,18 +143,23 @@ class ProfilePanel(QtWidgets.QWidget):
                                        statistic=self.statistic.currentText())
         # NaN plus connect="finite" leaves empty bins as visible gaps rather
         # than drawing a line through ground that was never sampled.
+        unit = self._unit
+        for plot, axis in ((self.profile_plot, "left"), (self.hist_plot, "bottom"),
+                           (self.scatter_plot, "left")):
+            plot.setLabel(axis, f"dose rate ({unit})")
+        dose = convert_dose_rate(track.dose_rate, unit)
         self._profile_curve.setData(profile.distance_m / 1000.0,
-                                    profile.dose_rate, connect="finite")
+                                    convert_dose_rate(profile.dose_rate, unit),
+                                    connect="finite")
 
         readings = track.valid_mask
-        histogram = distribution(track.dose_rate[readings], unit="nSv/h")
+        histogram = distribution(dose[readings], unit=unit)
         if histogram.counts.size:
             self._hist_curve.setData(histogram.edges, histogram.counts)
 
         readings = readings.copy()
         readings[0] = False                 # its speed is a copy of the next
-        self._scatter.setData(track.speed_m_s[readings],
-                              track.dose_rate[readings])
+        self._scatter.setData(track.speed_m_s[readings], dose[readings])
 
         correlation = self._correlation
         self.caption.setText(

@@ -37,7 +37,9 @@ rcta sample-data/Track*.rctrk         # opening a file directly
 
 rcta-cli info    sample-data/Track*.rctrk
 rcta-cli analyze sample-data/Track*.rctrk --json report.json
-rcta-cli export  sample-data/Track*.rctrk --format geojson -o track.geojson
+rcta-cli export  "sample-data/Track 07 Sep 2026 14-30-57.rctrk" \
+    --format geojson -o walk.geojson
+rcta-cli grid    "sample-data/Track 07 Sep 2026 14-30-57.rctrk" -o walk.asc
 
 # a trajectory from disk: no account, no network, nothing to look up
 rcta-cli flight  "sample-data/Track 07 Sep 2026 07-53-59.rctrk" \
@@ -75,9 +77,15 @@ things follow that the obvious implementation gets wrong:
   under any absolute ceiling. Outliers are the union of a hard ceiling and a
   robust bound on *this* track's own speed, evaluated on unsmoothed fixes.
 
-At walking scale the interpolated heatmap also becomes genuinely useful —
-about 90 % cell coverage at a 50 m bandwidth, against 2 % on a continental
-transect where the surface is honestly almost all blank.
+At walking scale the interpolated heatmap also becomes genuinely useful. On
+the bundled walk it keeps its 50 m bandwidth and 25 % of the bounding box is
+supported: every cell within 100 m of the route, with the rest left blank
+rather than extrapolated. On the continental transect the bandwidth has to be
+raised to 6.4 km to be resolvable at all, and only 2 % of the box is
+supported. *Analysis → Compute heatmap* (**Ctrl+Shift+H**) draws it under the
+points on their own colour scale; *File → Export heatmap grid* and
+`rcta-cli grid` write it as an ESRI ASCII grid with its `.prj`, blank cells
+as NODATA.
 
 ## Worked example: a null result
 

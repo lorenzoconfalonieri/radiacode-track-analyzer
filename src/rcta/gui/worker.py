@@ -1,12 +1,14 @@
 """The only threading in this program, and the fence that keeps it contained.
 
 No threading at all is the right default for a program this size, and that
-restraint is worth keeping wherever it is affordable. Here it is affordable
-everywhere
-except three jobs, each of which scales into seconds on a long survey: loading
-a large file, computing the interpolated grid, and running the multi-scale
-scan. Tile retrieval does *not* appear on that list -- ``QNetworkAccessManager``
-is already asynchronous on the Qt event loop, so the map adds no threads.
+restraint is worth keeping wherever it is affordable. Two jobs go to a worker:
+computing the interpolated grid, which scales into seconds on a long survey,
+and fetching a flight trajectory, which waits on someone else's server.
+Loading a file and running the analysis stay on the GUI thread; both finish
+in well under a second on the bundled tracks, and a synchronous load keeps
+"the window shows the file you opened" trivially true. Tile retrieval does
+*not* need a worker either -- ``QNetworkAccessManager`` is already
+asynchronous on the Qt event loop, so the map adds no threads.
 
 Three rules make this safe rather than merely functional.
 

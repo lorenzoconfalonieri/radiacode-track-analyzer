@@ -29,10 +29,12 @@ from rcta.core.analysis import AnalysisParams, analyze_track
 from rcta.core.anomalies import significance_trace
 from rcta.core.io_export import (altitude_profile_to_csv,
                                  altitude_samples_to_csv, anomalies_to_csv,
-                                 flight_report_to_json, hotspots_to_csv,
+                                 flight_report_to_json, grid_prj,
+                                 grid_to_asc, hotspots_to_csv,
                                  report_to_json, track_to_csv,
                                  track_to_geojson, track_to_gpx)
 from rcta.core.io_flight import trajectory_to_csv
+from rcta.core.dose import format_dose_rate
 from rcta.core.flight import FlightMatchError, join_altitude, looks_like_flight
 from rcta.core.io_radiacode import TrackParseError, load_track
 from rcta.core.profile import summarise
@@ -131,6 +133,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self._analysis = None
         self._selection = None
         self._grid = None
+        # The samples the surface was built from. A re-analysis that hides
+        # or restores fixes makes the surface stale; one that only changes
+        # the background or the scan does not touch it.
+        self._grid_mask = None
         self._reference_span = None
         self._trajectory = None
         self._path = ""
@@ -326,6 +332,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._needs_join: list = []
         self._needs_trajectory: list = []
         self._needs_selection: list = []
+        self._needs_grid: list = []
 
         file_menu = self.menuBar().addMenu("&File")
         self._action(file_menu, "&Open track...", self.open_dialog, "Ctrl+O")
@@ -353,6 +360,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self._needs_join.append(self._action(
             file_menu, "Export &flight JSON report...",
             lambda: self._export("report")))
+        self._needs_grid.append(self._action(
+            file_menu, "Export heat&map grid (ASC)...",
+            lambda: self._export("grid")))
         file_menu.addSeparator()
         self._needs_track.append(self._action(
             file_menu, "Export map &image...", self._export_image))
@@ -365,7 +375,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self._needs_track.append(self._action(
             analysis_menu, "&Run analysis", self.analyse, "Ctrl+R"))
         self._needs_track.append(self._action(
-            analysis_menu, "Compute &heatmap", self.compute_grid, "Ctrl+H"))
+            analysis_menu, "Compute &heatmap", self.compute_grid,
+            # Not Ctrl+H: on macOS that is Cmd+H, which hides the application.
+            "Ctrl+Shift+H"))
         analysis_menu.addSeparator()
         self._needs_selection.append(self._action(
             analysis_menu, "Use selection as &background",
@@ -429,6 +441,8 @@ class MainWindow(QtWidgets.QMainWindow):
             (self._needs_trajectory, self._trajectory is not None,
              "No trajectory loaded. Fetch a flight or load one from a file in "
              "the Flight dock."),
+            (self._needs_grid, self._grid is not None,
+             "No heatmap yet: Analysis > Compute heatmap."),
             (self._needs_selection, has_selection,
              "Select a span on the map or the series plot first."),
             ([self._reference_action], self._reference_span is not None,
@@ -462,6 +476,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.display_dock.accuracyThresholdChanged.connect(
             self.map.set_accuracy_threshold)
         self.display_dock.gapConnectorsToggled.connect(self.map.set_gap_connectors)
+        self.display_dock.heatmapToggled.connect(self.map.set_heatmap_visible)
+        self.display_dock.heatmapOpacityChanged.connect(
+            self.map.set_heatmap_opacity)
         self.display_dock.unitChanged.connect(self._on_unit_changed)
         self.display_dock.basemapChanged.connect(self._set_provider)
         self.display_dock.offlineToggled.connect(self._set_offline)
@@ -647,7 +664,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._analysis = None
         self._track = track
         self._selection = Selection.empty(track.n)
-        self._grid = None
+        self._set_grid(None)
         self._reference_span = None
         # A trajectory belongs to the track it was joined to, so a new file
         # must not inherit the last one's altitudes.
@@ -706,6 +723,11 @@ class MainWindow(QtWidgets.QMainWindow):
     def _apply_analysis(self, analysis) -> None:
         self._analysis = analysis
         track = analysis.track
+        if self._grid is not None and not np.array_equal(
+                self._grid_mask, self._grid_samples(track)):
+            self._set_grid(None)
+            self.log.log("heatmap cleared: the fixes it was built from changed; "
+                         "compute it again")
 
         self.track_dock.set_text(track.describe())
         for warning in analysis.background.warnings:
@@ -734,7 +756,8 @@ class MainWindow(QtWidgets.QMainWindow):
             widest = analysis.mda_table[-1] if analysis.mda_table else None
             if widest:
                 self.log.log(
-                    f"no anomalies above L_C; MDA {widest[2]:.1f} nSv/h over "
+                    "no anomalies above L_C; MDA "
+                    f"{format_dose_rate(widest[2], self._unit)} over "
                     f"{widest[1]:.0f} s")
         else:
             self.log.log(f"{len(analysis.significant)} anomal"
@@ -746,9 +769,21 @@ class MainWindow(QtWidgets.QMainWindow):
         if self._analysis is None:
             return
         self.statusBar().showMessage("computing heatmap...")
+        self._pending_grid_mask = self._grid_samples(self._analysis.track)
         self.jobs.submit(
             "grid", interpolate, self._analysis.track,
             GridParams(value="dose"), background=self._analysis.background)
+
+    @staticmethod
+    def _grid_samples(track):
+        return track.position_mask & track.valid_mask
+
+    def _set_grid(self, grid, mask=None) -> None:
+        self._grid = grid
+        self._grid_mask = mask if grid is not None else None
+        self.map.set_grid(grid)
+        self.display_dock.set_heatmap_available(grid is not None)
+        self._update_actions()
 
     # ---- flight -----------------------------------------------------------
 
@@ -1030,13 +1065,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if selection.is_empty:
             self.selection_dock.set_summary(
-                "no selection", self._analysis.summary.describe()
+                "no selection", self._analysis.summary.describe(self._unit)
                 if self._analysis else "")
         else:
             try:
                 stats = summarise(self._track, mask=selection.mask)
                 self.selection_dock.set_summary(selection.describe(),
-                                                stats.describe())
+                                                stats.describe(self._unit))
             except ValueError as exc:
                 self.selection_dock.set_summary(selection.describe(), str(exc))
         self._update_actions()
@@ -1046,7 +1081,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.map.set_hover(index)
         self.series.set_hover(index)
         if self._track is not None and 0 <= index < self._track.n:
-            self.statusBar().showMessage(self._track.point(index).describe())
+            self.statusBar().showMessage(
+                self._track.point(index).describe(self._unit))
         else:
             self._update_status()
 
@@ -1111,7 +1147,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self._apply_trajectory(result)
             return
         if name == "grid":
-            self._grid = result
+            mask = getattr(self, "_pending_grid_mask", None)
+            if self._analysis is None or not np.array_equal(
+                    mask, self._grid_samples(self._analysis.track)):
+                self.log.log("heatmap discarded: the track changed while it "
+                             "was computing")
+                return
+            self._set_grid(result, mask)
             # describe() already includes the warnings; logging them again
             # would double every one of them.
             self.log.log(result.describe())
@@ -1152,14 +1194,23 @@ class MainWindow(QtWidgets.QMainWindow):
     # ---- misc -------------------------------------------------------------
 
     def _on_unit_changed(self, unit: str) -> None:
+        """Every dose rate on screen follows the unit; no number changes.
+
+        Display only, so it re-renders rather than re-analysing: a unit is not
+        a parameter of the analysis, and a full re-run would also reset the
+        user's colour limits for nothing.
+        """
         self._unit = unit
-        self.flight.set_unit(unit)
-        self.analyse()
+        for view in (self.flight, self.map, self.series, self.profile,
+                     self.anomaly_model, self.hotspot_model, self.leg_model):
+            view.set_unit(unit)
+        if self._selection is not None:
+            self._broadcast(self._selection)
 
     def _update_status(self) -> None:
         if self._analysis is None:
             return
-        line = self._analysis.status_line()
+        line = self._analysis.status_line(self._unit)
         if self._selection is not None and not self._selection.is_empty:
             line += f"  |  {self._selection.describe()}"
         self.statusBar().showMessage(line)
@@ -1175,6 +1226,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.log.log("no altitude joined yet: fetch a flight or load a "
                          "trajectory in the Flight dock first", "warning")
             return
+        if kind == "grid" and self._grid is None:
+            self.log.log("no heatmap yet: compute one first", "warning")
+            return
         if kind == "trajectory" and self._trajectory is None:
             self.log.log("no trajectory loaded yet", "warning")
             return
@@ -1183,7 +1237,8 @@ class MainWindow(QtWidgets.QMainWindow):
                    "hotspots": "CSV (*.csv)", "geojson": "GeoJSON (*.geojson)",
                    "gpx": "GPX (*.gpx)", "json": "JSON (*.json)",
                    "samples": "CSV (*.csv)", "profile": "CSV (*.csv)",
-                   "trajectory": "CSV (*.csv)", "report": "JSON (*.json)"}
+                   "trajectory": "CSV (*.csv)", "report": "JSON (*.json)",
+                   "grid": "ESRI ASCII grid (*.asc)"}
         suggested = self._suggested_export_name(kind)
         path, _ = QtWidgets.QFileDialog.getSaveFileName(
             self, f"Export {kind}", suggested, filters[kind])
@@ -1208,13 +1263,19 @@ class MainWindow(QtWidgets.QMainWindow):
             "report": lambda: flight_report_to_json(
                 self._join(), self._flight_profile(), unit=self._unit,
                 floor_m=float(self.flight.floor.value())),
+            "grid": lambda: grid_to_asc(self._grid, unit=self._unit),
         }
         try:
             Path(path).write_text(writers[kind](), encoding="utf-8")
+            if kind == "grid":
+                # Without its .prj an .asc has no coordinate system.
+                Path(path).with_suffix(".prj").write_text(grid_prj(),
+                                                          encoding="utf-8")
         except OSError as exc:
             self.log.log(f"could not write {path}: {exc}", "error")
             return
-        self.log.log(f"wrote {path}")
+        self.log.log(f"wrote {path}" + (" and its .prj (EPSG:3857)"
+                                        if kind == "grid" else ""))
 
     def _suggested_export_name(self, kind: str) -> str:
         """A filename that says what the file is and which phase it covers.
@@ -1241,6 +1302,7 @@ class MainWindow(QtWidgets.QMainWindow):
             "report": f"{stem}-flight-report.json",
             "image": f"{stem}-map.png",
             "svg": f"{stem}-map.svg",
+            "grid": f"{stem}-heatmap.asc",
         }
         return names.get(kind, "")
 
@@ -1269,11 +1331,13 @@ class MainWindow(QtWidgets.QMainWindow):
         lines = attribution_lines(
             self._analysis, provider,
             colormap=self.display_dock.colormap.currentText(),
-            scale=self.map._scale, include_basemap=include_basemap)
+            scale=self.map._scale, include_basemap=include_basemap,
+            unit=self._unit,
+            grid=self._grid if self.map.heatmap_shown else None)
 
         size = self.map.size()
         image = render_image(self.map, size.width() * 2, size.height() * 2,
-                             lines=lines)
+                             lines=lines, include_basemap=include_basemap)
         if image.save(path):
             self.log.log(f"wrote {path}")
         else:
@@ -1288,9 +1352,15 @@ class MainWindow(QtWidgets.QMainWindow):
             "SVG image (*.svg)")
         if not path:
             return
-        from rcta.gui.map_export import render_svg
+        from rcta.gui.map_export import attribution_lines, render_svg
+        lines = attribution_lines(
+            self._analysis, None,
+            colormap=self.display_dock.colormap.currentText(),
+            scale=self.map._scale, include_basemap=False,
+            unit=self._unit,
+            grid=self._grid if self.map.heatmap_shown else None)
         try:
-            render_svg(self.map, path)
+            render_svg(self.map, path, lines=lines)
         except Exception as exc:
             self.log.log(f"SVG export failed: {exc}", "error")
             return

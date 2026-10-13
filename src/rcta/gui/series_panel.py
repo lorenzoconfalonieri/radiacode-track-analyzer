@@ -25,6 +25,7 @@ import numpy as np
 import pyqtgraph as pg
 from PySide6 import QtCore, QtWidgets
 
+from rcta.core.dose import convert_dose_rate
 from rcta.gui import theme
 
 Qt = QtCore.Qt
@@ -51,6 +52,8 @@ class SeriesPanel(QtWidgets.QWidget):
         self._threshold = 0.0
         self._run_bands: list[pg.LinearRegionItem] = []
         self._applying = False
+        self._unit = "nSv/h"
+        self._selection = None
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -156,7 +159,7 @@ class SeriesPanel(QtWidgets.QWidget):
             return
 
         t = track.elapsed_s
-        self._curves["dose"].setData(t, track.dose_rate)
+        self._curves["dose"].setData(t, self._dose(track.dose_rate))
         self._curves["count"].setData(t, track.count_rate)
         self._curves["dose_selected"].setData([], [])
 
@@ -176,8 +179,21 @@ class SeriesPanel(QtWidgets.QWidget):
         self.dose_plot.enableAutoRange()
         self._caption.setText("")
 
+    def set_unit(self, unit: str) -> None:
+        """Display unit for the dose plot. Redraws; never emits."""
+        self._unit = unit
+        self.dose_plot.setLabel("left", f"dose rate ({unit})")
+        if self._track is not None:
+            self._curves["dose"].setData(self._track.elapsed_s,
+                                         self._dose(self._track.dose_rate))
+            self.set_selection(self._selection)
+
+    def _dose(self, values):
+        return convert_dose_rate(values, self._unit)
+
     def set_selection(self, selection) -> None:
         """Render a selection. The region item is a control, not the model."""
+        self._selection = selection
         self._clear_run_bands()
         if self._track is None or selection is None or selection.is_empty:
             self.region.hide()
@@ -187,7 +203,7 @@ class SeriesPanel(QtWidgets.QWidget):
 
         t = self._track.elapsed_s
         # Break the highlight between runs so disjoint stretches are not joined.
-        y = np.where(selection.mask, self._track.dose_rate, np.nan)
+        y = np.where(selection.mask, self._dose(self._track.dose_rate), np.nan)
         self._curves["dose_selected"].setData(t, y, connect="finite")
 
         self._applying = True

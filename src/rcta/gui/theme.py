@@ -64,6 +64,10 @@ UNCERTAIN_PEN_WIDTH = 1.2
 ACCURACY_THRESHOLD_M = 50.0
 DECIMATE_ABOVE = 50_000
 
+#: The surface is an inference drawn under the measured points; opaque
+#: enough to read, translucent enough that the basemap still locates it.
+HEATMAP_OPACITY = 0.6
+
 # ---- basemap --------------------------------------------------------------
 
 #: Desaturate, then lift toward white. Opacity alone preserves hue, so OSM's

@@ -191,6 +191,8 @@ class DisplayDock(QtWidgets.QWidget):
     unitChanged = QtCore.Signal(str)
     accuracyThresholdChanged = QtCore.Signal(float)
     gapConnectorsToggled = QtCore.Signal(bool)
+    heatmapToggled = QtCore.Signal(bool)
+    heatmapOpacityChanged = QtCore.Signal(float)
     #: provider id, or None for no basemap
     basemapChanged = QtCore.Signal(object)
     offlineToggled = QtCore.Signal(bool)
@@ -256,6 +258,31 @@ class DisplayDock(QtWidgets.QWidget):
         self.gap_connectors.toggled.connect(self.gapConnectorsToggled)
         form.addRow("", self.gap_connectors)
 
+        self.heatmap = QtWidgets.QCheckBox("Show heatmap")
+        self.heatmap.setChecked(True)
+        self.heatmap.setToolTip(
+            "The interpolated surface, on the points' own colour scale.\n"
+            "Blank cells were not constrained by the track; they are\n"
+            "unknown, not low. Drawn only when colouring by dose rate.")
+        self.heatmap.toggled.connect(self.heatmapToggled)
+        form.addRow("", self.heatmap)
+
+        self.heatmap_opacity = QtWidgets.QSlider(Qt.Orientation.Horizontal)
+        self.heatmap_opacity.setRange(10, 100)
+        self.heatmap_opacity.setValue(round(theme.HEATMAP_OPACITY * 100))
+        self.heatmap_opacity.setToolTip("Heatmap opacity")
+        self.heatmap_opacity.valueChanged.connect(
+            lambda v: self.heatmapOpacityChanged.emit(v / 100.0))
+        form.addRow("Opacity", self.heatmap_opacity)
+        self.set_heatmap_available(False)
+
+
+    def set_heatmap_available(self, available: bool) -> None:
+        """Grey the heatmap controls until there is a surface to show."""
+        for widget in (self.heatmap, self.heatmap_opacity):
+            widget.setEnabled(bool(available))
+        self.heatmap.setText("Show heatmap" if available
+                             else "Show heatmap (compute it first)")
 
     # ---- basemap -----------------------------------------------------
 

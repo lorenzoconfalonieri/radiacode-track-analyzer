@@ -35,12 +35,14 @@ from rcta.core.flight import (FLIGHT_LEVEL_M, DEFAULT_ALTITUDE_STEP_M,
                               search_window)
 from rcta.core.io_export import (altitude_profile_to_csv,
                                  altitude_samples_to_csv, anomalies_to_csv,
-                                 flight_report_to_json, hotspots_to_csv,
+                                 flight_report_to_json, grid_prj,
+                                 grid_to_asc, hotspots_to_csv,
                                  report_to_json, track_to_csv,
                                  track_to_geojson, track_to_gpx)
 from rcta.core.io_flight import load_trajectory, trajectory_to_csv
 from rcta.core.io_radiacode import TrackParseError, load_track
 from rcta.core.quality import QualityParams, assess
+from rcta.core.spatial import GridParams, interpolate
 from rcta.net.flights import (FlightFetchError, fetch_trajectory,
                               load_flight_providers)
 
@@ -116,9 +118,17 @@ def _build_params(args) -> AnalysisParams:
 
 
 def cmd_info(args) -> int:
-    track = load_track(args.path)
+    for i, path in enumerate(args.paths):
+        if i:
+            print()
+        _info(path)
+    return 0
+
+
+def _info(path) -> None:
+    track = load_track(path)
     print(RULE)
-    print(f"  {track.meta.title or Path(args.path).name}")
+    print(f"  {track.meta.title or Path(path).name}")
     print(RULE)
     print(track.describe())
     print()
@@ -132,20 +142,31 @@ def cmd_info(args) -> int:
     print("  route")
     print(THIN)
     print(_ascii_map(track))
-    return 0
 
 
 def cmd_analyze(args) -> int:
-    track = load_track(args.path)
-    analysis = analyze_track(track, _build_params(args))
-
-    print(RULE)
-    print(f"  {track.meta.title or Path(args.path).name}")
-    print(RULE)
-    print(analysis.describe())
+    if args.csv and len(args.paths) > 1:
+        raise ValueError("--csv writes one track's anomaly table; "
+                         "give a single track with it")
+    params = _build_params(args)
+    reports = []
+    for i, path in enumerate(args.paths):
+        track = load_track(path)
+        analysis = analyze_track(track, params)
+        if i:
+            print()
+        print(RULE)
+        print(f"  {track.meta.title or Path(path).name}")
+        print(RULE)
+        print(analysis.describe())
+        reports.append(report_to_json(analysis))
 
     if args.json:
-        Path(args.json).write_text(report_to_json(analysis), encoding="utf-8")
+        # One report for one track, as before; a JSON array for several, in
+        # the order given, so a script can zip it with its own file list.
+        text = (reports[0] if len(reports) == 1 else
+                "[\n" + ",\n".join(r.rstrip() for r in reports) + "\n]\n")
+        Path(args.json).write_text(text, encoding="utf-8")
         print(f"\nwrote {args.json}")
     if args.csv:
         Path(args.csv).write_text(
@@ -173,6 +194,25 @@ def cmd_export(args) -> int:
     }
     Path(args.output).write_text(writers[args.format](), encoding="utf-8")
     print(f"wrote {args.output} ({args.format})")
+    return 0
+
+
+def cmd_grid(args) -> int:
+    track = load_track(args.path)
+    analysis = analyze_track(track, _build_params(args))
+    grid = interpolate(
+        analysis.track,
+        GridParams(value=args.value, bandwidth_m=args.bandwidth,
+                   grid_size=args.grid_size),
+        background=analysis.background)
+    print(grid.describe())
+
+    output = Path(args.output)
+    output.write_text(grid_to_asc(grid, unit=args.unit), encoding="utf-8")
+    prj = output.with_suffix(".prj")
+    prj.write_text(grid_prj(), encoding="utf-8")
+    print(f"wrote {output} and {prj.name} (EPSG:3857, {args.unit}"
+          f"{' net' if args.value == 'excess' else ''}, blank cells NODATA)")
     return 0
 
 
@@ -454,12 +494,14 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
 
     info = sub.add_parser("info", help="metadata, sampling and route shape")
-    info.add_argument("path")
+    info.add_argument("paths", nargs="+", metavar="path")
     info.set_defaults(func=cmd_info)
 
     analyze = sub.add_parser("analyze", help="full analysis and detection limits")
-    analyze.add_argument("path")
-    analyze.add_argument("--json", metavar="OUT", help="write a JSON report")
+    analyze.add_argument("paths", nargs="+", metavar="path")
+    analyze.add_argument("--json", metavar="OUT",
+                         help="write a JSON report; an array of reports when "
+                              "several tracks are given")
     analyze.add_argument("--csv", metavar="OUT", help="write the anomaly table")
     _add_analysis_flags(analyze)
     analyze.set_defaults(func=cmd_analyze)
@@ -472,6 +514,21 @@ def build_parser() -> argparse.ArgumentParser:
     export.add_argument("-o", "--output", required=True)
     _add_analysis_flags(export)
     export.set_defaults(func=cmd_export)
+
+    grid = sub.add_parser(
+        "grid", help="write the interpolated surface as an ESRI ASCII grid")
+    grid.add_argument("path")
+    grid.add_argument("-o", "--output", required=True,
+                      help="the .asc file; a .prj is written beside it")
+    grid.add_argument("--value", default="dose", choices=["dose", "excess"],
+                      help="absolute dose rate, or net over the background")
+    grid.add_argument("--bandwidth", type=float, metavar="M",
+                      help="kernel bandwidth in ground metres; "
+                           "default max(3 x median accuracy, 50)")
+    grid.add_argument("--grid-size", type=int, default=GridParams().grid_size,
+                      metavar="N", help="cells along the long axis")
+    _add_analysis_flags(grid)
+    grid.set_defaults(func=cmd_grid)
 
     flight = sub.add_parser(
         "flight", help="import altitude for an airborne track and profile "

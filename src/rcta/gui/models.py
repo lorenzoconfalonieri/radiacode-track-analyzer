@@ -11,10 +11,12 @@ that silently drops everything below threshold makes that impossible.
 
 from __future__ import annotations
 
+import math
 from datetime import datetime, timezone
 
 from PySide6 import QtCore, QtGui
 
+from rcta.core.dose import format_dose_rate
 from rcta.gui import theme
 
 Qt = QtCore.Qt
@@ -27,13 +29,32 @@ def _iso(seconds: float) -> str:
         "%H:%M:%S")
 
 
+def _dose(value: float, unit: str, *, signed: bool = False) -> str:
+    """A dose rate in the display unit, without the unit (it is in the header)."""
+    if not math.isfinite(value):
+        return "-"
+    text = format_dose_rate(value, unit).rsplit(" ", 1)[0]
+    return f"+{text}" if signed and value >= 0 else text
+
+
+def _mean(values) -> float:
+    return float(values.mean()) if values.size else float("nan")
+
+
 class _BaseModel(QtCore.QAbstractTableModel):
+    #: (header, accessor(row, unit)); "{unit}" in a header is the display unit.
     COLUMNS: list = []
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self._rows: list = []
+        self._unit = "nSv/h"
         self._font = theme.mono_font()
+
+    def set_unit(self, unit: str) -> None:
+        self.beginResetModel()
+        self._unit = unit
+        self.endResetModel()
 
     def set_rows(self, rows) -> None:
         self.beginResetModel()
@@ -53,7 +74,7 @@ class _BaseModel(QtCore.QAbstractTableModel):
         if role != Qt.ItemDataRole.DisplayRole:
             return None
         if orientation == Qt.Orientation.Horizontal:
-            return self.COLUMNS[section][0]
+            return self.COLUMNS[section][0].format(unit=self._unit)
         return section + 1
 
     def data(self, index, role=Qt.ItemDataRole.DisplayRole):
@@ -61,7 +82,7 @@ class _BaseModel(QtCore.QAbstractTableModel):
             return None
         obj = self._rows[index.row()]
         if role == Qt.ItemDataRole.DisplayRole:
-            return self.COLUMNS[index.column()][1](obj)
+            return self.COLUMNS[index.column()][1](obj, self._unit)
         if role == Qt.ItemDataRole.FontRole:
             return self._font
         if role == Qt.ItemDataRole.TextAlignmentRole and index.column() > 0:
@@ -77,17 +98,17 @@ class AnomalyTableModel(_BaseModel):
     """Every scan candidate, significant or not, with its exclusion reason."""
 
     COLUMNS = [
-        ("time", lambda a: _iso(a.time_s)),
-        ("dur (s)", lambda a: f"{a.duration_s:.0f}"),
-        ("lat", lambda a: f"{a.lat:.5f}"),
-        ("lon", lambda a: f"{a.lon:.5f}"),
-        ("net (cps)", lambda a: f"{a.net_count_rate:+.2f}"),
-        ("net (nSv/h)", lambda a: f"{a.net_dose_rate:+.1f}"),
-        ("peak (nSv/h)", lambda a: f"{a.peak_dose_rate:.1f}"),
-        ("sigma", lambda a: f"{a.significance:.2f}"),
-        ("L_C", lambda a: f"{a.limits.critical_level:.0f}"),
-        ("MDA (cps)", lambda a: f"{a.limits.mda_cps:.2f}"),
-        ("flags", lambda a: " ".join(a.flags)),
+        ("time", lambda a, u: _iso(a.time_s)),
+        ("dur (s)", lambda a, u: f"{a.duration_s:.0f}"),
+        ("lat", lambda a, u: f"{a.lat:.5f}"),
+        ("lon", lambda a, u: f"{a.lon:.5f}"),
+        ("net (cps)", lambda a, u: f"{a.net_count_rate:+.2f}"),
+        ("net ({unit})", lambda a, u: _dose(a.net_dose_rate, u, signed=True)),
+        ("peak ({unit})", lambda a, u: _dose(a.peak_dose_rate, u)),
+        ("sigma", lambda a, u: f"{a.significance:.2f}"),
+        ("L_C", lambda a, u: f"{a.limits.critical_level:.0f}"),
+        ("MDA (cps)", lambda a, u: f"{a.limits.mda_cps:.2f}"),
+        ("flags", lambda a, u: " ".join(a.flags)),
     ]
 
     def _decoration(self, anomaly, index, role):
@@ -107,16 +128,16 @@ class AnomalyTableModel(_BaseModel):
 
 class HotspotTableModel(_BaseModel):
     COLUMNS = [
-        ("lat", lambda h: f"{h.lat:.5f}"),
-        ("lon", lambda h: f"{h.lon:.5f}"),
-        ("r (m)", lambda h: f"{h.radius_m:.0f}"),
-        ("samples", lambda h: str(h.n_samples)),
-        ("passes", lambda h: str(h.n_passes)),
-        ("peak (nSv/h)", lambda h: f"{h.peak_dose_rate:.1f}"),
-        ("net counts", lambda h: f"{h.net_counts:.0f}"),
-        ("sigma", lambda h: f"{h.significance:.2f}"),
-        ("score", lambda h: f"{h.score:.0f}"),
-        ("evidence", lambda h: h.evidence),
+        ("lat", lambda h, u: f"{h.lat:.5f}"),
+        ("lon", lambda h, u: f"{h.lon:.5f}"),
+        ("r (m)", lambda h, u: f"{h.radius_m:.0f}"),
+        ("samples", lambda h, u: str(h.n_samples)),
+        ("passes", lambda h, u: str(h.n_passes)),
+        ("peak ({unit})", lambda h, u: _dose(h.peak_dose_rate, u)),
+        ("net counts", lambda h, u: f"{h.net_counts:.0f}"),
+        ("sigma", lambda h, u: f"{h.significance:.2f}"),
+        ("score", lambda h, u: f"{h.score:.0f}"),
+        ("evidence", lambda h, u: h.evidence),
     ]
 
     def _decoration(self, hotspot, index, role):
@@ -137,14 +158,14 @@ class LegTableModel(_BaseModel):
     """One row per contiguous recording leg."""
 
     COLUMNS = [
-        ("leg", lambda r: str(r["leg"])),
-        ("start", lambda r: _iso(r["start_time"])),
-        ("end", lambda r: _iso(r["end_time"])),
-        ("samples", lambda r: str(r["n"])),
-        ("dur (s)", lambda r: f"{r['duration_s']:.0f}"),
-        ("dist (km)", lambda r: f"{r['distance_m'] / 1000.0:.2f}"),
-        ("mean (nSv/h)", lambda r: f"{r['mean_dose']:.1f}"),
-        ("gap after (s)", lambda r: "-" if r["gap_after_s"] <= 0
+        ("leg", lambda r, u: str(r["leg"])),
+        ("start", lambda r, u: _iso(r["start_time"])),
+        ("end", lambda r, u: _iso(r["end_time"])),
+        ("samples", lambda r, u: str(r["n"])),
+        ("dur (s)", lambda r, u: f"{r['duration_s']:.0f}"),
+        ("dist (km)", lambda r, u: f"{r['distance_m'] / 1000.0:.2f}"),
+        ("mean ({unit})", lambda r, u: _dose(r["mean_dose"], u)),
+        ("gap after (s)", lambda r, u: "-" if r["gap_after_s"] <= 0
                                     else f"{r['gap_after_s']:.0f}"),
     ]
 
@@ -171,7 +192,10 @@ class LegTableModel(_BaseModel):
                                         - track.time_s[start]),
                     "distance_m": float(track.distance_along_m[stop - 1]
                                         - track.distance_along_m[start]),
-                    "mean_dose": float(track.dose_rate[start:stop].mean()),
+                    # Masked samples carry NaN; a leg's mean is over what
+                    # was actually read.
+                    "mean_dose": _mean(track.dose_rate[start:stop]
+                                       [track.valid_mask[start:stop]]),
                     "gap_after_s": gap,
                 })
                 start = i

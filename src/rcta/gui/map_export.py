@@ -28,8 +28,14 @@ a journal figure is usually what is actually wanted.
 
 from __future__ import annotations
 
+import re
+from contextlib import contextmanager
+from pathlib import Path
+from xml.sax.saxutils import escape
+
 from PySide6 import QtCore, QtGui
 
+from rcta.core.dose import convert_dose_rate
 from rcta.gui import theme
 
 __all__ = ["attribution_lines", "compose_attribution", "render_image",
@@ -37,8 +43,13 @@ __all__ = ["attribution_lines", "compose_attribution", "render_image",
 
 
 def attribution_lines(analysis, provider=None, *, colormap: str = "viridis",
-                      scale: str = "linear", include_basemap: bool = True):
-    """The provenance block stamped into an exported image."""
+                      scale: str = "linear", include_basemap: bool = True,
+                      unit: str = "nSv/h", grid=None):
+    """The provenance block stamped into an exported image.
+
+    ``grid`` is the heatmap when it is drawn, so the figure states how far
+    the surface was allowed to reach from the track it was inferred from.
+    """
     lines = []
     if provider is not None and include_basemap:
         lines.append(provider.attribution_export)
@@ -52,10 +63,15 @@ def attribution_lines(analysis, provider=None, *, colormap: str = "viridis",
     lines.append(f"{track.meta.title or 'track'} · {device} · "
                  f"{track.n} samples · {start}–{end} UTC")
 
-    lo = float(track.dose_rate.min())
-    hi = float(track.dose_rate.max())
-    lines.append(f"Dose rate {lo:.1f}–{hi:.0f} nSv/h, {colormap}, {scale} scale · "
-                 "Web Mercator (EPSG:3857)")
+    readings = convert_dose_rate(track.dose_rate[track.valid_mask], unit)
+    if readings.size:
+        lines.append(f"Dose rate {readings.min():.3g}–{readings.max():.3g} "
+                     f"{unit}, {colormap}, {scale} scale · "
+                     "Web Mercator (EPSG:3857)")
+    if grid is not None:
+        reach = grid.params.max_distance_m or 2.0 * grid.bandwidth_m
+        lines.append(f"Heatmap: Gaussian kernel, bandwidth {grid.bandwidth_m:.0f} m, "
+                     f"blank beyond {reach:.0f} m of the track (unknown, not low)")
     return lines
 
 
@@ -89,8 +105,32 @@ def compose_attribution(image: QtGui.QImage, lines) -> None:
         painter.end()
 
 
-def render_image(map_panel, width: int, height: int, *, lines=()) -> QtGui.QImage:
-    """Render the map scene into an image and stamp the attribution on it."""
+@contextmanager
+def _without_basemap(map_panel, hide: bool):
+    """Take the basemap out of the scene for the duration of a render.
+
+    Dropping only the credit line, as an earlier version did, still wrote
+    the provider's pixels into the file, which is exactly what its terms
+    forbid; the tiles themselves have to leave the scene.
+    """
+    item = getattr(map_panel, "basemap", None)
+    was_visible = item is not None and item.isVisible()
+    if hide and was_visible:
+        item.hide()
+    try:
+        yield
+    finally:
+        if hide and was_visible:
+            item.show()
+
+
+def render_image(map_panel, width: int, height: int, *, lines=(),
+                 include_basemap: bool = True) -> QtGui.QImage:
+    """Render the map scene into an image and stamp the attribution on it.
+
+    ``include_basemap=False`` renders the data layers alone, for a provider
+    whose terms do not allow its tiles in an exported image.
+    """
     lines = list(lines)
     # Reserve a band for the attribution rather than overlaying it on the axis
     # labels: the text has to stay legible for the licence to be satisfied.
@@ -115,7 +155,8 @@ def render_image(map_panel, width: int, height: int, *, lines=()) -> QtGui.QImag
     try:
         painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing, True)
         target = QtCore.QRectF(0, 0, image.width(), image.height() - band)
-        with theme.plots_in(map_panel, theme.LIGHT):
+        with theme.plots_in(map_panel, theme.LIGHT), \
+                _without_basemap(map_panel, not include_basemap):
             view.scene().render(painter, target, source,
                                 QtCore.Qt.AspectRatioMode.IgnoreAspectRatio)
     finally:
@@ -125,10 +166,41 @@ def render_image(map_panel, width: int, height: int, *, lines=()) -> QtGui.QImag
     return image
 
 
-def render_svg(map_panel, path) -> None:
-    """Vector export of the data layers only. The basemap cannot come along."""
+def render_svg(map_panel, path, *, lines=()) -> None:
+    """Vector export of the data layers and colour bar, with provenance.
+
+    The whole scene is exported rather than the plot alone, so the colour bar
+    comes along: a coloured track without its scale is a picture, not a
+    figure. The provenance lines are appended below it as real SVG text, as
+    they are baked into the PNG.
+    """
     from pyqtgraph import exporters
 
-    exporter = exporters.SVGExporter(map_panel.plot)
-    with theme.plots_in(map_panel, theme.LIGHT):
-        exporter.export(str(path))
+    exporter = exporters.SVGExporter(map_panel._glw.scene())
+    # The basemap paints raster tiles, which the SVG generator would embed as
+    # images; it is removed rather than trusted to be skipped.
+    with theme.plots_in(map_panel, theme.LIGHT), \
+            _without_basemap(map_panel, True):
+        svg = exporter.export(toBytes=True).decode("utf-8")
+    Path(path).write_text(_append_lines(svg, list(lines)), encoding="utf-8")
+
+
+def _append_lines(svg: str, lines) -> str:
+    """Grow the SVG's viewBox downward and write ``lines`` into the band."""
+    match = re.search(r'viewBox\s*=\s*"([\d.\s-]+)"', svg)
+    if not lines or match is None:
+        return svg
+    x, y, width, height = (float(v) for v in match.group(1).split())
+    size, step = 11.0, 14.0
+    band = step * len(lines) + 8.0
+    svg = (svg[:match.start()]
+           + f'viewBox="{x:g} {y:g} {width:g} {height + band:g}"'
+           + svg[match.end():])
+    text = [f'<g font-family="sans-serif" font-size="{size:g}" '
+            f'fill="{theme.ATTRIBUTION_COLOR}">']
+    for i, line in enumerate(lines):
+        text.append(f'<text x="{x + 6:g}" y="{height + step * (i + 1):g}">'
+                    f'{escape(line)}</text>')
+    text.append("</g>")
+    close = svg.rindex("</svg>")
+    return svg[:close] + "\n".join(text) + "\n" + svg[close:]

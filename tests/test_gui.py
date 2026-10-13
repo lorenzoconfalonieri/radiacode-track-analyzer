@@ -38,6 +38,11 @@ def window(app):
     win = MainWindow(offline=True, synchronous=True)
     yield win
     win.close()
+    # Delete, not just close. A closed window stays alive through its own
+    # signal connections, and destroying ~150 of them at interpreter exit is
+    # quadratic in PySide: it added minutes to every run after the last test.
+    win.deleteLater()
+    QtCore.QCoreApplication.sendPostedEvents(None, QtCore.QEvent.Type.DeferredDelete)
 
 
 @pytest.fixture
@@ -255,6 +260,62 @@ def test_heatmap_warnings_are_not_logged_twice(loaded):
     loaded.compute_grid()
     log = loaded.log.toPlainText()
     assert log.count("bandwidth raised") == 1
+
+
+def test_the_heatmap_is_drawn_once_computed(loaded):
+    """It used to be computed, logged and never shown."""
+    assert not loaded.map.heatmap_shown
+    assert not loaded.display_dock.heatmap.isEnabled()
+    loaded.compute_grid()
+    assert loaded.map.heatmap_shown
+    assert loaded.display_dock.heatmap.isEnabled()
+    image = loaded.map.heatmap.image
+    # Unsupported cells are transparent, not painted as low.
+    assert image.shape[:2] == loaded._grid.values.shape
+    assert (image[~loaded._grid.supported, 3] == 0).all()
+    assert (image[loaded._grid.supported, 3] == 255).all()
+
+
+def test_the_heatmap_hides_when_the_colour_bar_means_count_rate(loaded):
+    loaded.compute_grid()
+    loaded.map.set_color_field("count_rate")
+    assert not loaded.map.heatmap_shown
+    loaded.map.set_color_field("dose_rate")
+    assert loaded.map.heatmap_shown
+    loaded.display_dock.heatmap.setChecked(False)
+    assert not loaded.map.heatmap_shown
+
+
+def test_a_new_track_clears_the_heatmap(loaded, sample_path):
+    loaded.compute_grid()
+    assert loaded.load(str(sample_path))
+    assert loaded._grid is None and not loaded.map.heatmap_shown
+    assert not loaded.display_dock.heatmap.isEnabled()
+
+
+def test_changing_which_fixes_count_clears_the_heatmap(loaded):
+    loaded.compute_grid()
+    loaded.analysis_dock.max_accuracy.setValue(20.0)
+    assert loaded._grid is None
+    assert "heatmap cleared" in loaded.log.toPlainText()
+
+
+def test_changing_only_the_scan_keeps_the_heatmap(loaded):
+    loaded.compute_grid()
+    loaded.analysis_dock.alpha.setValue(0.01)
+    assert loaded._grid is not None
+
+
+def test_the_heatmap_grid_exports_with_its_projection(loaded, tmp_path,
+                                                      monkeypatch):
+    from PySide6 import QtWidgets
+    out = tmp_path / "grid.asc"
+    monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName",
+                        staticmethod(lambda *a, **k: (str(out), "")))
+    loaded.compute_grid()
+    loaded._export("grid")
+    assert out.read_text().startswith("ncols ")
+    assert "Mercator" in (tmp_path / "grid.prj").read_text()
 
 
 # ---- the basemap ---------------------------------------------------------
@@ -484,6 +545,56 @@ def test_an_export_blocked_by_provider_terms_says_so(loaded, tmp_path,
     loaded._export_image()
     assert "may not be redistributed" in loaded.log.toPlainText()
     assert out.exists()
+
+
+def _count_basemap_paints(monkeypatch):
+    from rcta.gui.basemap import BasemapItem
+    calls = []
+    original = BasemapItem.paint
+
+    def paint(self, *args):
+        calls.append(1)
+        return original(self, *args)
+    monkeypatch.setattr(BasemapItem, "paint", paint)
+    return calls
+
+
+def test_a_basemap_that_may_not_be_exported_is_not_rendered(loaded,
+                                                            monkeypatch):
+    """Dropping only the credit line still shipped the provider's pixels."""
+    from rcta.gui.map_export import render_image
+    calls = _count_basemap_paints(monkeypatch)
+    render_image(loaded.map, 300, 200, include_basemap=True)
+    assert calls, "the control case must paint the basemap"
+    calls.clear()
+    render_image(loaded.map, 300, 200, include_basemap=False)
+    assert not calls
+    assert loaded.map.basemap.isVisible()          # put back afterwards
+
+
+def test_the_svg_carries_the_colour_bar_and_provenance_but_no_tiles(
+        loaded, tmp_path, monkeypatch):
+    from PySide6 import QtWidgets
+    calls = _count_basemap_paints(monkeypatch)
+    out = tmp_path / "map.svg"
+    monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName",
+                        staticmethod(lambda *a, **k: (str(out), "")))
+    loaded._export_svg()
+    svg = out.read_text()
+    assert not calls
+    assert "dose rate (nSv/h" in svg                 # the colour bar label
+    assert "2964 samples" in svg                     # the provenance block
+    assert "Web Mercator" in svg
+
+
+def test_the_provenance_quotes_the_display_unit_and_the_heatmap(loaded):
+    from rcta.gui.map_export import attribution_lines
+    loaded.compute_grid()
+    lines = attribution_lines(loaded._analysis, unit="uSv/h",
+                              grid=loaded._grid)
+    text = "\n".join(lines)
+    assert "uSv/h" in text and "nSv/h" not in text
+    assert "unknown, not low" in text
 
 
 def test_the_profile_panel_reports_the_confound(loaded):
@@ -1421,3 +1532,44 @@ def test_the_theme_icons_ship_with_the_package():
     from rcta.gui import theme
     for name in ("check", "up_light", "down_light", "up_dark", "down_dark"):
         assert (theme._ICONS / f"{name}.svg").is_file()
+
+
+# ---- display unit --------------------------------------------------------
+
+
+def test_the_display_unit_reaches_every_dose_on_screen(loaded):
+    """It used to change the report and the Flight dock and nothing else."""
+    from PySide6.QtCore import Qt as _Qt
+    loaded.display_dock.unit.setCurrentText("uSv/h")
+
+    assert "uSv/h" in loaded.map.colorbar.getAxis("left").labelText
+    assert "uSv/h" in loaded.series.dose_plot.getAxis("left").labelText
+    assert "uSv/h" in loaded.profile.hist_plot.getAxis("bottom").labelText
+    headers = [loaded.anomaly_model.headerData(i, _Qt.Orientation.Horizontal)
+               for i in range(loaded.anomaly_model.columnCount())]
+    assert "peak (uSv/h)" in headers and not any("nSv" in h for h in headers)
+    assert "uSv/h" in loaded.selection_dock.text.toPlainText()
+    assert "nSv/h" not in loaded.selection_dock.text.toPlainText()
+
+    loaded._on_hover(10)
+    assert "uSv/h" in loaded.statusBar().currentMessage()
+    loaded._on_hover(-1)
+    assert " uSv " in loaded.statusBar().currentMessage()
+
+
+def test_the_display_unit_scales_the_values_not_just_the_label(loaded):
+    lo_nano, hi_nano = loaded.map._limits
+    curve = loaded.series._curves["dose"].getData()[1]
+    loaded.display_dock.unit.setCurrentText("uSv/h")
+    lo_micro, hi_micro = loaded.map._limits
+    assert lo_micro == pytest.approx(lo_nano / 1000.0)
+    assert hi_micro == pytest.approx(hi_nano / 1000.0)
+    import numpy as np
+    np.testing.assert_allclose(loaded.series._curves["dose"].getData()[1],
+                               curve / 1000.0)
+
+
+def test_changing_the_unit_does_not_rerun_the_analysis(loaded):
+    before = loaded._analysis
+    loaded.display_dock.unit.setCurrentText("uR/h")
+    assert loaded._analysis is before

@@ -38,6 +38,7 @@ conversion lives in :mod:`rcta.core.dose`; nothing else divides by 1000.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from functools import cached_property
@@ -134,13 +135,19 @@ class TrackPoint:
     valid: bool
     position_valid: bool
 
-    def describe(self) -> str:
+    def describe(self, unit: str = "nSv/h") -> str:
+        # Imported here: dose imports this module.
+        from rcta.core.dose import format_dose_rate
         flag = "" if self.position_valid else "  (position uncertain)"
+        reading = (f"{format_dose_rate(self.dose_rate, unit)}  "
+                   f"{self.count_rate:.2f} cps"
+                   if math.isfinite(self.dose_rate) else "no reading")
+        accuracy = (f"+-{self.accuracy_m:.0f} m"
+                    if math.isfinite(self.accuracy_m) else "accuracy unknown")
         return (f"#{self.index}  {self.time:%Y-%m-%d %H:%M:%S}Z  "
                 f"{abs(self.lat):.6f}{'N' if self.lat >= 0 else 'S'} "
                 f"{abs(self.lon):.6f}{'E' if self.lon >= 0 else 'W'}  "
-                f"{self.dose_rate:.2f} nSv/h  {self.count_rate:.2f} cps  "
-                f"+-{self.accuracy_m:.0f} m{flag}")
+                f"{reading}  {accuracy}{flag}")
 
 
 @dataclass(frozen=True)

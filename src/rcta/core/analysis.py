@@ -32,7 +32,8 @@ from dataclasses import dataclass, field, replace
 from rcta.core.anomalies import Anomaly, ScanParams, scan, scan_mda
 from rcta.core.background import (BackgroundEstimate, BackgroundParams,
                                   estimate_background)
-from rcta.core.dose import DoseSummary, accumulated_dose
+from rcta.core.dose import (DoseSummary, accumulated_dose,
+                            format_accumulated_dose)
 from rcta.core.profile import (Bimodality, Correlation, SummaryStats,
                                bimodality, correlate_speed_dose, summarise)
 from rcta.core.quality import QualityParams, QualityReport, assess_with_report
@@ -134,15 +135,17 @@ class TrackAnalysis:
             blocks += [f"! {w}" for w in self.warnings]
         return "\n".join(blocks)
 
-    def status_line(self) -> str:
-        """One line for the GUI status bar."""
+    def status_line(self, unit: str | None = None) -> str:
+        """One line for the GUI status bar, dose in ``unit`` (default: the
+        analysis's own)."""
         verdict = (f"{len(self.significant)} anomal"
                    f"{'y' if len(self.significant) == 1 else 'ies'} above L_C"
                    if self.significant else "no anomalies above L_C")
         return (f"{self.track.n} samples  |  "
                 f"{self.summary.distance_m / 1000.0:.2f} km  |  "
                 f"{self.quality.n_legs} legs  |  "
-                f"{self.dose.total_nsv:.1f} nSv  |  {verdict}")
+                f"{format_accumulated_dose(self.dose.total_nsv, unit or self.dose.unit)}"
+                f"  |  {verdict}")
 
 
 def analyze_track(track: Track, params: AnalysisParams | None = None, *,

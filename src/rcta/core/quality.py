@@ -126,10 +126,9 @@ class QualityReport:
 def assess(track: Track, params: QualityParams | None = None) -> Track:
     """Mask poor fixes, split at dropouts, flag impossible speeds.
 
-    Returns a new Track carrying ``position_mask`` and ``leg_index``; the
-    report is attached as :attr:`Track.quality` via the returned track's
-    ``meta`` warnings and is also available from :func:`report_for`. Use
-    :func:`assess_with_report` when the numbers themselves are wanted.
+    Returns a new Track carrying ``position_mask``, ``geometry_mask`` and
+    ``leg_index``, and nothing else. Use :func:`assess_with_report` when the
+    :class:`QualityReport` itself is wanted.
     """
     return assess_with_report(track, params)[0]
 

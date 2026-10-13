@@ -80,9 +80,16 @@ class SummaryStats:
     coverage: float
     contiguous: bool = True
 
-    def describe(self) -> str:
+    def describe(self, unit: str = "nSv/h") -> str:
+        from rcta.core.dose import (accumulated_unit, convert_dose_rate,
+                                    format_accumulated_dose)
         hours, rem = divmod(int(self.duration_s), 3600)
         minutes, seconds = divmod(rem, 60)
+        lo, hi, mean, median, p95 = (
+            float(convert_dose_rate(v, unit)) for v in
+            (self.dose_min, self.dose_max, self.dose_mean, self.dose_median,
+             self.dose_p95))
+        digits = 2 if unit in ("nSv/h", "uR/h") else 4
         lines = [
             f"samples    : {self.n} ({self.n_valid} valid, "
             f"{self.n_poor_position} with poor position)",
@@ -90,16 +97,18 @@ class SummaryStats:
             f"   coverage {self.coverage * 100.0:.1f} %",
             f"distance   : {self.distance_m / 1000.0:.2f} km"
             + ("" if self.contiguous else "   (selection is not contiguous)"),
-            f"dose rate  : {self.dose_min:.2f} .. {self.dose_max:.2f} nSv/h   "
-            f"mean {self.dose_mean:.2f}, median {self.dose_median:.2f}, "
-            f"p95 {self.dose_p95:.2f}",
+            f"dose rate  : {lo:.{digits}f} .. {hi:.{digits}f} {unit}   "
+            f"mean {mean:.{digits}f}, median {median:.{digits}f}, "
+            f"p95 {p95:.{digits}f}",
             f"count rate : {self.count_min:.2f} .. {self.count_max:.2f} cps   "
             f"mean {self.count_mean:.2f}, median {self.count_median:.2f}",
             f"speed      : median {self.speed_median:.1f} m/s, "
             f"max {self.speed_max:.1f} m/s",
             f"accuracy   : median {self.accuracy_median:.0f} m, "
             f"max {self.accuracy_max:.0f} m",
-            f"dose       : {self.accumulated_dose_nsv:.3f} nSv accumulated",
+            f"dose       : "
+            f"{format_accumulated_dose(self.accumulated_dose_nsv, unit)} "
+            "accumulated",
         ]
         return "\n".join(lines)
 

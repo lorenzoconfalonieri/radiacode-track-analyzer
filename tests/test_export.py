@@ -356,3 +356,55 @@ def test_the_json_report_is_strict_json_even_with_unknowns():
     report = json.loads(report_to_json(analysis))
     assert report["track"]["dose_per_count_nsv_h_per_cps"] is None
     assert all(row["mda_nsv_h"] is None for row in report["detection_limits"])
+
+
+# ---- heatmap grid --------------------------------------------------------
+
+
+def _grid():
+    from rcta.core.spatial import GridParams, interpolate
+    track, _ = synthetic.make(n=300, speed_m_s=1.4, dt_s=2.0, shuffle=False)
+    return interpolate(track, GridParams(grid_size=48))
+
+
+def _parse_asc(text):
+    lines = text.splitlines()
+    header = dict(line.split() for line in lines[:6])
+    rows = np.array([[float(v) for v in line.split()] for line in lines[6:]])
+    return header, rows
+
+
+def test_the_asc_grid_writes_blank_cells_as_nodata_never_zero():
+    from rcta.core.io_export import grid_to_asc
+    grid = _grid()
+    header, rows = _parse_asc(grid_to_asc(grid))
+    assert int(header["ncols"]) == grid.values.shape[1]
+    assert int(header["nrows"]) == grid.values.shape[0]
+    nodata = rows == float(header["NODATA_value"])
+    assert nodata.sum() == (~grid.supported).sum()
+    assert not (rows[~nodata] == 0).any()
+
+
+def test_the_asc_grid_runs_north_to_south_from_the_lower_left_corner():
+    from rcta.core.io_export import grid_to_asc
+    grid = _grid()
+    header, rows = _parse_asc(grid_to_asc(grid))
+    assert float(header["xllcorner"]) == pytest.approx(grid.x_edges[0], abs=1e-3)
+    assert float(header["yllcorner"]) == pytest.approx(grid.y_edges[0], abs=1e-3)
+    assert float(header["cellsize"]) == pytest.approx(
+        grid.y_edges[1] - grid.y_edges[0], rel=1e-6)
+    # First written row is the northernmost.
+    top = grid.values[-1]
+    np.testing.assert_allclose(rows[0][np.isfinite(top)],
+                               top[np.isfinite(top)], rtol=1e-5)
+
+
+def test_the_asc_grid_converts_to_the_requested_unit():
+    from rcta.core.io_export import grid_to_asc
+    grid = _grid()
+    _, nano = _parse_asc(grid_to_asc(grid, unit="nSv/h"))
+    _, micro = _parse_asc(grid_to_asc(grid, unit="uSv/h"))
+    ok = nano != -9999
+    np.testing.assert_allclose(micro[ok], nano[ok] / 1000.0, rtol=1e-5)
+    with pytest.raises(ValueError):
+        grid_to_asc(grid, unit="Gy")

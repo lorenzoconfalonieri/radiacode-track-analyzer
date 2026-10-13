@@ -348,12 +348,13 @@ def block_bootstrap_p(x, y, time_s, *, statistic=None, block_s: float = 300.0,
                       n_boot: int = 2000, seed: int = 0) -> float:
     """Two-sided p-value for an association between two serial time series.
 
-    Contiguous blocks of ``block_s`` seconds are resampled with replacement to
-    build the null distribution, so each surrogate inherits the same
-    short-range serial structure as the data and only the *pairing* between the
-    two series is destroyed. Resampling individual points instead would destroy
-    the autocorrelation as well, and would reproduce exactly the false
-    confidence this function exists to avoid.
+    Contiguous blocks of ``block_s`` seconds of ``y`` are shuffled -- a
+    permutation of whole blocks, not a resample with replacement -- against
+    an unchanged ``x`` to build the null distribution. Each surrogate thus
+    inherits the same short-range serial structure as the data and only the
+    *pairing* between the two series is destroyed. Shuffling individual points
+    instead would destroy the autocorrelation as well, and would reproduce
+    exactly the false confidence this function exists to avoid.
 
     ``block_s`` should comfortably exceed the autocorrelation time; the default
     of five minutes is several times the two-second logging cadence and is

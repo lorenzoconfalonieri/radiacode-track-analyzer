@@ -350,3 +350,8 @@ def test_a_masked_sample_takes_no_part_in_the_geometry():
                   count_rate=walk.count_rate, valid_mask=valid)
     assert track.speed_m_s.max() < 5.0
     assert track.bbox[1] > 29.0
+
+
+def test_a_point_describes_itself_in_the_requested_unit(sample):
+    text = sample.point(0).describe("uSv/h")
+    assert "uSv/h" in text and "nSv/h" not in text

@@ -452,3 +452,53 @@ def test_the_json_report_records_the_applied_background_window(tmp_path):
         "parameters"]["background"]
     assert background["window_s_requested"] == 900.0
     assert background["window_s"] > 900.0
+
+
+def test_grid_writes_an_asc_and_its_projection(sample_path, tmp_path, capsys):
+    out = tmp_path / "surface.asc"
+    assert main(["grid", str(sample_path), "-o", str(out), "--grid-size", "64",
+                 "--n-boot", "10"]) == 0
+    assert out.read_text().startswith("ncols ")
+    assert "Mercator_Auxiliary_Sphere" in (tmp_path / "surface.prj").read_text()
+    printed = capsys.readouterr().out
+    assert "supported" in printed and "NODATA" in printed
+
+
+def test_grid_excess_needs_no_extra_input(sample_path, tmp_path):
+    out = tmp_path / "net.asc"
+    assert main(["grid", str(sample_path), "-o", str(out), "--value", "excess",
+                 "--grid-size", "32", "--n-boot", "10"]) == 0
+    assert out.exists()
+
+
+def _walk_path():
+    from pathlib import Path
+    walk = (Path(__file__).resolve().parents[1] / "sample-data"
+            / "Track 07 Sep 2026 14-30-57.rctrk")
+    if not walk.exists():
+        pytest.skip("walk sample not present")
+    return walk
+
+
+def test_info_takes_several_tracks_as_the_readme_shows(sample_path, capsys):
+    """`rcta-cli info sample-data/Track*.rctrk` used to be a usage error."""
+    assert main(["info", str(sample_path), str(_walk_path())]) == 0
+    out = capsys.readouterr().out
+    assert "2964" in out and "348" in out
+
+
+def test_analyze_writes_an_array_of_reports_for_several_tracks(
+        sample_path, tmp_path):
+    out = tmp_path / "reports.json"
+    assert main(["analyze", str(sample_path), str(_walk_path()),
+                 "--json", str(out), "--n-boot", "10"]) == 0
+    reports = json.loads(out.read_text())
+    assert isinstance(reports, list) and len(reports) == 2
+    assert [r["track"]["n_samples"] for r in reports] == [2964, 348]
+
+
+def test_analyze_refuses_one_anomaly_csv_for_several_tracks(sample_path,
+                                                            tmp_path, capsys):
+    assert main(["analyze", str(sample_path), str(_walk_path()),
+                 "--csv", str(tmp_path / "a.csv"), "--n-boot", "10"]) == 1
+    assert "single track" in capsys.readouterr().err
