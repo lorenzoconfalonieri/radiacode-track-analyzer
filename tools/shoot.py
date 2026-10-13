@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import os
 import sys
+import tempfile
+from pathlib import Path
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 sys.path.insert(0, "src")
@@ -64,11 +66,67 @@ def size_to(win, w: int, h: int) -> None:
         pump(200)
 
 
+def _synthetic_flight(folder: Path) -> tuple[Path, Path]:
+    """tests/synthetic.flight_track() written out as a track and trajectory.
+
+    The figure is "a profile with a known answer": 900 samples built from a
+    2000 m scale height. Going through files rather than injecting objects
+    means the figure exercises the same parser and join a user's file does.
+    """
+    sys.path.insert(0, "tests")
+    import synthetic
+
+    track, trajectory, _truth = synthetic.flight_track()
+    rows = ["Track: synthetic flight",
+            "Timestamp\tLatitude\tLongitude\tAccuracy\tDoseRate\tCountRate"]
+    for i in range(track.n):
+        # The TSV dose column is in the device's display unit, a tenth of
+        # nSv/h; see docs/FORMAT.md.
+        rows.append(f"{int(track.time_s[i])}\t{track.lat[i]:.6f}\t"
+                    f"{track.lon[i]:.6f}\t{track.accuracy_m[i]:.0f}\t"
+                    f"{track.dose_rate[i] / 10:.3f}\t{track.count_rate[i]:.3f}")
+    track_path = folder / "synthetic-flight.rctrk"
+    track_path.write_text("\n".join(rows), encoding="utf-8")
+    trajectory_path = folder / "synthetic-flight-trajectory.csv"
+    trajectory_path.write_text(
+        "time,lat,lon,altitude_m\n" + "\n".join(
+            f"{int(t)},{la:.6f},{lo:.6f},{a:.1f}" for t, la, lo, a in zip(
+                trajectory.time_s, trajectory.lat, trajectory.lon,
+                trajectory.altitude_m)), encoding="utf-8")
+    return track_path, trajectory_path
+
+
+def shoot_flight_fit(path: str) -> int:
+    """The Flight dock alone: altitude profile, fit and its caption."""
+    with tempfile.TemporaryDirectory() as folder:
+        track_path, trajectory_path = _synthetic_flight(Path(folder))
+        win = MainWindow(offline=True)
+        win.show()
+        size_to(win, 1500, 950)
+        if not win.load(str(track_path)):
+            print("could not load the synthetic flight", file=sys.stderr)
+            return 1
+        win._load_trajectory(str(trajectory_path), "m")
+    # Out of its dock, so the figure has a fixed size whatever the window
+    # layout does.
+    panel = win.flight
+    panel.setParent(None)
+    panel.resize(1200, 640)
+    panel.show()
+    pump(600)
+    panel.grab().save(path)
+    print(f"  wrote {path}  ({panel.width()}x{panel.height()})")
+    win.close()
+    return 0
+
+
 def main() -> int:
     out = os.environ.get("RCTA_SHOT_OUT", "docs/screenshot-walk.png")
+    fit_out = os.environ.get("RCTA_SHOT_FIT_OUT",
+                             "docs/screenshot-flight-fit.png")
 
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-    theme.apply(app)
+    theme.apply(app, "Light")       # a figure for a white page
 
     win = MainWindow(offline=False)
     win.show()
@@ -86,7 +144,7 @@ def main() -> int:
     shoot(win, out)
 
     win.close()
-    return 0
+    return shoot_flight_fit(fit_out)
 
 
 if __name__ == "__main__":
