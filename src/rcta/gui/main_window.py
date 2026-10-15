@@ -515,10 +515,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self._on_anomaly_row)
         self.hotspot_view.selectionModel().selectionChanged.connect(
             self._on_hotspot_row)
+        self.leg_view.selectionModel().selectionChanged.connect(
+            self._on_leg_row)
         # A selected row highlights its samples, but on a long flight they
         # can be far off-screen; a double-click also frames them.
         for view, handler in ((self.anomaly_view, self._on_anomaly_row),
-                              (self.hotspot_view, self._on_hotspot_row)):
+                              (self.hotspot_view, self._on_hotspot_row),
+                              (self.leg_view, self._on_leg_row)):
             view.setToolTip("Click a row to select its samples; "
                             "double-click to zoom the map to them.")
             view.doubleClicked.connect(
@@ -1218,6 +1221,18 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._source_row(self.anomaly_view, index))
             if anomaly is not None:
                 mask[anomaly.start_index:anomaly.stop_index] = True
+        self._broadcast(Selection(mask=mask, source="table"))
+
+    def _on_leg_row(self, *_) -> None:
+        """Select every sample of the chosen legs, as the other tables do."""
+        if self._applying or self._analysis is None:
+            return
+        rows = self.leg_view.selectionModel().selectedRows()
+        if not rows:
+            return
+        legs = {self.leg_model.row_object(self._source_row(self.leg_view, i))["leg"]
+                for i in rows}
+        mask = np.isin(self._analysis.quality.leg_index, list(legs))
         self._broadcast(Selection(mask=mask, source="table"))
 
     def _on_hotspot_row(self, *_) -> None:

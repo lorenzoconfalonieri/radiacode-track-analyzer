@@ -1833,3 +1833,18 @@ def test_double_clicking_an_anomaly_row_zooms_the_map_to_it(window):
     zoomed = window.map.vb.viewRect()
     assert zoomed.width() < whole.width()
     assert window._selection.count > 0
+
+
+def test_selecting_a_leg_row_selects_that_legs_samples(loaded):
+    from PySide6.QtCore import QItemSelectionModel
+    import numpy as np
+    proxy = loaded.leg_view.model()
+    assert proxy.rowCount() > 1
+    index = proxy.index(1, 0)
+    loaded.leg_view.selectionModel().select(
+        index, QItemSelectionModel.SelectionFlag.ClearAndSelect
+        | QItemSelectionModel.SelectionFlag.Rows)
+    leg = loaded.leg_model.row_object(proxy.mapToSource(index).row())
+    expected = loaded._analysis.quality.leg_index == leg["leg"]
+    assert np.array_equal(loaded._selection.mask, expected)
+    assert loaded._selection.count == leg["n"]

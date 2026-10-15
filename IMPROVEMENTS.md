@@ -6,8 +6,6 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 ## Backlog
 
-- **GUI:** selecting a row in the Legs table does nothing; it could select
-  that leg's samples like the other two tables do.
 - **GUI:** the Track summary (13 lines) shows about 9 in its dock. Instead
   of forcing height (rejected below), move it to a "Summary" tab in the
   bottom stack, or let the Track dock collapse to a one-line caption with
@@ -170,6 +168,10 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 - 2026-10-15 **GUI:** double-clicking an Anomalies or Hotspots row zooms the
   map to its samples; the tables' tooltip says so.
+
+- 2026-10-15 **GUI:** selecting Legs rows selects every sample of those
+  legs, on the map and the series; double-click zooms to them, as in the
+  other two tables.
 
 ## Rejected
 
