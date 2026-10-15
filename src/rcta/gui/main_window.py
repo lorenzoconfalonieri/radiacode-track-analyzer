@@ -825,6 +825,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.track_dock.set_text(track.describe())
         for warning in analysis.background.warnings:
             self.log.log(warning, "warning")
+        self.analysis_dock.set_applied_window(
+            analysis.background.params.window_s)
         # The one analysis-level warning about the parameters themselves:
         # the Window box shows the default while a widened window is used.
         for warning in analysis.warnings:

@@ -84,6 +84,14 @@ class AnalysisDock(QtWidgets.QWidget):
             "Comfortably wider than the widest window scanned, or the\n"
             "scan is partly comparing a source against itself.")
         form.addRow("Window", self.window_s)
+        # What the analysis actually applied, when that differs: the default
+        # is widened on a slow cadence, and writing the widened value back
+        # into the box would turn an automatic choice into a fixed one.
+        self.window_applied = QtWidgets.QLabel("")
+        theme.polish(self.window_applied, "muted")
+        self.window_applied.setWordWrap(True)
+        self.window_applied.hide()
+        form.addRow("", self.window_applied)
 
         self.trim = QtWidgets.QDoubleSpinBox()
         self.trim.setRange(0.0, 0.49)
@@ -176,6 +184,14 @@ class AnalysisDock(QtWidgets.QWidget):
     def scan_params(self) -> ScanParams:
         return ScanParams(alpha=self.alpha.value(),
                           bonferroni=self.bonferroni.isChecked())
+
+    def set_applied_window(self, applied_s: float) -> None:
+        """Show the window the analysis used, if not the one in the box."""
+        differs = abs(applied_s - self.window_s.value()) > 0.5
+        self.window_applied.setText(
+            f"applied: {applied_s:.0f} s, widened to fit the widest scan "
+            "window at this cadence (see the log)" if differs else "")
+        self.window_applied.setVisible(differs)
 
     def integration_time(self):
         value = self.integration.value()

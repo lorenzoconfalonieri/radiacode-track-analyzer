@@ -1765,3 +1765,17 @@ def test_the_gui_logs_a_widened_background_window(window):
         pytest.skip("walk sample not present")
     assert window.load(str(walk))
     assert "background window widened from 900 s" in window.log.toPlainText()
+
+
+def test_the_window_box_shows_the_window_actually_applied(window, sample_path):
+    from pathlib import Path
+    walk = sample_path.parent / "Track 07 Sep 2026 14-30-57.rctrk"
+    if not walk.exists():
+        pytest.skip("walk sample not present")
+    window.show()
+    assert window.load(str(walk))
+    note = window.analysis_dock.window_applied
+    assert note.isVisible() and "applied: 3200 s" in note.text()
+    assert window.analysis_dock.window_s.value() == 900.0   # box untouched
+    assert window.load(str(sample_path))                    # 2 s cadence
+    assert not note.isVisible()

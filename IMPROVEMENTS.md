@@ -6,10 +6,6 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 ## Backlog
 
-- **GUI:** the Analysis dock's Window box still shows 900 s while the
-  widened window (e.g. 3200 s on the walk) is used. The log says so, but
-  the box could show the applied value, or "auto (3200 s)", without turning
-  it into an explicit choice.
 - **GUI:** the Track summary (13 lines) shows about 9 in its dock. Instead
   of forcing height (rejected below), move it to a "Summary" tab in the
   bottom stack, or let the Track dock collapse to a one-line caption with
@@ -154,6 +150,11 @@ correctness, tests, GUI usability, performance (measured), code quality.
   the GUI showed only the default; the JSON had been the only record.
   A follow-up made the GUI log it too: it logged only the background
   estimator's warnings, not the analysis-level ones. 3 tests.
+
+- 2026-10-15 **GUI:** a muted note under the Window box shows the applied
+  window when it differs ("applied: 3200 s, widened to fit the widest scan
+  window at this cadence"). The box keeps the requested value, so the
+  automatic choice stays automatic.
 
 ## Rejected
 
