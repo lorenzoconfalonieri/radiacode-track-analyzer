@@ -1635,3 +1635,12 @@ def test_longitude_labels_fit_side_by_side_on_a_walk(app):
     # Minor ticks carry no labels of their own.
     assert all(s == "" for s in axis.tickStrings(ticks, 1.0, minor))
     assert all(axis.tickStrings(ticks, 1.0, major))
+
+
+def test_degree_labels_carry_instead_of_printing_sixty():
+    """59.96 s rounded on its own printed 111°52'60.0"; it is 111°53'00.0"."""
+    from rcta.gui.geo_axis import format_degree
+    assert format_degree(-111.88332222, 1 / 3600, False) == "111°53'00.0\"W"
+    assert format_degree(40.99999, 1 / 60, True) == "41°00'N"
+    assert format_degree(40.5, 1 / 60, True) == "40°30'N"
+    assert format_degree(-111.905, 1 / 3600, False) == "111°54'18.0\"W"

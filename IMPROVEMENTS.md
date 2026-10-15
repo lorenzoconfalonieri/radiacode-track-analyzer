@@ -6,9 +6,6 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 ## Backlog
 
-- **Correctness:** `format_degree` can print `111°52'60.0"W`: seconds are
-  rounded after the minutes are split off, so 59.96 s shows as 60.0 without
-  carrying. Round to the step's precision first, then split.
 - **Tests:** `flight_report_to_json` and `map_export.compose_attribution`
   are untested.
 - **GUI:** File > Open recent, via QSettings.
@@ -60,6 +57,10 @@ correctness, tests, GUI usability, performance (measured), code quality.
 - 2026-10-15 **GUI:** longitude labels no longer overlap. The bottom axis
   coarsens its step until the measured label widths fit, and minor ticks are
   left unlabelled. Checked on the walk and the flight.
+
+- 2026-10-15 **Correctness:** map degree labels round to their printed
+  precision before splitting, so 59.96 s carries to the next minute instead
+  of printing `52'60.0"` (likewise `40°60'` becomes `41°00'`).
 
 ## Rejected
 

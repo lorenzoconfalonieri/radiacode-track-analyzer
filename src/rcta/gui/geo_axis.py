@@ -65,13 +65,16 @@ def format_degree(value: float, step: float, is_lat: bool) -> str:
     if step >= 0.1:
         return f"{value:.2f}°{hemi}"
 
-    degrees = int(value)
-    minutes = (value - degrees) * 60.0
+    # Round to the printed precision *before* splitting into degrees,
+    # minutes and seconds. Rounding the last field alone printed 59.96 s as
+    # "60.0" without carrying, so a tick read 111°52'60.0" for 111°53'00.0".
     if step >= 1 / 60:
-        return f"{degrees}°{minutes:02.0f}'{hemi}"
-    whole_minutes = int(minutes)
-    seconds = (minutes - whole_minutes) * 60.0
-    return f"{degrees}°{whole_minutes:02d}'{seconds:04.1f}\"{hemi}"
+        total = round(value * 60.0)
+        return f"{total // 60}°{total % 60:02d}'{hemi}"
+    tenths = round(value * 36000.0)
+    degrees, rest = divmod(tenths, 36000)
+    minutes, seconds = divmod(rest, 600)
+    return f"{degrees}°{minutes:02d}'{seconds / 10:04.1f}\"{hemi}"
 
 
 def nice_distance(target: float) -> float:
