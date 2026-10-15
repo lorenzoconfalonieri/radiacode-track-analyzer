@@ -1718,3 +1718,11 @@ def test_no_lines_draws_nothing(app):
     image.fill(QtGui.QColor("white"))
     compose_attribution(image, [])
     assert not _inked_columns(image, range(0, 100, 5))
+
+
+def test_the_empty_map_says_how_to_open_a_track(window, sample_path):
+    window.show()
+    assert window.map.hint.isVisible()
+    assert "Ctrl+O" in window.map.hint.text()
+    assert window.load(str(sample_path))
+    assert not window.map.hint.isVisible()

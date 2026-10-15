@@ -137,6 +137,17 @@ class MapPanel(QtWidgets.QWidget):
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        # An empty map is a blank grid that says nothing about how to fill
+        # it; the banner says, and goes away with the first track.
+        self.hint = QtWidgets.QLabel(
+            "<b>No track loaded.</b> Open a RadiaCode <tt>.rctrk</tt> file "
+            "with <b>File &rsaquo; Open track</b> (Ctrl+O), or drop it "
+            "onto this window.")
+        self.hint.setTextFormat(Qt.TextFormat.RichText)
+        self.hint.setWordWrap(True)
+        theme.polish(self.hint, "banner")
+        layout.addWidget(self.hint)
         self._glw = pg.GraphicsLayoutWidget()
         layout.addWidget(self._glw)
 
@@ -260,6 +271,7 @@ class MapPanel(QtWidgets.QWidget):
     def set_track(self, track, quality=None) -> None:
         self._track = track
         self._quality = quality
+        self.hint.setVisible(track is None)
         if track is None:
             for item in (self.points, self.uncertain, self.halo, self.hover):
                 item.setData([], [])

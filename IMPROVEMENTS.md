@@ -10,9 +10,9 @@ correctness, tests, GUI usability, performance (measured), code quality.
   of forcing height (rejected below), move it to a "Summary" tab in the
   bottom stack, or let the Track dock collapse to a one-line caption with
   the full text in a tooltip.
-- **GUI:** the status-bar hint and the empty map say nothing about what to
-  do; a banner over the empty map ("Open a .rctrk track (Ctrl+O) or drop it
-  here") would use the theme's banner style.
+- **GUI:** an empty window still draws a world-scale graticule, a 0-1
+  colour bar and three empty plots full of 0.1 ticks. Hiding the plot
+  frames until a track loads would make the empty state read as empty.
 - **Tests:** `synthetic.make()` sets `integration_time_s`, which real files
   never do, so most analysis tests skip the inference path. Consider a
   `from_file=True` option that clears it.
@@ -93,6 +93,10 @@ correctness, tests, GUI usability, performance (measured), code quality.
   strict flight JSON. Against the pre-fix CLI the info case fails, so the
   test would have caught that crash. A manual sweep found no other command
   affected.
+
+- 2026-10-15 **GUI:** a banner over the empty map ("No track loaded. Open a
+  RadiaCode .rctrk file with File > Open track (Ctrl+O), or drop it onto
+  this window.") in the theme's banner style; hidden once a track loads.
 
 ## Rejected
 
