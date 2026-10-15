@@ -13,8 +13,6 @@ correctness, tests, GUI usability, performance (measured), code quality.
   trimming against a hand-computed window.
 - **Tests:** `flight_report_to_json` and `map_export.compose_attribution`
   are untested.
-- **GUI:** opening a file by dragging it onto the window (`.rctrk`, or a
-  trajectory once a track is loaded).
 - **GUI:** File > Open recent, via QSettings.
 - **GUI:** longitude tick labels overlap on small extents, e.g. the bundled
   walk (`GeoAxisItem`).
@@ -28,6 +26,9 @@ correctness, tests, GUI usability, performance (measured), code quality.
   "for any vehicle". Urban driving (30 m per fix, 8 m accuracy) gets 3, which
   is harmless but contradicts the claim; reword it to "any platform moving
   well beyond its fix error per sample".
+- **GUI:** the status-bar hint and the empty map say nothing about what to
+  do; a banner over the empty map ("Open a .rctrk track (Ctrl+O) or drop it
+  here") would use the theme's banner style.
 - **Code quality:** the version string is defined in three places
   (`pyproject.toml`, `io_export.py`, `main_window.py`).
 
@@ -42,6 +43,11 @@ correctness, tests, GUI usability, performance (measured), code quality.
   `geo.choose_smoothing_window`: identity at window 1, centring on a
   straight line, endpoint holding, noise reduction, odd windows only, walk
   vs fast platform, NaN accuracy, and a stationary platform.
+
+- 2026-10-15 **GUI:** drag and drop. A dropped `.rctrk` opens as the track;
+  any other file dropped onto a loaded track goes to the Flight dock as its
+  trajectory. A trajectory dropped before any track says why it can't be
+  used. 3 tests.
 
 ## Rejected
 

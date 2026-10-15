@@ -1582,3 +1582,38 @@ def test_the_app_icon_renders(app):
     assert not icon.isNull()
     image = icon.pixmap(64, 64).toImage()
     assert image.pixelColor(32, 32).alpha() == 255
+
+
+# ---- drag and drop -------------------------------------------------------
+
+
+def _drop(window, *paths):
+    from PySide6 import QtCore as _QtCore, QtGui as _QtGui
+    mime = _QtCore.QMimeData()
+    mime.setUrls([_QtCore.QUrl.fromLocalFile(str(p)) for p in paths])
+    event = _QtGui.QDropEvent(_QtCore.QPointF(10, 10),
+                              _QtCore.Qt.DropAction.CopyAction, mime,
+                              _QtCore.Qt.MouseButton.LeftButton,
+                              _QtCore.Qt.KeyboardModifier.NoModifier)
+    window.dropEvent(event)
+    return event
+
+
+def test_dropping_a_track_opens_it(window, sample_path):
+    assert window.acceptDrops()
+    _drop(window, sample_path)
+    assert window._track is not None and window._track.n == 2964
+
+
+def test_dropping_a_trajectory_onto_a_track_joins_it(loaded,
+                                                     sample_trajectory_path):
+    _drop(loaded, sample_trajectory_path)
+    assert loaded._trajectory is not None
+    assert "loaded trajectory" in loaded.log.toPlainText()
+
+
+def test_a_trajectory_dropped_before_any_track_explains_itself(
+        window, sample_trajectory_path):
+    _drop(window, sample_trajectory_path)
+    assert window._track is None
+    assert "drop a .rctrk track first" in window.log.toPlainText()

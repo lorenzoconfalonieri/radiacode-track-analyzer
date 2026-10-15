@@ -164,7 +164,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self._make_menus()
         self._wire()
 
-        self.statusBar().showMessage("Open a .rctrk track file to begin")
+        self.setAcceptDrops(True)
+        self.statusBar().showMessage(
+            "Open a .rctrk track file to begin (Ctrl+O, or drop it here)")
 
     # ---- construction -----------------------------------------------------
 
@@ -234,6 +236,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.flight = FlightPanel()
         flight_dock = self._add_dock("Flight", self.flight, bottom)
+        self._flight_dock = flight_dock
 
         self.log = LogDock()
         log_dock = self._add_dock("Log", self.log, bottom)
@@ -637,6 +640,43 @@ class MainWindow(QtWidgets.QMainWindow):
             self.statusBar().showMessage(message)
 
     # ---- loading ----------------------------------------------------------
+
+    # ---- drag and drop ----------------------------------------------------
+
+    @staticmethod
+    def _dropped_paths(event) -> list[str]:
+        mime = event.mimeData()
+        if not mime.hasUrls():
+            return []
+        return [url.toLocalFile() for url in mime.urls() if url.isLocalFile()]
+
+    def dragEnterEvent(self, event) -> None:
+        if self._dropped_paths(event):
+            event.acceptProposedAction()
+
+    def dragMoveEvent(self, event) -> None:
+        if self._dropped_paths(event):
+            event.acceptProposedAction()
+
+    def dropEvent(self, event) -> None:
+        """A .rctrk opens as the track; anything else, once a track is
+        loaded, is offered to the Flight dock as its trajectory -- the same
+        two things the two Open commands do."""
+        paths = self._dropped_paths(event)
+        if not paths:
+            return
+        event.acceptProposedAction()
+        track = next((p for p in paths if p.lower().endswith(".rctrk")), None)
+        if track is not None:
+            self.load(track)
+            return
+        if self._track is None:
+            self.log.log("drop a .rctrk track first; a trajectory needs a "
+                         "track to join to", "warning")
+            self.statusBar().showMessage("Drop a .rctrk track file first")
+            return
+        self.show_panel(self._flight_dock)
+        self._load_trajectory(paths[0], "auto")
 
     def open_dialog(self) -> None:
         path, _ = QtWidgets.QFileDialog.getOpenFileName(
