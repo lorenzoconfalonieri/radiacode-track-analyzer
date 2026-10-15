@@ -210,3 +210,20 @@ def test_the_bundled_sample_trajectory_reads(sample_trajectory_path):
     assert trajectory.altitude_kind == "barometric"
     assert trajectory.altitude_ceiling_m == pytest.approx(10972.8, abs=1.0)
     assert trajectory.n > 300
+
+
+def test_a_json_trajectory_with_a_byte_order_mark_loads(sample_trajectory_path,
+                                                        tmp_path):
+    """The BOM hid the leading "{" and sent JSON to the CSV parser."""
+    from rcta.core.io_flight import load_trajectory
+    path = tmp_path / "bom.json"
+    path.write_bytes(b"\xef\xbb\xbf" + sample_trajectory_path.read_bytes())
+    assert load_trajectory(path).n == load_trajectory(sample_trajectory_path).n
+
+
+def test_a_binary_file_is_refused_as_not_a_trajectory(tmp_path):
+    from rcta.core.io_flight import TrajectoryParseError, load_trajectory
+    path = tmp_path / "picture.csv"
+    path.write_bytes(b"\x89PNG\r\n\x1a\n" + bytes(range(256)))
+    with pytest.raises(TrajectoryParseError, match="not a text file"):
+        load_trajectory(path)

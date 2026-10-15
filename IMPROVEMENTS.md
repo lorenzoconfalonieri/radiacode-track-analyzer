@@ -6,10 +6,6 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 ## Backlog
 
-- **GUI:** a binary file loaded as a trajectory is refused, but with the
-  raw codec text ("'utf-8' codec can't decode byte 0x89...").
-  `io_flight.load_trajectory` should say "not a text file" as the track
-  loader now does, and read as UTF-8 explicitly.
 - **GUI:** the Track summary (13 lines) shows about 9 in its dock. Instead
   of forcing height (rejected below), move it to a "Summary" tab in the
   bottom stack, or let the Track dock collapse to a one-line caption with
@@ -129,6 +125,11 @@ correctness, tests, GUI usability, performance (measured), code quality.
   `MainWindow.load()`; the CLI printed a raw codec error. Both readers now
   read UTF-8 explicitly (the locale default misreads non-ASCII titles on
   Windows) and raise TrackParseError("not a text file ..."). 3 tests.
+
+- 2026-10-15 **Correctness:** `load_trajectory` reads `utf-8-sig`. A JSON
+  trajectory saved with a byte-order mark had been refused with a
+  misleading "missing a column" error, because the BOM hid its `{`. A binary
+  file now says "not a text file" instead of a raw codec error. 2 tests.
 
 ## Rejected
 

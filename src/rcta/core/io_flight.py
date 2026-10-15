@@ -188,10 +188,18 @@ def load_trajectory(path, *, altitude_unit: str = "auto", callsign: str = "",
     """Read a trajectory from disk, dispatching on content not extension."""
     path = Path(path)
     try:
-        text = path.read_text()
+        # utf-8-sig: a byte-order mark, which Windows editors and Excel
+        # write, would otherwise hide the leading "{" of a JSON file and
+        # send it to the delimited parser as a one-column table.
+        text = path.read_text(encoding="utf-8-sig")
     except OSError as exc:
         raise TrajectoryParseError(f"cannot read trajectory: {exc}",
                                    path=str(path)) from exc
+    except UnicodeDecodeError as exc:
+        raise TrajectoryParseError(
+            f"not a text file (undecodable byte at offset {exc.start}); a "
+            "trajectory is JSON, CSV or tab-separated text",
+            path=str(path)) from exc
     head = text.lstrip()
     if not head:
         raise TrajectoryParseError("file is empty", path=str(path))
