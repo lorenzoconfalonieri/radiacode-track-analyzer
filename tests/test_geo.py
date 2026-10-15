@@ -197,3 +197,82 @@ def test_robust_bound_is_not_raised_by_the_outlier_it_must_catch():
     speeds = np.array([5.0, 5.0, 5.0, 277000.0])
     assert geo._robust_max(speeds) < 100.0
     assert float(np.percentile(speeds, 95)) > 1e5
+
+
+# ---- position smoothing ----------------------------------------------------
+
+
+def _walk(n=600, step_m=2.8, sigma_m=8.0, seed=1):
+    """A straight north-going walk with Gaussian fix noise, in degrees."""
+    rng = np.random.default_rng(seed)
+    north = np.arange(n) * step_m + rng.normal(0, sigma_m, n)
+    east = rng.normal(0, sigma_m, n)
+    lat = 40.0 + north / 111_320.0
+    lon = -111.9 + east / (111_320.0 * np.cos(np.radians(40.0)))
+    return lat, lon
+
+
+def test_smoothing_with_window_one_is_the_identity():
+    from rcta.core.geo import smooth_positions
+    lat, lon = _walk(50)
+    out_lat, out_lon = smooth_positions(lat, lon, 1)
+    np.testing.assert_array_equal(out_lat, lat)
+    np.testing.assert_array_equal(out_lon, lon)
+
+
+def test_a_window_wider_than_the_track_leaves_it_raw():
+    from rcta.core.geo import smooth_positions
+    lat, lon = _walk(5)
+    out_lat, _ = smooth_positions(lat, lon, 9)
+    np.testing.assert_array_equal(out_lat, lat)
+
+
+def test_smoothing_is_centred_so_a_straight_line_stays_put():
+    """An off-centre kernel would shift every point along the track."""
+    from rcta.core.geo import smooth_positions
+    lat = np.linspace(40.0, 40.01, 101)
+    lon = np.linspace(-111.9, -111.89, 101)
+    out_lat, out_lon = smooth_positions(lat, lon, 7)
+    np.testing.assert_allclose(out_lat[3:-3], lat[3:-3], rtol=0, atol=1e-12)
+    np.testing.assert_allclose(out_lon[3:-3], lon[3:-3], rtol=0, atol=1e-12)
+    # Endpoints are held at the first and last fully averaged value.
+    assert (out_lat[:3] == out_lat[3]).all()
+    assert (out_lat[-3:] == out_lat[-4]).all()
+
+
+def test_smoothing_removes_most_of_the_cross_track_noise():
+    from rcta.core.geo import smooth_positions
+    lat, lon = _walk(sigma_m=8.0)
+    _, out_lon = smooth_positions(lat, lon, 15)
+    assert np.std(out_lon[20:-20]) < np.std(lon) / 3.0
+
+
+def test_the_window_is_always_odd():
+    """np.convolve(mode="same") is only centred for an odd kernel."""
+    from rcta.core.geo import choose_smoothing_window
+    for sigma in (3.0, 8.0, 20.0):
+        lat, lon = _walk(sigma_m=sigma)
+        window = choose_smoothing_window(lat, lon, np.full(lat.size, sigma))
+        assert window % 2 == 1
+
+
+def test_a_walk_needs_smoothing_and_a_fast_platform_does_not():
+    from rcta.core.geo import choose_smoothing_window
+    lat, lon = _walk(step_m=2.8, sigma_m=8.0)
+    assert choose_smoothing_window(lat, lon, np.full(lat.size, 8.0)) > 1
+    # 100 m per fix: a highway at 10 s logging, or anything airborne.
+    lat, lon = _walk(step_m=100.0, sigma_m=8.0)
+    assert choose_smoothing_window(lat, lon, np.full(lat.size, 8.0)) == 1
+
+
+def test_no_recorded_accuracy_means_no_smoothing():
+    from rcta.core.geo import choose_smoothing_window
+    lat, lon = _walk()
+    assert choose_smoothing_window(lat, lon, np.full(lat.size, np.nan)) == 1
+
+
+def test_a_platform_that_never_moved_gets_the_widest_window():
+    from rcta.core.geo import choose_smoothing_window
+    lat, lon = _walk(step_m=0.0, sigma_m=8.0)
+    assert choose_smoothing_window(lat, lon, np.full(lat.size, 8.0),
+                                   max_window=121) == 121
