@@ -372,7 +372,10 @@ def scan_mda(track: Track, background: BackgroundEstimate,
     median_support = max(float(np.median(background.n_effective)), 1.0)
     typical = float(np.median(background.count_rate))
     for width in sorted(set(params.scales)):
-        if width > track.n:
+        # A scale at which every window holds a masked sample was never
+        # tested, so it has no detection limit: quoting one would claim a
+        # sensitivity for a measurement the scan did not make.
+        if width > track.n or _blocked(track, width).all():
             continue
         back = typical * width * live
         limits = st.currie_limits(back, width, int(round(median_support)),

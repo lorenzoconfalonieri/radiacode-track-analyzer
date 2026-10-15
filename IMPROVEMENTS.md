@@ -6,6 +6,10 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 ## Backlog
 
+- **Correctness:** with very few readings the bimodality line degenerates:
+  "split at 75.35: 75.35 +- 0.00 (n=2) vs 75.35 +- 0.00 (n=0)" for two
+  different readings. Below a minimum sample count, say "too few readings
+  to judge" instead.
 - **GUI:** the Track summary (13 lines) shows about 9 in its dock. Instead
   of forcing height (rejected below), move it to a "Summary" tab in the
   bottom stack, or let the Track dock collapse to a one-line caption with
@@ -97,6 +101,11 @@ correctness, tests, GUI usability, performance (measured), code quality.
 - 2026-10-15 **GUI:** a banner over the empty map ("No track loaded. Open a
   RadiaCode .rctrk file with File > Open track (Ctrl+O), or drop it onto
   this window.") in the theme's banner style; hidden once a track loads.
+
+- 2026-10-15 **Correctness:** the MDA table quoted detection limits for
+  scales at which every window held a masked sample, which the scan never
+  tested. A two-reading track listed limits up to 64 samples. Such scales
+  are now omitted. Bundled-track output is byte-identical.
 
 ## Rejected
 

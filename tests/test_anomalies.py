@@ -238,3 +238,17 @@ def test_scan_reports_progress(sample):
     scan(track, bg, ScanParams(), progress=seen.append)
     assert seen and seen[-1] == 1.0
     assert seen == sorted(seen)
+
+
+def test_no_detection_limit_is_quoted_for_a_scale_the_scan_never_tested():
+    """With every 3rd sample masked, no window of 4 or more is clean."""
+    import synthetic
+    from rcta.core.anomalies import ScanParams, scan_mda
+    from rcta.core.background import estimate_background
+    track, _ = synthetic.make(n=300, shuffle=False)
+    valid = np.ones(track.n, dtype=bool)
+    valid[::3] = False
+    track = track.with_mask(valid=valid)
+    background = estimate_background(track)
+    table = scan_mda(track, background, ScanParams(scales=(1, 2, 4, 8)))
+    assert [width for width, _, _ in table] == [1, 2]
