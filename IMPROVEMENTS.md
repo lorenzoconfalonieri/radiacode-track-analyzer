@@ -6,8 +6,10 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 ## Backlog
 
-- **GUI:** the Track and Selection dock text boxes clip their content at the
-  default dock height.
+- **GUI:** the Track summary (13 lines) shows about 9 in its dock. Instead
+  of forcing height (rejected below), move it to a "Summary" tab in the
+  bottom stack, or let the Track dock collapse to a one-line caption with
+  the full text in a tooltip.
 - **GUI:** the status-bar hint and the empty map say nothing about what to
   do; a banner over the empty map ("Open a .rctrk track (Ctrl+O) or drop it
   here") would use the theme's banner style.
@@ -79,8 +81,18 @@ correctness, tests, GUI usability, performance (measured), code quality.
   the widest line fits. 4 tests cover three image shapes, the image size
   being left unchanged, and no lines drawing nothing.
 
+- 2026-10-15 **Correctness:** `rcta-cli info` crashed ("cannot convert
+  float NaN to integer") on any track with masked markers, a regression from
+  masked readings becoming NaN. The sparkline skips NaN and draws an
+  all-masked bin as `_`. `info` also assesses quality first, so it reports
+  the same 2.99 km as `analyze` instead of 2.97 km. 3 tests.
+
 ## Rejected
 
+- 2026-10-15 **GUI:** minimum heights on the Track and Selection text boxes
+  (8 lines). The Selection box showed all its lines, but the window's
+  minimum height grew from 950 to 1108 px, taller than many laptop screens.
+  Reverted.
 - 2026-10-15 **Blocked on the owner, not rejected:** the `USER_AGENT`
   contact URL. It points at `github.com/rcta/...`, a placeholder that may
   belong to someone else; this is the suite's one xfail. The real

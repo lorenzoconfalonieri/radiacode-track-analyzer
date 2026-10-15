@@ -59,14 +59,27 @@ def _sparkline(values, width: int = 74) -> str:
     if values.size == 0:
         return ""
     edges = np.linspace(0, values.size, min(width, values.size) + 1).astype(int)
-    binned = [values[a:b].max() for a, b in zip(edges[:-1], edges[1:]) if b > a]
-    lo, hi = min(binned), max(binned)
+    # Masked samples are NaN. A bin of nothing but masked samples is drawn
+    # as "_" -- no reading, and distinct from the lowest level, which is a
+    # space -- rather than crashing int(nan).
+    binned = []
+    for a, b in zip(edges[:-1], edges[1:]):
+        chunk = values[a:b]
+        chunk = chunk[np.isfinite(chunk)]
+        if b > a:
+            binned.append(float(chunk.max()) if chunk.size else None)
+    finite = [v for v in binned if v is not None]
+    if not finite:
+        return "_" * len(binned)
+    lo, hi = min(finite), max(finite)
     span = hi - lo
-    if span <= 0:
-        return SPARK[len(SPARK) // 2] * len(binned)
-    scaled = [(v - lo) / span for v in binned]
-    return "".join(SPARK[min(int(s * (len(SPARK) - 1)), len(SPARK) - 1)]
-                   for s in scaled)
+    def mark(v):
+        if v is None:
+            return "_"
+        if span <= 0:
+            return SPARK[len(SPARK) // 2]
+        return SPARK[min(int((v - lo) / span * (len(SPARK) - 1)), len(SPARK) - 1)]
+    return "".join(mark(v) for v in binned)
 
 
 def _ascii_map(track, width: int = 70, height: int = 20) -> str:
@@ -126,7 +139,9 @@ def cmd_info(args) -> int:
 
 
 def _info(path) -> None:
-    track = load_track(path)
+    # Assessed, so the distance and smoothing printed here are the ones
+    # `analyze` and the GUI report: per-leg, with glitched fixes bypassed.
+    track = assess(load_track(path))
     print(RULE)
     print(f"  {track.meta.title or Path(path).name}")
     print(RULE)
@@ -136,7 +151,9 @@ def _info(path) -> None:
     print("  dose rate against time")
     print(THIN)
     print("  " + _sparkline(track.dose_rate))
-    print(f"  {track.dose_rate.min():.1f} .. {track.dose_rate.max():.1f} nSv/h")
+    readings = track.dose_rate[track.valid_mask]
+    if readings.size:
+        print(f"  {readings.min():.1f} .. {readings.max():.1f} nSv/h")
     print()
     print(THIN)
     print("  route")

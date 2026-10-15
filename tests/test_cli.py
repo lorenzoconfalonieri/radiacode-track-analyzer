@@ -527,3 +527,37 @@ def test_the_version_is_defined_once():
     assert 'dynamic = ["version"]' in (root / "pyproject.toml").read_text()
     default = inspect.signature(track_to_gpx).parameters["creator"].default
     assert default == f"rcta {rcta.__version__}"
+
+
+def test_sparkline_survives_masked_readings():
+    """Masked samples are NaN; int(nan) used to crash `rcta-cli info`."""
+    import numpy as np
+    from rcta.cli import _sparkline
+    values = np.array([1.0, np.nan, 3.0, np.nan, np.nan, 5.0])
+    line = _sparkline(values, width=6)
+    assert len(line) == 6
+    assert line[1] == "_" and line[3] == "_"
+    assert _sparkline(np.full(4, np.nan)) == "____"
+
+
+def test_info_runs_on_a_track_with_masked_markers(tmp_path, capsys):
+    out = tmp_path / "broken.rctrk"
+    walk = _walk_path()
+    data = json.loads(walk.read_text())
+    for marker in data["markers"][::50]:
+        marker.pop("doseRate", None)
+    out.write_text(json.dumps(data))
+    assert main(["info", str(out)]) == 0
+    assert "nan" not in capsys.readouterr().out.lower()
+
+
+def test_info_reports_the_same_distance_as_analyze(capsys):
+    """info used to describe the track before quality assessment."""
+    walk = str(_walk_path())
+    assert main(["info", walk]) == 0
+    info = capsys.readouterr().out
+    assert main(["analyze", walk, "--n-boot", "10"]) == 0
+    analyze = capsys.readouterr().out
+    line = next(l for l in info.splitlines() if l.startswith("distance"))
+    assert line.split(":")[1].split("(")[0].strip() == "2.99 km"
+    assert "2.99 km" in analyze
