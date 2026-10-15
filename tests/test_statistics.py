@@ -286,3 +286,59 @@ def test_sample_speed_dose_correlation_survives_correction_but_is_confounded(sam
     assert n_eff == pytest.approx(307.0, rel=0.05)
     assert n_eff < 0.15 * sample.n, "the nominal sample size is still a fiction"
     assert st.effective_p(rho, n_eff) < 0.01
+
+
+# ---- rolling trimmed mean --------------------------------------------------
+
+
+def test_the_trimmed_mean_drops_the_same_count_from_each_tail():
+    values = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 1000], float)
+    # 0.2 of 10 is 2 from each end: the mean of 3..8.
+    assert st._trimmed_mean(values, 0.2) == pytest.approx(5.5)
+    assert st._trimmed_mean(values, 0.0) == pytest.approx(values.mean())
+
+
+def test_trimming_never_empties_a_tiny_window():
+    # round(0.49 * 2) = 1 from each end would leave nothing; all are kept.
+    assert st._trimmed_mean(np.array([2.0, 4.0]), 0.49) == pytest.approx(3.0)
+
+
+def test_the_window_is_centred_and_inclusive_at_both_ends():
+    time_s = np.arange(10, dtype=float)
+    values = time_s ** 2
+    out, counts = st.rolling_trimmed_mean(values, time_s, window_s=4.0,
+                                          trim_fraction=0.0, min_samples=1)
+    # Sample 5 sees t = 3..7: five samples, mean of their squares.
+    assert counts[5] == 5
+    assert out[5] == pytest.approx(np.mean([9, 16, 25, 36, 49]))
+    # At the edge the window is truncated, not padded.
+    assert counts[0] == 3
+    assert out[0] == pytest.approx(np.mean([0, 1, 4]))
+
+
+def test_the_window_is_in_time_not_samples():
+    """Across a dropout the neighbours by index are not neighbours in time."""
+    time_s = np.array([0, 1, 2, 3, 4, 1000, 1001, 1002, 1003, 1004], float)
+    values = np.array([10] * 5 + [50] * 5, float)
+    out, counts = st.rolling_trimmed_mean(values, time_s, window_s=20.0,
+                                          trim_fraction=0.0, min_samples=1)
+    assert (counts == 5).all()
+    np.testing.assert_allclose(out, values)
+
+
+def test_thin_windows_fall_back_to_the_global_trimmed_mean():
+    time_s = np.array([0, 1, 2, 3, 4, 500], float)
+    values = np.array([10, 10, 10, 10, 10, 90], float)
+    out, counts = st.rolling_trimmed_mean(values, time_s, window_s=10.0,
+                                          trim_fraction=0.25, min_samples=3)
+    assert counts[-1] == 1
+    assert out[-1] == pytest.approx(st._trimmed_mean(values, 0.25))
+    assert out[0] == pytest.approx(10.0)
+
+
+def test_rolling_trimmed_mean_validates_and_handles_empty_input():
+    out, counts = st.rolling_trimmed_mean(np.zeros(0), np.zeros(0), window_s=10)
+    assert out.size == 0 and counts.size == 0
+    with pytest.raises(ValueError):
+        st.rolling_trimmed_mean(np.ones(5), np.arange(5.0), window_s=10,
+                                trim_fraction=0.5)

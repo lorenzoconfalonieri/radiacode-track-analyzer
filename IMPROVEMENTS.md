@@ -6,8 +6,6 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 ## Backlog
 
-- **Tests:** `background.rolling_trimmed_mean` has no direct test of its
-  trimming against a hand-computed window.
 - **Tests:** `flight_report_to_json` and `map_export.compose_attribution`
   are untested.
 - **GUI:** File > Open recent, via QSettings.
@@ -51,6 +49,12 @@ correctness, tests, GUI usability, performance (measured), code quality.
   assumed for a single sample. The "inferred" warning no longer fires for a
   Track that carries its own integration time; two tests had relied on that
   false warning.
+
+- 2026-10-15 **Tests:** 6 direct tests for `rolling_trimmed_mean` and
+  `_trimmed_mean`, all against hand-computed values: symmetric trimming, a
+  tiny window never trimmed empty, a centred window inclusive at both ends,
+  truncation at the edges, windowing in time across a dropout, fallback to
+  the global value, and input validation.
 
 ## Rejected
 
