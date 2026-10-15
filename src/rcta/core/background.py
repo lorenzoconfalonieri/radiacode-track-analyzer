@@ -126,11 +126,13 @@ class BackgroundEstimate:
     def median_count_rate(self) -> float:
         return float(np.median(self.count_rate))
 
-    def describe(self) -> str:
+    def describe(self, unit: str = "nSv/h") -> str:
+        from rcta.core.dose import format_dose_rate
         lines = [
             f"method     : {self.method}",
             f"background : median {self.median_count_rate:.2f} cps "
-            f"({np.median(self.dose_rate):.1f} nSv/h), range "
+            f"({format_dose_rate(float(np.median(self.dose_rate)), unit)}), "
+            "range "
             f"{self.count_rate.min():.2f} .. {self.count_rate.max():.2f} cps",
             f"support    : median {np.median(self.n_effective):.0f} samples "
             f"per estimate",

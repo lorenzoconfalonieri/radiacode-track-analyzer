@@ -173,6 +173,12 @@ correctness, tests, GUI usability, performance (measured), code quality.
   legs, on the map and the series; double-click zooms to them, as in the
   other two tables.
 
+- 2026-10-15 **Correctness:** `rcta-cli analyze --unit` now reaches every
+  dose rate in the summary. It had converted only the dose section; the
+  track range, background, detection limits, anomalies and hotspots stayed
+  in nSv/h. The MDA lines keep their nSv/h text byte for byte; the README's
+  anomaly line now shows two decimals (+81.51).
+
 ## Rejected
 
 - 2026-10-15 **Investigated, no change:** the Flight caption's "scatter

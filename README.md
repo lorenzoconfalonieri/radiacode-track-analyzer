@@ -101,7 +101,7 @@ minimum detectable dose rate, by window:
    64 samples (   128 s):   132.56 nSv/h
 
 1 candidate(s) excluded by flags:
-     506 s  31.04148N  98.49739W  net   +1.59 cps (   +81.5 nSv/h)    8.48 sigma
+     506 s  31.04148N  98.49739W  net   +1.59 cps (+81.51 nSv/h)    8.48 sigma
        [trend, poor-gps, gap-adjacent]
 ```
 

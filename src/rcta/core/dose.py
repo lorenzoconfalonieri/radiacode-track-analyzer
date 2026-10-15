@@ -40,6 +40,7 @@ __all__ = [
     "convert_dose_rate",
     "format_accumulated_dose",
     "format_dose_rate",
+    "format_signed_dose_rate",
 ]
 
 #: Multipliers from the canonical nSv/h. The roentgen equivalence is the
@@ -71,6 +72,12 @@ def format_dose_rate(value: float, unit: str = "nSv/h") -> str:
     """One dose rate as text, with its unit and a sensible precision."""
     converted = float(convert_dose_rate(value, unit))
     return f"{converted:.{_PRECISION.get(unit, 3)}f} {unit}"
+
+
+def format_signed_dose_rate(value: float, unit: str = "nSv/h") -> str:
+    """A net dose rate with an explicit sign: "+81.50 nSv/h"."""
+    text = format_dose_rate(abs(value), unit)
+    return ("-" if value < 0 else "+") + text
 
 
 def accumulated_unit(rate_unit: str = "nSv/h") -> str:

@@ -33,7 +33,7 @@ from rcta.core.anomalies import Anomaly, ScanParams, scan, scan_mda
 from rcta.core.background import (BackgroundEstimate, BackgroundParams,
                                   estimate_background)
 from rcta.core.dose import (DoseSummary, accumulated_dose,
-                            format_accumulated_dose)
+                            format_accumulated_dose, format_dose_rate)
 from rcta.core.profile import (Bimodality, Correlation, SummaryStats,
                                bimodality, correlate_speed_dose, summarise)
 from rcta.core.quality import QualityParams, QualityReport, assess_with_report
@@ -89,8 +89,9 @@ class TrackAnalysis:
 
     def describe(self) -> str:
         """The whole result as text. The CLI prints this; the GUI logs it."""
+        unit = self.params.unit
         blocks = [
-            self.track.describe(),
+            self.track.describe(unit),
             "",
             "-- gps quality " + "-" * 55,
             self.quality.describe(),
@@ -104,12 +105,12 @@ class TrackAnalysis:
             self.speed_dose.describe(),
             "",
             "-- background " + "-" * 56,
-            self.background.describe(),
+            self.background.describe(unit),
             "",
             "-- detections " + "-" * 56,
         ]
         if self.significant:
-            blocks += [a.describe() for a in self.significant]
+            blocks += [a.describe(unit) for a in self.significant]
         else:
             blocks.append(
                 f"no anomalies above L_C at "
@@ -119,16 +120,16 @@ class TrackAnalysis:
             blocks.append("minimum detectable dose rate, by window:")
             for width, seconds, mda in self.mda_table:
                 blocks.append(f"  {width:3d} samples ({seconds:6.0f} s): "
-                              f"{mda:8.2f} nSv/h")
+                              f"{format_dose_rate(mda, unit):>14}")
 
         flagged = [a for a in self.anomalies if not a.is_significant]
         if flagged:
             blocks += ["", f"{len(flagged)} candidate(s) excluded by flags:"]
-            blocks += [f"  {a.describe()}" for a in flagged[:10]]
+            blocks += [f"  {a.describe(unit)}" for a in flagged[:10]]
 
         if self.hotspots:
             blocks += ["", "-- hotspots " + "-" * 58]
-            blocks += [h.describe() for h in self.hotspots]
+            blocks += [h.describe(unit) for h in self.hotspots]
 
         if self.warnings:
             blocks += ["", "-- warnings " + "-" * 58]

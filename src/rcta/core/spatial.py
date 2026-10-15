@@ -337,13 +337,14 @@ class Hotspot:
     anomaly_indices: tuple[int, ...]
     flags: tuple[str, ...] = ()
 
-    def describe(self) -> str:
+    def describe(self, unit: str = "nSv/h") -> str:
+        from rcta.core.dose import format_dose_rate
         flags = f"  [{', '.join(self.flags)}]" if self.flags else ""
         return (f"{abs(self.lat):8.5f}{'N' if self.lat >= 0 else 'S'} "
                 f"{abs(self.lon):9.5f}{'E' if self.lon >= 0 else 'W'}  "
                 f"r={self.radius_m:5.0f} m  {self.n_samples:3d} samples / "
                 f"{self.n_passes} pass(es)  "
-                f"peak {self.peak_dose_rate:7.1f} nSv/h  "
+                f"peak {format_dose_rate(self.peak_dose_rate, unit)}  "
                 f"{self.significance:6.2f} sigma  {self.evidence}{flags}")
 
 

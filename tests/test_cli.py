@@ -619,3 +619,14 @@ def test_flight_survives_masked_markers(sample_path, sample_trajectory_path,
     assert not re.search(r"\bnan\b", capsys.readouterr().out, re.I)
     json.loads((tmp_path / "f.json").read_text(),
                parse_constant=lambda c: pytest.fail(f"JSON constant {c}"))
+
+
+def test_analyze_quotes_every_dose_rate_in_the_requested_unit(sample_path,
+                                                              capsys):
+    """--unit used to reach only the dose section; the track, background,
+    detection limits, anomalies and hotspots stayed in nSv/h."""
+    assert main(["analyze", str(sample_path), "--unit", "uSv/h",
+                 "--n-boot", "10"]) == 0
+    out = capsys.readouterr().out
+    assert "nSv" not in out
+    assert "1.1600 uSv/h" in out          # the 2 s MDA, 1159.97 nSv/h

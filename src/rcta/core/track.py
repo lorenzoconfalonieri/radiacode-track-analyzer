@@ -561,7 +561,7 @@ class Track:
 
     # ---- summary ----------------------------------------------------------
 
-    def describe(self) -> str:
+    def describe(self, unit: str = "nSv/h") -> str:
         start, end = _utc(self.time_s[0]), _utc(self.time_s[-1])
         span = float(self.time_s[-1] - self.time_s[0])
         hours, rem = divmod(int(span), 3600)
@@ -598,9 +598,11 @@ class Track:
 
         ok = self.valid_mask
         if ok.any():
+            from rcta.core.dose import format_dose_rate   # dose imports us
             dose, cps = self.dose_rate[ok], self.count_rate[ok]
-            lines.append(f"dose rate  : {dose.min():.2f} .. {dose.max():.2f} "
-                         f"nSv/h   median {np.median(dose):.2f}")
+            lines.append(f"dose rate  : {format_dose_rate(dose.min(), unit)} .. "
+                         f"{format_dose_rate(dose.max(), unit)}   median "
+                         f"{format_dose_rate(float(np.median(dose)), unit)}")
             lines.append(f"count rate : {cps.min():.2f} .. {cps.max():.2f} "
                          f"cps      median {np.median(cps):.2f}")
         known = self.accuracy_m[np.isfinite(self.accuracy_m)]

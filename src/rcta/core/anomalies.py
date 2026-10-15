@@ -117,13 +117,14 @@ class Anomaly:
     def flags_block_detection(self) -> bool:
         return "trend" in self.flags
 
-    def describe(self) -> str:
+    def describe(self, unit: str = "nSv/h") -> str:
+        from rcta.core.dose import format_signed_dose_rate
         flags = f"  [{', '.join(self.flags)}]" if self.flags else ""
         return (f"{self.duration_s:6.0f} s  "
                 f"{abs(self.lat):8.5f}{'N' if self.lat >= 0 else 'S'} "
                 f"{abs(self.lon):9.5f}{'E' if self.lon >= 0 else 'W'}  "
                 f"net {self.net_count_rate:+7.2f} cps "
-                f"({self.net_dose_rate:+8.1f} nSv/h)  "
+                f"({format_signed_dose_rate(self.net_dose_rate, unit)})  "
                 f"{self.significance:6.2f} sigma{flags}")
 
 
