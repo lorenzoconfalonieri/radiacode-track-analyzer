@@ -6,8 +6,6 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 ## Backlog
 
-- **Tests:** `map_export.compose_attribution` is untested: it should
-  enlarge nothing and draw the plate inside the image.
 - **GUI:** the Track and Selection dock text boxes clip their content at the
   default dock height.
 - **GUI:** the status-bar hint and the empty map say nothing about what to
@@ -74,6 +72,12 @@ correctness, tests, GUI usability, performance (measured), code quality.
   are left out, and there is a Clear list action. The list persists through
   QSettings, which the app injects; tests use an ini file or memory, never
   the user's settings.
+
+- 2026-10-15 **Correctness and tests:** the export attribution plate sized
+  its font from the image height only, so a tall narrow PNG clipped the
+  licence credit at the right edge. The font now shrinks, in a loop, until
+  the widest line fits. 4 tests cover three image shapes, the image size
+  being left unchanged, and no lines drawing nothing.
 
 ## Rejected
 

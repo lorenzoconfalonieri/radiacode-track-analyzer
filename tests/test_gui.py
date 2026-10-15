@@ -1680,3 +1680,41 @@ def test_the_recent_list_persists_through_the_settings(app, sample_path,
     second.close()
     for win in (first, second):
         win.deleteLater()
+
+
+# ---- attribution plate ---------------------------------------------------
+
+
+_CREDIT = ["© OpenStreetMap contributors",
+           "Track 07 Sep 2026 14-30-57 · RadiaCode-102 · 348 samples · "
+           "2026-09-07 20:30–22:40 UTC",
+           "Dose rate 45.2–212 nSv/h, viridis, linear scale · Web Mercator"]
+
+
+def _inked_columns(image, rows):
+    return [x for x in range(image.width())
+            if any(image.pixelColor(x, y).lightness() < 250 for y in rows)]
+
+
+@pytest.mark.parametrize("size", [(1500, 1000), (600, 400), (400, 900)])
+def test_the_attribution_stays_inside_the_image(app, size):
+    """A tall narrow export used to clip the licence credit at the edge."""
+    from PySide6 import QtGui
+    from rcta.gui.map_export import compose_attribution
+    width, height = size
+    image = QtGui.QImage(width, height, QtGui.QImage.Format.Format_ARGB32)
+    image.fill(QtGui.QColor("white"))
+    compose_attribution(image, _CREDIT)
+    assert (image.width(), image.height()) == size       # nothing resized
+    inked = _inked_columns(image, range(max(height - 250, 0), height, 2))
+    assert inked, "the plate must be drawn"
+    assert max(inked) < width - 2
+
+
+def test_no_lines_draws_nothing(app):
+    from PySide6 import QtGui
+    from rcta.gui.map_export import compose_attribution
+    image = QtGui.QImage(200, 100, QtGui.QImage.Format.Format_ARGB32)
+    image.fill(QtGui.QColor("white"))
+    compose_attribution(image, [])
+    assert not _inked_columns(image, range(0, 100, 5))

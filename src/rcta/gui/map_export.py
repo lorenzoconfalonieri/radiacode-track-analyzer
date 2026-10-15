@@ -84,8 +84,20 @@ def compose_attribution(image: QtGui.QImage, lines) -> None:
         painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing, True)
         font = QtGui.QFont()
         font.setPointSizeF(max(image.height() / 90.0, 7.0))
+        metrics = QtGui.QFontMetricsF(font, image)
+        # Sized from the height alone, a tall narrow export ran the lines off
+        # the right edge and clipped the very credit the licence requires.
+        # Shrink until the widest line fits, padding included. A loop, not
+        # one proportional step: hinted glyph widths do not scale linearly
+        # at small sizes.
+        for _ in range(20):
+            widest = max(metrics.horizontalAdvance(line) for line in lines)
+            room = image.width() - 3.0 * metrics.height() * 0.4
+            if widest <= room or font.pointSizeF() <= 3.0:
+                break
+            font.setPointSizeF(max(font.pointSizeF() * 0.92, 3.0))
+            metrics = QtGui.QFontMetricsF(font, image)
         painter.setFont(font)
-        metrics = QtGui.QFontMetricsF(font)
 
         pad = metrics.height() * 0.4
         height = metrics.height() * len(lines) + 2 * pad
