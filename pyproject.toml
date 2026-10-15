@@ -5,7 +5,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rcta"
-version = "0.1.0"
+# Defined once, in rcta/__init__.py; the GPX creator, the About box, the
+# CLI's --version and the User-Agent all read it from there.
+dynamic = ["version"]
 description = "Radiacode Track Analyzer - GPS radiation track analysis for handheld CsI(Tl) scintillators"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -37,6 +39,9 @@ dev = ["pytest>=7"]
 [project.scripts]
 rcta = "rcta.gui.app:main"
 rcta-cli = "rcta.cli:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "rcta.__version__"}
 
 [tool.setuptools.packages.find]
 where = ["src"]

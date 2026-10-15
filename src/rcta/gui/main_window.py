@@ -25,6 +25,7 @@ from pathlib import Path
 import numpy as np
 from PySide6 import QtCore, QtGui, QtWidgets
 
+from rcta import __version__
 from rcta.core.analysis import AnalysisParams, analyze_track
 from rcta.core.anomalies import significance_trace
 from rcta.core.io_export import (altitude_profile_to_csv,
@@ -54,7 +55,7 @@ Qt = QtCore.Qt
 __all__ = ["MainWindow"]
 
 LIMITATIONS = """
-<h3>Radiacode Track Analyzer 0.1.0</h3>
+<h3>Radiacode Track Analyzer {version}</h3>
 <p>Analysis of GPS radiation tracks from RadiaCode 100-series detectors.</p>
 <h4>Known limitations, all of them deliberate</h4>
 <ol>
@@ -1409,7 +1410,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _about(self) -> None:
         QtWidgets.QMessageBox.about(self, "About Radiacode Track Analyzer",
-                                    LIMITATIONS)
+                                    LIMITATIONS.format(version=__version__))
 
     def closeEvent(self, event) -> None:
         self.tiles.cancel_all()

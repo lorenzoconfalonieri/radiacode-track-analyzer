@@ -515,3 +515,15 @@ def test_the_gui_without_its_extra_explains_how_to_install_it(
     err = capsys.readouterr().err
     assert "pip install 'rcta[gui]'" in err and missing in err
     assert "rcta-cli" in err
+
+
+def test_the_version_is_defined_once():
+    """pyproject, the GPX creator and the About box used to repeat it."""
+    from pathlib import Path
+    import rcta
+    from rcta.core.io_export import track_to_gpx
+    import inspect
+    root = Path(__file__).resolve().parents[1]
+    assert 'dynamic = ["version"]' in (root / "pyproject.toml").read_text()
+    default = inspect.signature(track_to_gpx).parameters["creator"].default
+    assert default == f"rcta {rcta.__version__}"

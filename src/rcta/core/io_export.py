@@ -29,6 +29,7 @@ from xml.sax.saxutils import escape
 
 import numpy as np
 
+from rcta import __version__
 from rcta.core.dose import DOSE_UNITS, convert_dose_rate
 from rcta.core.flight import (FLIGHT_LEVEL_M, compare_branches,
                               fit_scale_height)
@@ -289,7 +290,7 @@ def hotspots_to_geojson(hotspots, *, unit="nSv/h", indent=2) -> str:
                       indent=indent)
 
 
-def track_to_gpx(track, *, quality=None, creator="rcta 0.1.0") -> str:
+def track_to_gpx(track, *, quality=None, creator=f"rcta {__version__}") -> str:
     """GPX 1.1 with one ``trkseg`` per leg and dose in an ``rcta:`` extension."""
     lines = [
         '<?xml version="1.0" encoding="UTF-8"?>',

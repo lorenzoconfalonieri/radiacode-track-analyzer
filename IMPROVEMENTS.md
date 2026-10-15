@@ -6,6 +6,10 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 ## Backlog
 
+- **Correctness:** `USER_AGENT` gives the contact URL
+  `github.com/rcta/radiacode-track-analyzer`, but the repository is
+  `github.com/lorenzoconfalonieri/radiacode-track-analyzer`. The OSM tile
+  policy asks for a working contact. Check the GPX namespace URL too.
 - **Tests:** `flight_report_to_json` and `map_export.compose_attribution`
   are untested.
 - **GUI:** File > Open recent, via QSettings.
@@ -17,8 +21,6 @@ correctness, tests, GUI usability, performance (measured), code quality.
 - **Tests:** `synthetic.make()` sets `integration_time_s`, which real files
   never do, so most analysis tests skip the inference path. Consider a
   `from_file=True` option that clears it.
-- **Code quality:** the version string is defined in three places
-  (`pyproject.toml`, `io_export.py`, `main_window.py`).
 
 ## Done
 
@@ -63,6 +65,10 @@ correctness, tests, GUI usability, performance (measured), code quality.
 - 2026-10-15 **GUI:** running `rcta` without the `[gui]` extra prints which
   package is missing, `pip install 'rcta[gui]'`, and a pointer to `rcta-cli`,
   then exits 1, instead of an ImportError traceback.
+
+- 2026-10-15 **Code quality:** the version is defined once, in
+  `rcta/__init__.py`. `pyproject.toml` reads it dynamically, and the GPX
+  `creator` and the About box format it in.
 
 ## Rejected
 
