@@ -31,10 +31,7 @@ def test_parameters_are_carried_on_the_result():
 
 
 def test_an_inferred_integration_time_is_warned_about():
-    from dataclasses import replace
-    track, _ = synthetic.make(n=400, shuffle=False)
-    # As a file loads: the format records no integration time.
-    track = replace(track, integration_time_s=None)
+    track, _ = synthetic.make(n=400, shuffle=False, from_file=True)
     a = analyze_track(track, AnalysisParams(n_boot=50))
     assert any("integration time is" in w and "inferred from median spacing" in w
                for w in a.warnings)
@@ -69,11 +66,8 @@ def test_warnings_are_collected_from_every_stage():
     reports them, because only the loader knows what the file claimed. The
     real-file case is covered in test_io.
     """
-    from dataclasses import replace
     track, _ = synthetic.make(n=600, shuffle=True, accuracy_outliers=50,
-                              gaps=[(300, 600.0)], seed=2)
-    # As a file loads: no recorded integration time, so it is inferred.
-    track = replace(track, integration_time_s=None)
+                              gaps=[(300, 600.0)], seed=2, from_file=True)
     a = analyze_track(track, AnalysisParams(n_boot=50))
     assert any("accuracy" in w for w in a.warnings)
     assert any("dropout" in w for w in a.warnings)
@@ -219,3 +213,20 @@ def test_a_masked_interval_is_unobserved_time(corrupted):
                           AnalysisParams(n_boot=50))
     masked = analyze_track(broken, AnalysisParams(n_boot=50))
     assert masked.dose.covered_time_s < clean.quality.covered_time_s
+
+
+@pytest.mark.parametrize("dt_s", [2.0, 5.0, 10.0])
+def test_the_inferred_integration_time_recovers_the_cadence(dt_s):
+    """With jitter and a long dropout, the median spacing is still the cadence,
+    so a file-like track gets the same detection limits as one that states
+    its integration time."""
+    kwargs = dict(n=500, dt_s=dt_s, dt_jitter=0.1 * dt_s, gaps=[(250, 900.0)],
+                  shuffle=False, seed=3)
+    inferred, _ = synthetic.make(from_file=True, **kwargs)
+    stated, _ = synthetic.make(**kwargs)
+    a = analyze_track(inferred, AnalysisParams(n_boot=20))
+    b = analyze_track(stated, AnalysisParams(n_boot=20))
+    assert a.track.effective_integration_time_s == pytest.approx(dt_s, rel=0.05)
+    for (wa, _, mda_a), (wb, _, mda_b) in zip(a.mda_table, b.mda_table):
+        assert wa == wb
+        assert mda_a == pytest.approx(mda_b, rel=0.05)

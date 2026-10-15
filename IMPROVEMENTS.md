@@ -13,9 +13,6 @@ correctness, tests, GUI usability, performance (measured), code quality.
 - **GUI:** an empty window still draws a world-scale graticule, a 0-1
   colour bar and three empty plots full of 0.1 ticks. Hiding the plot
   frames until a track loads would make the empty state read as empty.
-- **Tests:** `synthetic.make()` sets `integration_time_s`, which real files
-  never do, so most analysis tests skip the inference path. Consider a
-  `from_file=True` option that clears it.
 
 ## Done
 
@@ -107,6 +104,12 @@ correctness, tests, GUI usability, performance (measured), code quality.
   line says "too few readings to judge (n; the split needs at least 4)"
   instead of describing its placeholder as a split of identical readings.
   Text only; the JSON already reported `is_bimodal: false`.
+
+- 2026-10-15 **Tests:** `synthetic.make(from_file=True)` builds a track
+  without an integration time, as real files load. The two tests that had
+  cleared it by hand now use it. A new test at 2, 5 and 10 s cadence, with
+  jitter and a 900 s dropout, checks the inferred time recovers the cadence
+  within 5 % and the MDA table matches a track that states it.
 
 ## Rejected
 

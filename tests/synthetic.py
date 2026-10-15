@@ -70,8 +70,13 @@ def make(*, n=600, start=1788785639, dt_s=2.0, dt_jitter=0.0, path="line",
          speed_m_s=1.4, origin=(30.2, -97.66), background_cps=18.0,
          dose_per_count=DOSE_PER_COUNT, sources=(), drift=None,
          accuracy_m=8.0, accuracy_outliers=0, gaps=(), teleports=(),
-         shuffle=True, poisson=True, seed=0):
+         shuffle=True, poisson=True, seed=0, from_file=False):
     """Build a track with known ground truth.
+
+    ``from_file=True`` leaves ``integration_time_s`` unset, as every real
+    file does (the format records timestamps, not live times), so the
+    analysis has to infer it. By default the true value is attached, which
+    skips that path.
 
     ``sources`` is a list of ``(index, peak_cps, width_samples)``: a Gaussian
     bump in count rate centred on that sample. Expressing a source in sample
@@ -168,7 +173,7 @@ def make(*, n=600, start=1788785639, dt_s=2.0, dt_jitter=0.0, path="line",
         count_rate=count_rate[order],
         meta=TrackMeta(title="synthetic", devices=("RadiaCode-102",),
                        source_format="synthetic"),
-        integration_time_s=float(dt_s),
+        integration_time_s=None if from_file else float(dt_s),
     )
     return track, truth
 
