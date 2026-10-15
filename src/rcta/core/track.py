@@ -421,14 +421,6 @@ class Track:
         return segment[arrival - 1]
 
     @cached_property
-    def bearing_deg(self) -> np.ndarray:
-        """Heading at each sample, degrees clockwise from north."""
-        if self.n < 2:
-            return np.zeros(self.n)
-        b = geo.bearing(self.lon[:-1], self.lat[:-1], self.lon[1:], self.lat[1:])
-        return np.concatenate(([b[0]], b))
-
-    @cached_property
     def bbox(self) -> tuple[float, float, float, float]:
         """(min_lon, min_lat, max_lon, max_lat) over position-valid samples."""
         m = (self.position_mask & self.valid_mask

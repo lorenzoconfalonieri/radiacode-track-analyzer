@@ -143,12 +143,6 @@ class BasemapItem(pg.GraphicsObject):
         self.update()
         return True
 
-    def set_lighten(self, value: float) -> None:
-        """Change the lift alone. Invalidates the decoded cache."""
-        self._lighten = float(value)
-        self._pixmaps.clear()
-        self.update()
-
     def set_recession(self, desaturate: float, lighten: float) -> None:
         """Both amounts at once, for a provider that declares its own.
 

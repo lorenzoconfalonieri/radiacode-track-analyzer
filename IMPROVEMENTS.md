@@ -113,6 +113,13 @@ correctness, tests, GUI usability, performance (measured), code quality.
   track is open. A shared `theme.empty_state()` puts it in the plots' own
   slot. The map keeps its graticule, under the no-track banner.
 
+- 2026-10-15 **Code quality:** removed two unused definitions. One was
+  `Track.bearing_deg`, which nothing called and which computed headings
+  from raw positions, glitched and masked fixes included. The other was
+  `BasemapItem.set_lighten`, superseded by `set_recession`. A scan for
+  other unreferenced code found only Qt overrides and small public
+  conveniences.
+
 ## Rejected
 
 - 2026-10-15 **GUI:** minimum heights on the Track and Selection text boxes
