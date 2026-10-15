@@ -502,3 +502,16 @@ def test_analyze_refuses_one_anomaly_csv_for_several_tracks(sample_path,
     assert main(["analyze", str(sample_path), str(_walk_path()),
                  "--csv", str(tmp_path / "a.csv"), "--n-boot", "10"]) == 1
     assert "single track" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("missing", ["PySide6", "pyqtgraph"])
+def test_the_gui_without_its_extra_explains_how_to_install_it(
+        monkeypatch, capsys, missing):
+    """A bare `pip install rcta` used to answer `rcta` with a traceback."""
+    import sys
+    from rcta.gui import app
+    monkeypatch.setitem(sys.modules, missing, None)
+    assert app.main(["rcta"]) == 1
+    err = capsys.readouterr().err
+    assert "pip install 'rcta[gui]'" in err and missing in err
+    assert "rcta-cli" in err

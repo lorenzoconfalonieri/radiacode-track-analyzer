@@ -11,8 +11,6 @@ correctness, tests, GUI usability, performance (measured), code quality.
 - **GUI:** File > Open recent, via QSettings.
 - **GUI:** the Track and Selection dock text boxes clip their content at the
   default dock height.
-- **GUI:** running `rcta` without the `[gui]` extra should print an install
-  hint, not an ImportError traceback.
 - **GUI:** the status-bar hint and the empty map say nothing about what to
   do; a banner over the empty map ("Open a .rctrk track (Ctrl+O) or drop it
   here") would use the theme's banner style.
@@ -61,6 +59,10 @@ correctness, tests, GUI usability, performance (measured), code quality.
 - 2026-10-15 **Correctness:** map degree labels round to their printed
   precision before splitting, so 59.96 s carries to the next minute instead
   of printing `52'60.0"` (likewise `40°60'` becomes `41°00'`).
+
+- 2026-10-15 **GUI:** running `rcta` without the `[gui]` extra prints which
+  package is missing, `pip install 'rcta[gui]'`, and a pointer to `rcta-cli`,
+  then exits 1, instead of an ImportError traceback.
 
 ## Rejected
 
