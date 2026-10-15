@@ -46,6 +46,10 @@ def _imported_roots(path: Path) -> set[str]:
     return roots
 
 
+def _sources() -> list[Path]:
+    return sorted(SRC.rglob("*.py"))
+
+
 def _rel(path: Path) -> str:
     return path.relative_to(SRC).as_posix()
 
@@ -157,3 +161,27 @@ def test_net_adds_no_threads(path):
     """Concurrency still has exactly one home, and it is not this package."""
     offenders = _imported_roots(path) & THREAD_MODULES
     assert not offenders, f"{_rel(path)} imports {sorted(offenders)}"
+
+
+def test_every_text_read_and_write_names_its_encoding():
+    """Without one, Python uses the locale's: on Windows (cp1252) every map
+    attribution read from providers.json came out as "Â© OpenStreetMap"."""
+    import ast
+    offenders = []
+    for path in _sources():
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            name = getattr(node.func, "attr", getattr(node.func, "id", ""))
+            if name not in ("read_text", "write_text", "open"):
+                continue
+            if name == "open" and not isinstance(node.func, ast.Name):
+                continue                      # urlopen, QFile.open, ...
+            keywords = {k.arg for k in node.keywords}
+            modes = [a.value for a in node.args[1:2]
+                     if isinstance(a, ast.Constant)]
+            if "encoding" in keywords or any("b" in str(m) for m in modes):
+                continue
+            offenders.append(f"{_rel(path)}:{node.lineno} {name}()")
+    assert not offenders, "text I/O without an encoding: " + ", ".join(offenders)

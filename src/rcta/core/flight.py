@@ -60,6 +60,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from functools import cached_property
 from importlib import resources
+from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import numpy as np
@@ -163,9 +164,9 @@ def load_airlines(path=None) -> dict[str, dict]:
     because the whole point of the mapping is that it has no rule to encode.
     """
     if path is None:
-        raw = resources.files("rcta.data").joinpath("airlines.json").read_text()
+        raw = resources.files("rcta.data").joinpath("airlines.json").read_text(encoding="utf-8")
     else:
-        raw = open(path).read()
+        raw = Path(path).read_text(encoding="utf-8")
     data = json.loads(raw)
     if data.get("schema_version") != 1:
         raise ValueError("unsupported airlines schema_version "

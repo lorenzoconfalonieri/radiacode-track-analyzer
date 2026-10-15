@@ -102,9 +102,9 @@ def load_providers(path=None):
     software update.
     """
     if path is None:
-        raw = resources.files("rcta.data").joinpath("providers.json").read_text()
+        raw = resources.files("rcta.data").joinpath("providers.json").read_text(encoding="utf-8")
     else:
-        raw = Path(path).read_text()
+        raw = Path(path).read_text(encoding="utf-8")
     data = json.loads(raw)
     if data.get("schema_version") != 1:
         raise ValueError(

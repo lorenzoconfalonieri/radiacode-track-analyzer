@@ -104,7 +104,7 @@ def load_airports() -> tuple[tuple[str, ...], np.ndarray, np.ndarray,
     operations are a vectorised distance over all of them and a lookup by
     code, and building the objects costs more than either.
     """
-    raw = resources.files("rcta.data").joinpath("airports.json").read_text()
+    raw = resources.files("rcta.data").joinpath("airports.json").read_text(encoding="utf-8")
     data = json.loads(raw)
     if data.get("schema_version") != 2:
         raise ValueError("unsupported airports schema_version "

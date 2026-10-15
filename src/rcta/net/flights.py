@@ -146,9 +146,9 @@ def load_flight_providers(path=None) -> tuple[dict[str, FlightProvider], str]:
     """Read the provider table. Returns ``(providers, default_id)``."""
     if path is None:
         raw = resources.files("rcta.data").joinpath(
-            "flight_providers.json").read_text()
+            "flight_providers.json").read_text(encoding="utf-8")
     else:
-        raw = Path(path).read_text()
+        raw = Path(path).read_text(encoding="utf-8")
     data = json.loads(raw)
     if data.get("schema_version") != 1:
         raise ValueError("unsupported flight providers schema_version "
@@ -219,7 +219,7 @@ def credentials_from_env(provider: FlightProvider, env=None
     path = Path(env.get("RCTA_FLIGHT_CREDENTIALS")
                 or Path.home() / ".config" / "rcta" / "flight_credentials.json")
     try:
-        raw = path.read_text()
+        raw = path.read_text(encoding="utf-8")
     except OSError:
         return None                  # absent, or unreadable: not configured
     try:
@@ -302,7 +302,7 @@ class FlightCache:
             age = time.time() - path.stat().st_mtime
             if age > self.ttl_for(window_end_s):
                 return None
-            return json.loads(path.read_text())
+            return json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             return None
 
@@ -313,7 +313,7 @@ class FlightCache:
             # Write-then-rename: a crash must not leave a truncated response
             # that would be served as a valid trajectory indefinitely.
             tmp = path.with_suffix(".part")
-            tmp.write_text(json.dumps(payload))
+            tmp.write_text(json.dumps(payload), encoding="utf-8")
             os.replace(tmp, path)
         except OSError:
             pass

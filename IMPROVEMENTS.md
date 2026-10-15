@@ -131,6 +131,14 @@ correctness, tests, GUI usability, performance (measured), code quality.
   misleading "missing a column" error, because the BOM hid its `{`. A binary
   file now says "not a text file" instead of a raw codec error. 2 tests.
 
+- 2026-10-15 **Correctness:** every text read and write now names its
+  encoding: the providers file, flight providers, airlines and airports
+  data, flight credentials, and the trajectory cache. On Windows (cp1252)
+  every basemap attribution had come out as "Â© OpenStreetMap
+  contributors", including in exported images. An architecture test scans
+  the source for `read_text`/`write_text`/`open` without an encoding; it
+  fails on the old code.
+
 ## Rejected
 
 - 2026-10-15 **GUI:** minimum heights on the Track and Selection text boxes
