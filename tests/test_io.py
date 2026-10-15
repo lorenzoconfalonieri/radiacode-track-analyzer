@@ -268,3 +268,29 @@ def test_tsv_without_required_columns_raises(tmp_path):
     bad = "Track: X\nTimestamp\tLatitude\n1\t2\n"
     with pytest.raises(TrackParseError, match="header lacks"):
         load_rctrk_tsv(_tsv(tmp_path, bad))
+
+
+@pytest.mark.parametrize("payload", [b"\x89PNG\r\n\x1a\n" + bytes(range(256)),
+                                     b"{\"markers\": [\xff\xfe]}"])
+def test_a_binary_file_is_refused_as_not_a_track(tmp_path, payload):
+    """An image renamed .rctrk used to leak a UnicodeDecodeError."""
+    from rcta.core.io_radiacode import TrackParseError, load_track
+    path = tmp_path / "picture.rctrk"
+    path.write_bytes(payload)
+    with pytest.raises(TrackParseError, match="not a text file"):
+        load_track(path)
+
+
+def test_a_non_ascii_title_is_read_as_utf8(tmp_path):
+    """Pins the UTF-8 round trip. On a UTF-8 system this would pass even
+    without the explicit encoding; it is Windows, whose default is cp1252,
+    where the explicit encoding matters."""
+    import json as _json
+    from rcta.core.io_radiacode import load_track
+    data = {"start": 1788813057, "title": "Strecke Zürich – Genève",
+            "markers": [{"date": 1788813057 + 2 * i, "doseRate": 7.0,
+                         "countRate": 5.0, "lat": 47.37, "lon": 8.54,
+                         "acc": 8.0} for i in range(5)]}
+    path = tmp_path / "t.rctrk"
+    path.write_text(_json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    assert load_track(path).meta.title == "Strecke Zürich – Genève"

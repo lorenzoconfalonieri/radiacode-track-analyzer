@@ -121,6 +121,23 @@ def _nearest(good: np.ndarray, rows: np.ndarray) -> np.ndarray:
                     good[left], good[right])
 
 
+def _read_text(path: Path) -> str:
+    """The file as UTF-8 text, or a TrackParseError saying it is not text.
+
+    UTF-8 explicitly: the default is the locale's encoding, which on Windows
+    misreads any non-ASCII track title. A decode failure means the file is
+    not a track export at all -- an image, an archive, a .rctrk renamed
+    from something else -- and says so instead of leaking a codec error.
+    """
+    try:
+        return path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        raise TrackParseError(
+            f"not a text file (undecodable byte at offset {exc.start}); a "
+            "RadiaCode track export is JSON or tab-separated text",
+            path=str(path)) from exc
+
+
 def load_track(path) -> Track:
     """Read either ``.rctrk`` dialect, dispatching on content not extension."""
     path = Path(path)
@@ -137,7 +154,7 @@ def load_rctrk_json(path) -> Track:
     """Read the RadiaCode app's JSON track export."""
     path = Path(path)
     try:
-        raw = json.loads(path.read_text())
+        raw = json.loads(_read_text(path))
     except (OSError, json.JSONDecodeError) as exc:
         raise TrackParseError(f"cannot parse JSON: {exc}", path=str(path)) from exc
     if not isinstance(raw, dict):
@@ -243,7 +260,7 @@ def load_rctrk_tsv(path) -> Track:
     """
     path = Path(path)
     try:
-        text = path.read_text()
+        text = _read_text(path)
     except OSError as exc:
         raise TrackParseError(f"cannot read track: {exc}", path=str(path)) from exc
 

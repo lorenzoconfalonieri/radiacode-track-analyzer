@@ -6,6 +6,10 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 ## Backlog
 
+- **GUI:** a binary file loaded as a trajectory is refused, but with the
+  raw codec text ("'utf-8' codec can't decode byte 0x89...").
+  `io_flight.load_trajectory` should say "not a text file" as the track
+  loader now does, and read as UTF-8 explicitly.
 - **GUI:** the Track summary (13 lines) shows about 9 in its dock. Instead
   of forcing height (rejected below), move it to a "Summary" tab in the
   bottom stack, or let the Track dock collapse to a one-line caption with
@@ -119,6 +123,12 @@ correctness, tests, GUI usability, performance (measured), code quality.
   `BasemapItem.set_lighten`, superseded by `set_recession`. A scan for
   other unreferenced code found only Qt overrides and small public
   conveniences.
+
+- 2026-10-15 **Correctness:** loading a binary file as a track (an image
+  renamed `.rctrk`) raised an uncaught UnicodeDecodeError out of
+  `MainWindow.load()`; the CLI printed a raw codec error. Both readers now
+  read UTF-8 explicitly (the locale default misreads non-ASCII titles on
+  Windows) and raise TrackParseError("not a text file ..."). 3 tests.
 
 ## Rejected
 
