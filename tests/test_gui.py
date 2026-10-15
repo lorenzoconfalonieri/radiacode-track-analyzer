@@ -1735,3 +1735,23 @@ def test_empty_panels_show_a_placeholder_not_empty_axes(window, sample_path):
     assert window.load(str(sample_path))
     window.show_panel(window._panel_docks[0])
     assert window.series._glw.isVisible()
+
+
+def test_choosing_a_reference_with_none_marked_says_what_is_used(loaded):
+    """The combo read "reference" while the rolling estimator ran, silently."""
+    loaded.analysis_dock.background.setCurrentText("reference")
+    assert loaded._analysis.background.params.method == "rolling"
+    log = loaded.log.toPlainText()
+    assert "no reference span marked yet" in log
+    assert "Use selection as background" in log
+
+
+def test_marking_a_reference_raises_no_such_warning(loaded):
+    from rcta.core.selection import Selection
+    import numpy as np
+    mask = np.zeros(loaded._track.n, dtype=bool)
+    mask[100:200] = True
+    loaded._broadcast(Selection(mask=mask, source="test"))
+    loaded._mark_reference()
+    assert loaded._analysis.background.params.method == "reference"
+    assert "no reference span marked yet" not in loaded.log.toPlainText()

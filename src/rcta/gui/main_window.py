@@ -477,6 +477,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.series.pointHovered.connect(self._on_hover)
 
         self.analysis_dock.changed.connect(self.analyse)
+        self.analysis_dock.background.currentTextChanged.connect(
+            self._on_background_method)
         self.analysis_dock.runRequested.connect(self.analyse)
         self.analysis_dock.gridRequested.connect(self.compute_grid)
 
@@ -1211,6 +1213,20 @@ class MainWindow(QtWidgets.QMainWindow):
             self.map.zoom_to_track()
 
     # ---- background reference --------------------------------------------
+
+    def _on_background_method(self, method: str) -> None:
+        """Say so when "reference" is chosen with no reference to use.
+
+        Until a span is marked, the analysis falls back to the rolling
+        estimator. The combo box still read "reference", so the results on
+        screen silently came from a method other than the one shown.
+        """
+        if method == "reference" and self._reference_span is None:
+            message = ("no reference span marked yet, so the rolling "
+                       "background is used: select a clean span and choose "
+                       "Analysis > Use selection as background")
+            self.log.log(message, "warning")
+            self.statusBar().showMessage(message, 10000)
 
     def _mark_reference(self) -> None:
         if self._track is None or self._selection is None or self._selection.is_empty:

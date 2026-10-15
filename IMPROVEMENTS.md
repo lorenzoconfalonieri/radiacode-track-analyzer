@@ -139,6 +139,11 @@ correctness, tests, GUI usability, performance (measured), code quality.
   the source for `read_text`/`write_text`/`open` without an encoding; it
   fails on the old code.
 
+- 2026-10-15 **GUI:** choosing the "reference" background with no span
+  marked now says, in the log and status bar, that the rolling estimator
+  is used until a span is marked, and how to mark one. Before, the combo
+  read "reference" while the rolling results were shown. 2 tests.
+
 ## Rejected
 
 - 2026-10-15 **GUI:** minimum heights on the Track and Selection text boxes
