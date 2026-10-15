@@ -20,12 +20,6 @@ correctness, tests, GUI usability, performance (measured), code quality.
   default dock height.
 - **GUI:** running `rcta` without the `[gui]` extra should print an install
   hint, not an ImportError traceback.
-- **Performance:** `rolling_trimmed_mean` sorts once per sample. Measure on
-  the flight, then try a sliding-window approach.
-- **Code quality:** the `choose_smoothing_window` docstring says it returns 1
-  "for any vehicle". Urban driving (30 m per fix, 8 m accuracy) gets 3, which
-  is harmless but contradicts the claim; reword it to "any platform moving
-  well beyond its fix error per sample".
 - **GUI:** the status-bar hint and the empty map say nothing about what to
   do; a banner over the empty map ("Open a .rctrk track (Ctrl+O) or drop it
   here") would use the theme's banner style.
@@ -49,6 +43,13 @@ correctness, tests, GUI usability, performance (measured), code quality.
   trajectory. A trajectory dropped before any track says why it can't be
   used. 3 tests.
 
+- 2026-10-15 **Code quality:** the `choose_smoothing_window` docstring no
+  longer claims that every vehicle gets window 1; slow driving gets 3.
+
 ## Rejected
 
-(none yet)
+- 2026-10-15 **Performance:** `rolling_trimmed_mean` vectorisation. Measured
+  19 ms on the 2964-sample flight, of a 118 ms warm analysis, and 0.55 s at
+  100k samples: not worth a rewrite. The real first-analysis cost is
+  importing `scipy.stats` (0.7 s, once per process); moving it to startup
+  only moves the wait.

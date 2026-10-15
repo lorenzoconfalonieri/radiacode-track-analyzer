@@ -204,8 +204,10 @@ def choose_smoothing_window(lat, lon, accuracy_m, *,
     baseline where travel dominates, and debiased with
     ``E[|d|^2] = d^2 + 4 sigma^2``.
 
-    Returns 1 when no smoothing is needed, which is the case for any vehicle:
-    validated at 1.00-1.03x of the true distance for walking (3, 8 and 20 m
+    Returns 1 when no smoothing is needed: a platform that moves well beyond
+    its fix error between samples, such as a highway drive or a flight. Slow
+    driving still gets a narrow window (30 m per fix at 8 m accuracy gives 3).
+    Validated at 1.00-1.03x of the true distance for walking (3, 8 and 20 m
     accuracy), jogging, cycling, driving and flight, on both straight and
     sharply cornered routes.
     """
