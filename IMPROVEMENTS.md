@@ -8,7 +8,6 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 - **Tests:** `map_export.compose_attribution` is untested: it should
   enlarge nothing and draw the plate inside the image.
-- **GUI:** File > Open recent, via QSettings.
 - **GUI:** the Track and Selection dock text boxes clip their content at the
   default dock height.
 - **GUI:** the status-bar hint and the empty map say nothing about what to
@@ -69,6 +68,12 @@ correctness, tests, GUI usability, performance (measured), code quality.
 - 2026-10-15 **Tests:** 3 direct tests for `flight_report_to_json` on the
   known-answer synthetic flight: scale height within 5 % of truth, strict
   JSON, only populated bins, unit conversion of the bins, provenance.
+
+- 2026-10-15 **GUI:** File > Open recent. The last 8 tracks, numbered,
+  with the file name shown and the full path as the tooltip. Vanished files
+  are left out, and there is a Clear list action. The list persists through
+  QSettings, which the app injects; tests use an ini file or memory, never
+  the user's settings.
 
 ## Rejected
 

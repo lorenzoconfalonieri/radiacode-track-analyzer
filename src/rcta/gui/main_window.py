@@ -125,8 +125,12 @@ class MainWindow(QtWidgets.QMainWindow):
     """Track analysis front end."""
 
     def __init__(self, parent=None, *, offline: bool = False,
-                 synchronous: bool = False) -> None:
+                 synchronous: bool = False, settings=None) -> None:
         super().__init__(parent)
+        # Where the recent-file list persists. None keeps it in memory only,
+        # which is what tests want: no test may write the user's settings.
+        self._settings = settings
+        self._recent_memory: list[str] = []
         self.setWindowTitle("Radiacode Track Analyzer")
         self.resize(1500, 950)
 
@@ -340,6 +344,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         file_menu = self.menuBar().addMenu("&File")
         self._action(file_menu, "&Open track...", self.open_dialog, "Ctrl+O")
+        self._recent_menu = file_menu.addMenu("Open &recent")
+        self._rebuild_recent_menu()
         self._needs_track.append(self._action(
             file_menu, "Open flight &trajectory...",
             self._open_trajectory_dialog, "Ctrl+Shift+O"))
@@ -732,12 +738,56 @@ class MainWindow(QtWidgets.QMainWindow):
                 "m/s): the format carries no altitude, so use the Flight dock "
                 "to import one and profile dose against it")
 
+        self._remember_recent(str(path))
         self.analyse()
         # analyse() returns early if the analysis raised, in which case
         # _apply_analysis never ran and the action states are still the
         # previous file's.
         self._update_actions()
         return True
+
+    # ---- recent files -----------------------------------------------------
+
+    _RECENT_KEY = "files/recent"
+    _RECENT_MAX = 8
+
+    def recent_files(self) -> list[str]:
+        """Most recent first. Files that have since vanished are left out."""
+        if self._settings is None:
+            paths = self._recent_memory
+        else:
+            stored = self._settings.value(self._RECENT_KEY, []) or []
+            # QSettings hands back a bare string for a one-item list.
+            paths = [stored] if isinstance(stored, str) else list(stored)
+        return [p for p in paths if Path(p).is_file()]
+
+    def _store_recent(self, paths: list[str]) -> None:
+        if self._settings is None:
+            self._recent_memory = paths
+        else:
+            self._settings.setValue(self._RECENT_KEY, paths)
+        self._rebuild_recent_menu()
+
+    def _remember_recent(self, path: str) -> None:
+        path = str(Path(path).resolve())
+        rest = [p for p in self.recent_files() if p != path]
+        self._store_recent([path, *rest][:self._RECENT_MAX])
+
+    def _rebuild_recent_menu(self) -> None:
+        menu = self._recent_menu
+        menu.clear()
+        paths = self.recent_files()
+        for i, path in enumerate(paths, start=1):
+            # Numbered mnemonics, the file name first: a full path is long
+            # and the name is what the user recognises. The path is the tip.
+            action = menu.addAction(f"&{i}  {Path(path).name}")
+            action.setToolTip(path)
+            action.triggered.connect(lambda _=False, p=path: self.load(p))
+        if paths:
+            menu.addSeparator()
+            menu.addAction("Clear list", lambda: self._store_recent([]))
+        menu.setToolTipsVisible(True)
+        menu.setEnabled(bool(paths))
 
     # ---- analysis ---------------------------------------------------------
 

@@ -1644,3 +1644,39 @@ def test_degree_labels_carry_instead_of_printing_sixty():
     assert format_degree(40.99999, 1 / 60, True) == "41°00'N"
     assert format_degree(40.5, 1 / 60, True) == "40°30'N"
     assert format_degree(-111.905, 1 / 3600, False) == "111°54'18.0\"W"
+
+
+# ---- recent files --------------------------------------------------------
+
+
+def test_opened_tracks_are_offered_again_most_recent_first(window, sample_path,
+                                                           tmp_path):
+    other = tmp_path / "walk.rctrk"
+    other.write_bytes(sample_path.read_bytes())
+    assert not window._recent_menu.isEnabled()
+    window.load(str(sample_path))
+    window.load(str(other))
+    window.load(str(sample_path))
+    recent = window.recent_files()
+    assert recent == [str(sample_path.resolve()), str(other.resolve())]
+    labels = [a.text() for a in window._recent_menu.actions() if a.text()]
+    assert labels[0].endswith(sample_path.name) and "Clear list" in labels
+    other.unlink()                       # a vanished file is not offered
+    assert window.recent_files() == [str(sample_path.resolve())]
+
+
+def test_the_recent_list_persists_through_the_settings(app, sample_path,
+                                                       tmp_path):
+    from PySide6 import QtCore as _QtCore
+    from rcta.gui.main_window import MainWindow
+    settings = _QtCore.QSettings(str(tmp_path / "rcta.ini"),
+                                 _QtCore.QSettings.Format.IniFormat)
+    first = MainWindow(offline=True, synchronous=True, settings=settings)
+    first.load(str(sample_path))
+    first.close()
+    second = MainWindow(offline=True, synchronous=True, settings=settings)
+    assert second.recent_files() == [str(sample_path.resolve())]
+    assert second._recent_menu.isEnabled()
+    second.close()
+    for win in (first, second):
+        win.deleteLater()

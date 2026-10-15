@@ -34,7 +34,8 @@ def main(argv=None) -> int:
     theme.apply(app, str(QtCore.QSettings().value("ui/theme", "System")))
     theme.follow_system(app)
 
-    window = MainWindow(offline="--offline" in argv)
+    window = MainWindow(offline="--offline" in argv,
+                        settings=QtCore.QSettings())
     window.show()
 
     for arg in argv[1:]:
