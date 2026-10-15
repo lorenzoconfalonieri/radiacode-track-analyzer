@@ -1617,3 +1617,21 @@ def test_a_trajectory_dropped_before_any_track_explains_itself(
     _drop(window, sample_trajectory_path)
     assert window._track is None
     assert "drop a .rctrk track first" in window.log.toPlainText()
+
+
+def test_longitude_labels_fit_side_by_side_on_a_walk(app):
+    """At walking scale seconds labels used to run into one another."""
+    from PySide6 import QtGui
+    from rcta.core.geo import lonlat_to_web_mercator
+    from rcta.gui.geo_axis import GeoAxisItem, format_degree
+    axis = GeoAxisItem("bottom")
+    x0 = float(lonlat_to_web_mercator(-111.905, 40.77)[0])
+    x1 = float(lonlat_to_web_mercator(-111.870, 40.77)[0])
+    size = 680.0
+    (major, ticks), (minor, _) = axis.tickValues(x0, x1, size)
+    metrics = QtGui.QFontMetricsF(QtGui.QFont())
+    width = metrics.horizontalAdvance(format_degree(-111.9, major, False))
+    assert len(ticks) * width <= size
+    # Minor ticks carry no labels of their own.
+    assert all(s == "" for s in axis.tickStrings(ticks, 1.0, minor))
+    assert all(axis.tickStrings(ticks, 1.0, major))

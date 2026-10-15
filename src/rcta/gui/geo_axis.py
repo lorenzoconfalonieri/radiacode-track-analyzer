@@ -24,6 +24,7 @@ from __future__ import annotations
 import math
 
 import pyqtgraph as pg
+from PySide6 import QtGui
 
 from rcta.core.geo import lonlat_to_web_mercator, mercator_scale, web_mercator_to_lonlat
 
@@ -40,6 +41,14 @@ def _pick_step(target: float) -> float:
         if step <= target:
             return step
     return _DEG_STEPS[-1]
+
+
+def _step_at_least(target: float) -> float:
+    """Smallest tabulated step not below ``target``."""
+    for step in reversed(_DEG_STEPS):
+        if step >= target:
+            return step
+    return _DEG_STEPS[0]
 
 
 def format_degree(value: float, step: float, is_lat: bool) -> str:
@@ -94,6 +103,7 @@ class GeoAxisItem(pg.AxisItem):
     def __init__(self, orientation, **kwargs) -> None:
         super().__init__(orientation, **kwargs)
         self._is_lat = orientation in ("left", "right")
+        self._major = None
         self.enableAutoSIPrefix(False)
 
     def _to_degrees(self, metres: float) -> float:
@@ -118,7 +128,11 @@ class GeoAxisItem(pg.AxisItem):
         # About 90 device pixels per major tick keeps labels from colliding.
         n_major = max(2.0, float(size) / 90.0)
         major = _pick_step(span / n_major)
+        if not self._is_lat:
+            major = self._fit_labels(lo, span, float(size), major)
+            n_major = max(span / major, 1.0)
         minor = _pick_step(span / (n_major * 5.0))
+        self._major = major
 
         out = []
         for step, is_major in ((major, True), (minor, False)):
@@ -133,6 +147,25 @@ class GeoAxisItem(pg.AxisItem):
             out.append((step, [self._to_metres(v) for v in values]))
         return out
 
+    def _fit_labels(self, lo: float, span: float, size: float,
+                    major: float) -> float:
+        """Coarsen ``major`` until its labels fit side by side.
+
+        A horizontal axis lays its labels end to end, and a seconds label
+        (``111 deg 54'20.0"W``) is wider than the 90 px budget above, so on
+        a walk the labels ran into one another. Coarsening also shortens
+        the label, so this converges in a step or two.
+        """
+        font = self.style.get("tickFont") or QtGui.QFont()
+        metrics = QtGui.QFontMetricsF(font)
+        for _ in range(4):
+            width = metrics.horizontalAdvance(
+                format_degree(lo + major, major, False)) * 1.3 + 8.0
+            if span / major * width <= size:
+                break
+            major = _step_at_least(span * width / max(size, 1.0))
+        return major
+
     def tickStrings(self, values, scale, spacing):
         # ``spacing`` is whatever tickValues declared as the step, and this
         # axis declares it in *degrees*. Using it directly is both correct and
@@ -140,6 +173,10 @@ class GeoAxisItem(pg.AxisItem):
         # major and minor levels together and picks the wrong precision --
         # printing a whole-degree tick as "41.00 deg N".
         step = float(spacing) if spacing else 1.0
+        # Minor ticks stay unlabelled: interleaved with the major labels they
+        # are what made a dense axis unreadable.
+        if self._major is not None and not math.isclose(step, self._major):
+            return [""] * len(values)
         return [format_degree(self._to_degrees(v), step, self._is_lat)
                 for v in values]
 
