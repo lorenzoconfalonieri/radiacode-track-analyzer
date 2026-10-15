@@ -1755,3 +1755,13 @@ def test_marking_a_reference_raises_no_such_warning(loaded):
     loaded._mark_reference()
     assert loaded._analysis.background.params.method == "reference"
     assert "no reference span marked yet" not in loaded.log.toPlainText()
+
+
+def test_the_gui_logs_a_widened_background_window(window):
+    from pathlib import Path
+    walk = (Path(__file__).resolve().parents[1] / "sample-data"
+            / "Track 07 Sep 2026 14-30-57.rctrk")
+    if not walk.exists():
+        pytest.skip("walk sample not present")
+    assert window.load(str(walk))
+    assert "background window widened from 900 s" in window.log.toPlainText()
