@@ -561,3 +561,61 @@ def test_info_reports_the_same_distance_as_analyze(capsys):
     line = next(l for l in info.splitlines() if l.startswith("distance"))
     assert line.split(":")[1].split("(")[0].strip() == "2.99 km"
     assert "2.99 km" in analyze
+
+
+# ---- every command survives masked markers --------------------------------
+
+
+def _with_masked_markers(source, tmp_path, every=50):
+    """A copy of a sample track with every Nth marker's dose rate removed."""
+    data = json.loads(source.read_text())
+    for marker in data["markers"][::every]:
+        marker.pop("doseRate", None)
+    out = tmp_path / f"masked-{source.stem.replace(' ', '_')}.rctrk"
+    out.write_text(json.dumps(data))
+    return str(out)
+
+
+_COMMANDS = {
+    "info": lambda t, d: ["info", t],
+    "analyze": lambda t, d: ["analyze", t, "--n-boot", "10",
+                             "--json", f"{d}/r.json", "--csv", f"{d}/a.csv"],
+    "export-csv": lambda t, d: ["export", t, "--format", "csv",
+                                "-o", f"{d}/t.csv"],
+    "export-geojson": lambda t, d: ["export", t, "--format", "geojson",
+                                    "-o", f"{d}/t.geojson"],
+    "export-gpx": lambda t, d: ["export", t, "--format", "gpx",
+                                "-o", f"{d}/t.gpx"],
+    "export-hotspots": lambda t, d: ["export", t, "--format", "hotspots",
+                                     "-o", f"{d}/h.csv"],
+    "grid": lambda t, d: ["grid", t, "-o", f"{d}/g.asc", "--grid-size", "32",
+                          "--n-boot", "10"],
+    "grid-excess": lambda t, d: ["grid", t, "-o", f"{d}/x.asc", "--value",
+                                 "excess", "--grid-size", "32", "--n-boot", "10"],
+}
+
+
+@pytest.mark.parametrize("command", sorted(_COMMANDS))
+def test_every_command_survives_masked_markers(command, tmp_path, capsys):
+    """Masked readings are NaN; `info` once crashed on int(nan)."""
+    import re
+    track = _with_masked_markers(_walk_path(), tmp_path)
+    assert main(_COMMANDS[command](track, tmp_path)) == 0
+    captured = capsys.readouterr()
+    assert not re.search(r"\bnan\b", captured.out, re.I)
+    for path in tmp_path.iterdir():
+        if path.suffix != ".rctrk":
+            assert not re.search(r"\bnan\b", path.read_text(), re.I), path.name
+
+
+def test_flight_survives_masked_markers(sample_path, sample_trajectory_path,
+                                        tmp_path, capsys):
+    import re
+    track = _with_masked_markers(sample_path, tmp_path, every=40)
+    assert main(["flight", track, "--trajectory", str(sample_trajectory_path),
+                 "--csv", str(tmp_path / "p.csv"),
+                 "--samples-csv", str(tmp_path / "s.csv"),
+                 "--json", str(tmp_path / "f.json")]) == 0
+    assert not re.search(r"\bnan\b", capsys.readouterr().out, re.I)
+    json.loads((tmp_path / "f.json").read_text(),
+               parse_constant=lambda c: pytest.fail(f"JSON constant {c}"))

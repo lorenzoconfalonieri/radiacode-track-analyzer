@@ -87,6 +87,13 @@ correctness, tests, GUI usability, performance (measured), code quality.
   all-masked bin as `_`. `info` also assesses quality first, so it reports
   the same 2.99 km as `analyze` instead of 2.97 km. 3 tests.
 
+- 2026-10-15 **Tests:** every CLI command (info, analyze, four exports,
+  grid, grid excess, flight) now runs on sample tracks with masked markers.
+  The tests check exit code 0, no `nan` in stdout or any output file, and
+  strict flight JSON. Against the pre-fix CLI the info case fails, so the
+  test would have caught that crash. A manual sweep found no other command
+  affected.
+
 ## Rejected
 
 - 2026-10-15 **GUI:** minimum heights on the Track and Selection text boxes
