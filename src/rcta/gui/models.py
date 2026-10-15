@@ -37,6 +37,14 @@ def _dose(value: float, unit: str, *, signed: bool = False) -> str:
     return f"+{text}" if signed and value >= 0 else text
 
 
+def _sort_key(text: str):
+    """Numbers sort as numbers ("9.2" before "10.5"); "-" and words last."""
+    try:
+        return (0, float(text), "")
+    except ValueError:
+        return (1, 0.0, text)
+
+
 def _mean(values) -> float:
     return float(values.mean()) if values.size else float("nan")
 
@@ -83,6 +91,8 @@ class _BaseModel(QtCore.QAbstractTableModel):
         obj = self._rows[index.row()]
         if role == Qt.ItemDataRole.DisplayRole:
             return self.COLUMNS[index.column()][1](obj, self._unit)
+        if role == Qt.ItemDataRole.UserRole:
+            return _sort_key(self.COLUMNS[index.column()][1](obj, self._unit))
         if role == Qt.ItemDataRole.FontRole:
             return self._font
         if role == Qt.ItemDataRole.TextAlignmentRole and index.column() > 0:

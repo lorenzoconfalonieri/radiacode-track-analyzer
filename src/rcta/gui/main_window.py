@@ -322,10 +322,17 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _make_table(self, model):
         view = QtWidgets.QTableView()
-        view.setModel(model)
+        # Sorted through a proxy, so the model keeps its own order and a row
+        # handler maps a view row back with _source_row().
+        proxy = QtCore.QSortFilterProxyModel(view)
+        proxy.setSourceModel(model)
+        proxy.setSortRole(Qt.ItemDataRole.UserRole)
+        view.setModel(proxy)
         view.setSelectionBehavior(
             QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
-        view.setSortingEnabled(False)
+        view.setSortingEnabled(True)
+        # Open in the model's own order (time order), not sorted by column 0.
+        view.sortByColumn(-1, Qt.SortOrder.AscendingOrder)
         view.verticalHeader().setVisible(False)
         view.horizontalHeader().setStretchLastSection(True)
         view.setAlternatingRowColors(True)
@@ -1186,6 +1193,11 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self._update_status()
 
+    @staticmethod
+    def _source_row(view, index) -> int:
+        """The model row behind a (possibly sorted) view row."""
+        return view.model().mapToSource(index).row()
+
     def _on_anomaly_row(self, *_) -> None:
         if self._applying or self._track is None:
             return
@@ -1194,7 +1206,8 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         mask = np.zeros(self._track.n, dtype=bool)
         for index in rows:
-            anomaly = self.anomaly_model.row_object(index.row())
+            anomaly = self.anomaly_model.row_object(
+                self._source_row(self.anomaly_view, index))
             if anomaly is not None:
                 mask[anomaly.start_index:anomaly.stop_index] = True
         self._broadcast(Selection(mask=mask, source="table"))
@@ -1205,7 +1218,8 @@ class MainWindow(QtWidgets.QMainWindow):
         rows = self.hotspot_view.selectionModel().selectedRows()
         if not rows:
             return
-        hotspot = self.hotspot_model.row_object(rows[0].row())
+        hotspot = self.hotspot_model.row_object(
+            self._source_row(self.hotspot_view, rows[0]))
         if hotspot is None:
             return
         mask = np.zeros(self._track.n, dtype=bool)

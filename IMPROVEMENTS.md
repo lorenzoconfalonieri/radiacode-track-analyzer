@@ -6,6 +6,9 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 ## Backlog
 
+- **GUI:** double-clicking a table row could zoom the map to that anomaly
+  or hotspot. Selecting it highlights the samples, but on a long flight
+  they can be off-screen.
 - **GUI:** the Track summary (13 lines) shows about 9 in its dock. Instead
   of forcing height (rejected below), move it to a "Summary" tab in the
   bottom stack, or let the Track dock collapse to a one-line caption with
@@ -159,6 +162,12 @@ correctness, tests, GUI usability, performance (measured), code quality.
 - 2026-10-15 **GUI:** Fetch with an empty flight-number field now says what
   to type (or to load a file) and focuses the field. It used to do nothing
   at all.
+
+- 2026-10-15 **GUI:** the Anomalies, Hotspots and Legs tables sort by any
+  column (click the header), numerically ("9.2" before "10.5"). They open
+  in time order. Row selection maps through the sort proxy, so a sorted
+  row still selects its own samples. A test sorts by sigma and checks the
+  top row selects the strongest candidate.
 
 ## Rejected
 

@@ -175,7 +175,7 @@ def test_selecting_an_anomaly_row_selects_its_samples(loaded):
     from PySide6.QtCore import QItemSelectionModel
     if loaded.anomaly_model.rowCount() == 0:
         pytest.skip("no candidates on this file")
-    index = loaded.anomaly_model.index(0, 0)
+    index = loaded.anomaly_view.model().index(0, 0)
     loaded.anomaly_view.selectionModel().select(
         index, QItemSelectionModel.SelectionFlag.Select
         | QItemSelectionModel.SelectionFlag.Rows)
@@ -1789,3 +1789,29 @@ def test_fetch_with_no_flight_number_says_what_to_type(loaded):
     loaded.flight._emit_fetch()
     assert not emitted
     assert "Type a flight number first" in loaded.flight.caption.text()
+
+
+def test_tables_sort_numerically_and_rows_still_select_their_samples(window):
+    """Sorting goes through a proxy, so a view row is not a model row."""
+    from pathlib import Path
+    from PySide6.QtCore import QItemSelectionModel, Qt as _Qt
+    walk = (Path(__file__).resolve().parents[1] / "sample-data"
+            / "Track 07 Sep 2026 14-30-57.rctrk")
+    if not walk.exists():
+        pytest.skip("walk sample not present")
+    assert window.load(str(walk))
+    view, model = window.anomaly_view, window.anomaly_model
+    sigma = [h for h in range(model.columnCount())
+             if model.headerData(h, _Qt.Orientation.Horizontal) == "sigma"][0]
+    view.sortByColumn(sigma, _Qt.SortOrder.DescendingOrder)
+    proxy = view.model()
+    shown = [float(proxy.index(r, sigma).data()) for r in range(proxy.rowCount())]
+    assert shown == sorted(shown, reverse=True) and len(shown) > 2
+    # The top row of the sorted view selects the strongest candidate's samples.
+    proxy_index = proxy.index(0, 0)
+    view.selectionModel().select(
+        proxy_index, QItemSelectionModel.SelectionFlag.ClearAndSelect
+        | QItemSelectionModel.SelectionFlag.Rows)
+    strongest = max(model._rows, key=lambda a: a.significance)
+    assert window._selection.mask[strongest.start_index]
+    assert window._selection.count == strongest.stop_index - strongest.start_index
