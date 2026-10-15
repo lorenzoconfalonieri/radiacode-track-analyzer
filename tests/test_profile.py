@@ -203,3 +203,12 @@ def test_sample_speed_dose_correlation(sample):
     assert c.n_effective == pytest.approx(307.0, rel=0.05)
     assert c.p_naive < 1e-100
     assert c.p_effective > c.p_naive, "the correction must always cost something"
+
+
+def test_too_few_readings_are_not_described_as_a_split():
+    from rcta.core.profile import bimodality
+    text = bimodality(np.array([74.0, 76.9])).describe()
+    assert text.startswith("too few readings to judge (2;")
+    assert "n=0" not in text
+    assert bimodality(np.zeros(0)).describe().startswith("too few readings")
+    assert "split at" in bimodality(np.array([1.0, 2.0, 9.0, 10.0])).describe()

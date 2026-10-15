@@ -316,6 +316,12 @@ class Bimodality:
         return self.ashman_d > BIMODAL_ASHMAN_D
 
     def describe(self) -> str:
+        if self.n_high == 0:
+            # Fewer than four readings: no split was attempted, and printing
+            # the placeholder as "x +- 0.00 (n=2) vs x +- 0.00 (n=0)" read
+            # as a measured split of identical readings.
+            return (f"too few readings to judge ({self.n_low}; the split "
+                    "needs at least 4)")
         verdict = ("clearly bimodal" if self.is_bimodal
                    else f"not clearly bimodal (a single Gaussian scores "
                         f"{UNIMODAL_ASHMAN_D:.2f} here)")

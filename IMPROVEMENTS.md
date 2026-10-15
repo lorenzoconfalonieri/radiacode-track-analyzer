@@ -6,10 +6,6 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 ## Backlog
 
-- **Correctness:** with very few readings the bimodality line degenerates:
-  "split at 75.35: 75.35 +- 0.00 (n=2) vs 75.35 +- 0.00 (n=0)" for two
-  different readings. Below a minimum sample count, say "too few readings
-  to judge" instead.
 - **GUI:** the Track summary (13 lines) shows about 9 in its dock. Instead
   of forcing height (rejected below), move it to a "Summary" tab in the
   bottom stack, or let the Track dock collapse to a one-line caption with
@@ -106,6 +102,11 @@ correctness, tests, GUI usability, performance (measured), code quality.
   scales at which every window held a masked sample, which the scan never
   tested. A two-reading track listed limits up to 64 samples. Such scales
   are now omitted. Bundled-track output is byte-identical.
+
+- 2026-10-15 **Correctness:** with fewer than 4 readings the distribution
+  line says "too few readings to judge (n; the split needs at least 4)"
+  instead of describing its placeholder as a split of identical readings.
+  Text only; the JSON already reported `is_bimodal: false`.
 
 ## Rejected
 
