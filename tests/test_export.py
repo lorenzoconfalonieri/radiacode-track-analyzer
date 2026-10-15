@@ -408,3 +408,55 @@ def test_the_asc_grid_converts_to_the_requested_unit():
     np.testing.assert_allclose(micro[ok], nano[ok] / 1000.0, rtol=1e-5)
     with pytest.raises(ValueError):
         grid_to_asc(grid, unit="Gy")
+
+
+# ---- flight report -------------------------------------------------------
+
+
+def _flight_report(unit="nSv/h"):
+    from rcta.core.flight import bin_by_altitude, join_altitude
+    from rcta.core.io_export import flight_report_to_json
+    track, trajectory, truth = synthetic.flight_track()
+    join = join_altitude(track, trajectory)
+    profile = bin_by_altitude(join, step_m=500.0)
+    text = flight_report_to_json(join, profile, unit=unit)
+    return text, profile, truth
+
+
+def _strict(text):
+    def refuse(token):
+        raise AssertionError(f"non-standard JSON constant {token}")
+    return json.loads(text, parse_constant=refuse)
+
+
+def test_the_flight_report_recovers_the_known_scale_height():
+    text, _, truth = _flight_report()
+    report = _strict(text)
+    fit = report["scale_height"]
+    assert fit["constrained"] is True
+    assert fit["scale_height_m"] == pytest.approx(truth["scale_height_m"],
+                                                  rel=0.05)
+    assert report["climb_vs_descent"]["consistent"] is True
+    assert report["join"]["coverage"] == pytest.approx(1.0)
+    assert report["join"]["match"]["matched"] is True
+
+
+def test_the_flight_report_writes_only_populated_bins_in_its_unit():
+    nano, profile, _ = _flight_report("nSv/h")
+    micro, _, _ = _flight_report("uSv/h")
+    a, b = _strict(nano), _strict(micro)
+    assert b["unit"] == "uSv/h"
+    assert len(a["profile"]["bins"]) == int((profile.n_samples > 0).sum())
+    for x, y in zip(a["profile"]["bins"], b["profile"]["bins"]):
+        assert y["dose_rate"] == pytest.approx(x["dose_rate"] / 1000.0,
+                                               rel=1e-5)
+        assert y["count_rate_cps"] == x["count_rate_cps"]
+
+
+def test_the_flight_report_carries_its_provenance():
+    report = _strict(_flight_report()[0])
+    trajectory = report["trajectory"]
+    assert trajectory["provider"] == "synthetic"
+    assert trajectory["callsign"] == "DAL2618"
+    assert trajectory["altitude_kind"] == "barometric"
+    assert trajectory["start"] < trajectory["end"]

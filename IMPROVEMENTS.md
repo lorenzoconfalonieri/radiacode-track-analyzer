@@ -6,12 +6,8 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 ## Backlog
 
-- **Correctness:** `USER_AGENT` gives the contact URL
-  `github.com/rcta/radiacode-track-analyzer`, but the repository is
-  `github.com/lorenzoconfalonieri/radiacode-track-analyzer`. The OSM tile
-  policy asks for a working contact. Check the GPX namespace URL too.
-- **Tests:** `flight_report_to_json` and `map_export.compose_attribution`
-  are untested.
+- **Tests:** `map_export.compose_attribution` is untested: it should
+  enlarge nothing and draw the plate inside the image.
 - **GUI:** File > Open recent, via QSettings.
 - **GUI:** the Track and Selection dock text boxes clip their content at the
   default dock height.
@@ -70,8 +66,20 @@ correctness, tests, GUI usability, performance (measured), code quality.
   `rcta/__init__.py`. `pyproject.toml` reads it dynamically, and the GPX
   `creator` and the About box format it in.
 
+- 2026-10-15 **Tests:** 3 direct tests for `flight_report_to_json` on the
+  known-answer synthetic flight: scale height within 5 % of truth, strict
+  JSON, only populated bins, unit conversion of the bins, provenance.
+
 ## Rejected
 
+- 2026-10-15 **Blocked on the owner, not rejected:** the `USER_AGENT`
+  contact URL. It points at `github.com/rcta/...`, a placeholder that may
+  belong to someone else; this is the suite's one xfail. The real
+  repository is private, so a tile-server operator could not use it
+  either. It needs a public contact (make the repo public, an address or a
+  project page), which is the owner's call. The GPX namespace URL is an
+  identifier and need not resolve; changing it would orphan files already
+  exported.
 - 2026-10-15 **Performance:** `rolling_trimmed_mean` vectorisation. Measured
   19 ms on the 2964-sample flight, of a 118 ms warm analysis, and 0.55 s at
   100k samples: not worth a rewrite. The real first-analysis cost is
