@@ -316,9 +316,14 @@ class FlightPanel(QtWidgets.QWidget):
 
     def _emit_fetch(self) -> None:
         text = self.flight.text().strip()
-        if text:
-            self.fetchRequested.emit(
-                text, self.date.date().toString("yyyy-MM-dd"))
+        if not text:
+            # Used to return in silence, so the button looked broken.
+            self.set_status("Type a flight number first, such as DL2618 or "
+                            "DAL2618, or load a trajectory with "
+                            "<b>From file...</b>")
+            self.flight.setFocus(Qt.FocusReason.OtherFocusReason)
+            return
+        self.fetchRequested.emit(text, self.date.date().toString("yyyy-MM-dd"))
 
     def choose_file(self) -> None:
         """Public: the File menu offers the same gesture."""

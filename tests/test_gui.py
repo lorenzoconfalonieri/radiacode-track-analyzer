@@ -1779,3 +1779,13 @@ def test_the_window_box_shows_the_window_actually_applied(window, sample_path):
     assert window.analysis_dock.window_s.value() == 900.0   # box untouched
     assert window.load(str(sample_path))                    # 2 s cadence
     assert not note.isVisible()
+
+
+def test_fetch_with_no_flight_number_says_what_to_type(loaded):
+    """The Fetch button used to do nothing at all with an empty field."""
+    emitted = []
+    loaded.flight.fetchRequested.connect(lambda *a: emitted.append(a))
+    loaded.flight.flight.setText("   ")
+    loaded.flight._emit_fetch()
+    assert not emitted
+    assert "Type a flight number first" in loaded.flight.caption.text()

@@ -156,8 +156,18 @@ correctness, tests, GUI usability, performance (measured), code quality.
   window at this cadence"). The box keeps the requested value, so the
   automatic choice stays automatic.
 
+- 2026-10-15 **GUI:** Fetch with an empty flight-number field now says what
+  to type (or to load a file) and focuses the field. It used to do nothing
+  at all.
+
 ## Rejected
 
+- 2026-10-15 **Investigated, no change:** the Flight caption's "scatter
+  inside bins is 0.2x the counting error -- below Poisson" on the bundled
+  flight (0.02x at 50 m bins). Suspected single-sample bins, but they
+  number 2 of 180 even at 50 m; the bundled sample's scatter really is
+  below Poisson. It is synthetic, and the note's diagnosis, an
+  understated integration time, may well be right for it.
 - 2026-10-15 **GUI:** minimum heights on the Track and Selection text boxes
   (8 lines). The Selection box showed all its lines, but the window's
   minimum height grew from 950 to 1108 px, taller than many laptop screens.
