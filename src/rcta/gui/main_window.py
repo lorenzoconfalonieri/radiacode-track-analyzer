@@ -515,6 +515,14 @@ class MainWindow(QtWidgets.QMainWindow):
             self._on_anomaly_row)
         self.hotspot_view.selectionModel().selectionChanged.connect(
             self._on_hotspot_row)
+        # A selected row highlights its samples, but on a long flight they
+        # can be far off-screen; a double-click also frames them.
+        for view, handler in ((self.anomaly_view, self._on_anomaly_row),
+                              (self.hotspot_view, self._on_hotspot_row)):
+            view.setToolTip("Click a row to select its samples; "
+                            "double-click to zoom the map to them.")
+            view.doubleClicked.connect(
+                lambda _index, h=handler: (h(), self._zoom_to_selection()))
 
     # ---- basemap ----------------------------------------------------------
 

@@ -1815,3 +1815,21 @@ def test_tables_sort_numerically_and_rows_still_select_their_samples(window):
     strongest = max(model._rows, key=lambda a: a.significance)
     assert window._selection.mask[strongest.start_index]
     assert window._selection.count == strongest.stop_index - strongest.start_index
+
+
+def test_double_clicking_an_anomaly_row_zooms_the_map_to_it(window):
+    from pathlib import Path
+    walk = (Path(__file__).resolve().parents[1] / "sample-data"
+            / "Track 07 Sep 2026 14-30-57.rctrk")
+    if not walk.exists():
+        pytest.skip("walk sample not present")
+    window.resize(1200, 800)
+    window.show()
+    assert window.load(str(walk))
+    whole = window.map.vb.viewRect()
+    index = window.anomaly_view.model().index(0, 0)
+    window.anomaly_view.setCurrentIndex(index)
+    window.anomaly_view.doubleClicked.emit(index)
+    zoomed = window.map.vb.viewRect()
+    assert zoomed.width() < whole.width()
+    assert window._selection.count > 0

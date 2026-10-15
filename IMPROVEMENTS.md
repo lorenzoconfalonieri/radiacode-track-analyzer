@@ -6,9 +6,8 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 ## Backlog
 
-- **GUI:** double-clicking a table row could zoom the map to that anomaly
-  or hotspot. Selecting it highlights the samples, but on a long flight
-  they can be off-screen.
+- **GUI:** selecting a row in the Legs table does nothing; it could select
+  that leg's samples like the other two tables do.
 - **GUI:** the Track summary (13 lines) shows about 9 in its dock. Instead
   of forcing height (rejected below), move it to a "Summary" tab in the
   bottom stack, or let the Track dock collapse to a one-line caption with
@@ -168,6 +167,9 @@ correctness, tests, GUI usability, performance (measured), code quality.
   in time order. Row selection maps through the sort proxy, so a sorted
   row still selects its own samples. A test sorts by sigma and checks the
   top row selects the strongest candidate.
+
+- 2026-10-15 **GUI:** double-clicking an Anomalies or Hotspots row zooms the
+  map to its samples; the tables' tooltip says so.
 
 ## Rejected
 
