@@ -125,9 +125,13 @@ class DoseSummary:
 
     @property
     def mean_dose_rate(self) -> float:
-        """Time-weighted mean over the intervals actually observed, nSv/h."""
+        """Time-weighted mean over the intervals actually observed, nSv/h.
+
+        NaN when no interval was observed: there is no mean of nothing, and
+        0.0 would read as a measured zero dose rate.
+        """
         if self.covered_time_s <= 0:
-            return 0.0
+            return float("nan")
         return self.total_nsv / (self.covered_time_s / 3600.0)
 
     def describe(self) -> str:
@@ -140,8 +144,10 @@ class DoseSummary:
             f" integrating straight across {self.n_gaps_excluded} dropout(s)",
             f"coverage   : {self.coverage * 100.0:.1f} % of a "
             f"{self.span_time_s:.0f} s span",
-            f"mean rate  : {format_dose_rate(self.mean_dose_rate, self.unit)}"
-            f"   peak {format_dose_rate(self.max_dose_rate, self.unit)}",
+            "mean rate  : "
+            + (format_dose_rate(self.mean_dose_rate, self.unit)
+               if self.covered_time_s > 0 else "undefined, nothing observed")
+            + f"   peak {format_dose_rate(self.max_dose_rate, self.unit)}",
         ]
         if self.n_gaps_excluded and self.naive_total_nsv > 0:
             spread = abs(self.naive_total_nsv - self.total_nsv)

@@ -198,3 +198,15 @@ def test_a_dose_total_converts_by_the_same_factor_as_a_rate():
 
     assert format_accumulated_dose(1000.0, "uSv/h") == "1.00000 uSv"
     assert format_accumulated_dose(1000.0, "uR/h") == "100.0000 uR"
+
+
+def test_a_track_with_nothing_observed_has_no_mean_rate_not_a_zero_one():
+    """One sample spans no interval: the mean is undefined, not 0 nSv/h."""
+    track = Track(time_s=np.array([0.0]), lat=np.array([40.0]),
+                  lon=np.array([-111.9]), accuracy_m=np.array([8.0]),
+                  dose_rate=np.array([70.0]), count_rate=np.array([5.0]))
+    summary = accumulated_dose(track)
+    assert np.isnan(summary.mean_dose_rate)
+    text = summary.describe()
+    assert "undefined, nothing observed" in text
+    assert "mean rate  : 0.00" not in text
