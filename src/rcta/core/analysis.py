@@ -172,7 +172,9 @@ def analyze_track(track: Track, params: AnalysisParams | None = None, *,
     background_params = params.background
     required = background_params.scale_separation * max_scan_window_s
     left_at_default = background_params.window_s == BackgroundParams().window_s
+    widened_from = None
     if left_at_default and background_params.window_s < required:
+        widened_from = background_params.window_s
         background_params = replace(background_params, window_s=required)
 
     background = estimate_background(track, background_params, quality=quality,
@@ -190,6 +192,16 @@ def analyze_track(track: Track, params: AnalysisParams | None = None, *,
 
     warnings = list(track.meta.warnings) + list(quality.warnings) \
         + list(background.warnings)
+    # The widened window is used everywhere, but the GUI's Window box and the
+    # command line still show the default the user left alone; without this
+    # line the only record of the window actually applied was in the JSON.
+    if widened_from is not None:
+        warnings.append(
+            f"background window widened from {widened_from:.0f} s to "
+            f"{background_params.window_s:.0f} s: the widest scan window is "
+            f"{max_scan_window_s:.0f} s at this cadence and the background "
+            f"must be {background_params.scale_separation:g}x wider; set a "
+            "window explicitly to override")
     # Warn only when the time really was inferred: a Track built in code may
     # carry its own, and calling that "inferred" would be false.
     if track.integration_time_s is None:

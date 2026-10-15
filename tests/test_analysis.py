@@ -230,3 +230,19 @@ def test_the_inferred_integration_time_recovers_the_cadence(dt_s):
     for (wa, _, mda_a), (wb, _, mda_b) in zip(a.mda_table, b.mda_table):
         assert wa == wb
         assert mda_a == pytest.approx(mda_b, rel=0.05)
+
+
+def test_a_widened_background_window_is_reported():
+    """The window applied differed from the one shown, and only the JSON said."""
+    track, _ = synthetic.make(n=400, dt_s=10.0, shuffle=False)
+    a = analyze_track(track, AnalysisParams(n_boot=20))
+    assert a.background.params.window_s > 900.0
+    assert any("background window widened from 900 s" in w for w in a.warnings)
+
+
+def test_an_explicit_window_is_not_reported_as_widened():
+    from rcta.core.background import BackgroundParams
+    track, _ = synthetic.make(n=400, dt_s=10.0, shuffle=False)
+    a = analyze_track(track, AnalysisParams(
+        background=BackgroundParams(window_s=1200.0), n_boot=20))
+    assert not any("widened" in w for w in a.warnings)

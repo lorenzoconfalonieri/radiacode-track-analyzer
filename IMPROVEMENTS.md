@@ -6,6 +6,10 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 ## Backlog
 
+- **GUI:** the Analysis dock's Window box still shows 900 s while the
+  widened window (e.g. 3200 s on the walk) is used. The log now says so,
+  but the box could show the applied value, or "auto (3200 s)", without
+  turning it into an explicit choice.
 - **GUI:** the Track summary (13 lines) shows about 9 in its dock. Instead
   of forcing height (rejected below), move it to a "Summary" tab in the
   bottom stack, or let the Track dock collapse to a one-line caption with
@@ -143,6 +147,12 @@ correctness, tests, GUI usability, performance (measured), code quality.
   marked now says, in the log and status bar, that the rolling estimator
   is used until a span is marked, and how to mark one. Before, the combo
   read "reference" while the rolling results were shown. 2 tests.
+
+- 2026-10-15 **Correctness:** when the default background window is
+  widened for a slow cadence (900 s to 3200 s on the walk), the analysis
+  now warns, with the reason and how to override it. The CLI summary and
+  the GUI showed only the default; the JSON had been the only record.
+  2 tests.
 
 ## Rejected
 
