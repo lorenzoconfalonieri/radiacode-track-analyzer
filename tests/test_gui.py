@@ -1726,3 +1726,12 @@ def test_the_empty_map_says_how_to_open_a_track(window, sample_path):
     assert "Ctrl+O" in window.map.hint.text()
     assert window.load(str(sample_path))
     assert not window.map.hint.isVisible()
+
+
+def test_empty_panels_show_a_placeholder_not_empty_axes(window, sample_path):
+    window.show()
+    assert not window.series._glw.isVisible()
+    assert not window.profile._glw.isVisible()
+    assert window.load(str(sample_path))
+    window.show_panel(window._panel_docks[0])
+    assert window.series._glw.isVisible()

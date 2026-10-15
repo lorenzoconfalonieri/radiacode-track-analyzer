@@ -10,9 +10,6 @@ correctness, tests, GUI usability, performance (measured), code quality.
   of forcing height (rejected below), move it to a "Summary" tab in the
   bottom stack, or let the Track dock collapse to a one-line caption with
   the full text in a tooltip.
-- **GUI:** an empty window still draws a world-scale graticule, a 0-1
-  colour bar and three empty plots full of 0.1 ticks. Hiding the plot
-  frames until a track loads would make the empty state read as empty.
 
 ## Done
 
@@ -110,6 +107,11 @@ correctness, tests, GUI usability, performance (measured), code quality.
   cleared it by hand now use it. A new test at 2, 5 and 10 s cadence, with
   jitter and a 900 s dropout, checks the inferred time recovers the cadence
   within 5 % and the MDA table matches a track that states it.
+
+- 2026-10-15 **GUI:** the Series and Profile panels show a muted placeholder
+  saying what will appear, instead of empty axes with 0.1 ticks, until a
+  track is open. A shared `theme.empty_state()` puts it in the plots' own
+  slot. The map keeps its graticule, under the no-track banner.
 
 ## Rejected
 

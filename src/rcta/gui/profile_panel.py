@@ -101,6 +101,10 @@ class ProfilePanel(QtWidgets.QWidget):
         self.caption.setWordWrap(True)
         self.caption.setContentsMargins(6, 2, 6, 4)
         layout.addWidget(self.caption)
+        self._show_plots = theme.empty_state(
+            layout, self._glw,
+            "Dose rate along the route, its distribution and its relation "
+            "to speed appear here once a track is open.")
         theme.follow(self)
 
     def restyle(self, t) -> None:
@@ -126,6 +130,7 @@ class ProfilePanel(QtWidgets.QWidget):
         result, quoted rather than recomputed so the caption cannot disagree
         with the report."""
         self._track = track
+        self._show_plots(track is not None)
         self._correlation = (correlation if correlation is not None or
                              track is None else correlate_speed_dose(track))
         self._refresh()

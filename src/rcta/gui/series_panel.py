@@ -98,6 +98,10 @@ class SeriesPanel(QtWidgets.QWidget):
         self._caption = QtWidgets.QLabel("")
         self._caption.setContentsMargins(6, 0, 6, 2)
         layout.addWidget(self._caption)
+        self._show_plots = theme.empty_state(
+            layout, self._glw,
+            "Dose rate, count rate and significance against time appear "
+            "here once a track is open.")
         theme.follow(self)
 
     def restyle(self, t) -> None:
@@ -150,6 +154,7 @@ class SeriesPanel(QtWidgets.QWidget):
         self._background = background
         self._trace = trace
         self._threshold = float(threshold)
+        self._show_plots(track is not None)
 
         if track is None:
             for curve in self._curves.values():

@@ -340,6 +340,29 @@ def app_icon() -> QtGui.QIcon:
     return QtGui.QIcon(str(_ICONS / "rcta.svg"))
 
 
+def empty_state(layout, plots, text: str):
+    """A muted placeholder shown instead of ``plots`` until there is data.
+
+    Empty pyqtgraph plots are not empty-looking: they draw axes from 0 to 1
+    with ticks every 0.1, which reads as a measurement of nothing. Returns
+    a function ``show(has_data)`` that swaps the two.
+    """
+    from PySide6 import QtWidgets
+    label = QtWidgets.QLabel(text)
+    label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    label.setWordWrap(True)
+    polish(label, "muted")
+    # In the plots' own slot, so controls above them stay where they are.
+    layout.insertWidget(max(layout.indexOf(plots), 0), label, 1)
+
+    def show(has_data: bool) -> None:
+        label.setVisible(not has_data)
+        plots.setVisible(bool(has_data))
+
+    show(False)
+    return show
+
+
 def polish(widget, cls: str):
     """Set a stylesheet class (QSS ``[class="..."]``) and re-polish."""
     widget.setProperty("class", cls)
