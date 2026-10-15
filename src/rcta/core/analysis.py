@@ -190,11 +190,13 @@ def analyze_track(track: Track, params: AnalysisParams | None = None, *,
 
     warnings = list(track.meta.warnings) + list(quality.warnings) \
         + list(background.warnings)
-    if params.integration_time_s is None:
+    # Warn only when the time really was inferred: a Track built in code may
+    # carry its own, and calling that "inferred" would be false.
+    if track.integration_time_s is None:
         warnings.append(
-            f"per-sample integration time was inferred as {live:.1f} s from the "
-            "median spacing; the file does not record it, and every detection "
-            "limit scales with it")
+            f"per-sample integration time is {live:.1f} s, "
+            f"{track.integration_time_source}; the file does not record it, "
+            "and every detection limit scales with it")
 
     return TrackAnalysis(
         track=track, params=params, quality=quality, background=background,

@@ -6,9 +6,6 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 ## Backlog
 
-- **Correctness:** a one-sample track reports "integration: 1.0 s per sample
-  (inferred from median spacing)" when there is no spacing to infer from.
-  It should say the time is unknown, or fall back explicitly.
 - **Tests:** `background.rolling_trimmed_mean` has no direct test of its
   trimming against a hand-computed window.
 - **Tests:** `flight_report_to_json` and `map_export.compose_attribution`
@@ -23,6 +20,9 @@ correctness, tests, GUI usability, performance (measured), code quality.
 - **GUI:** the status-bar hint and the empty map say nothing about what to
   do; a banner over the empty map ("Open a .rctrk track (Ctrl+O) or drop it
   here") would use the theme's banner style.
+- **Tests:** `synthetic.make()` sets `integration_time_s`, which real files
+  never do, so most analysis tests skip the inference path. Consider a
+  `from_file=True` option that clears it.
 - **Code quality:** the version string is defined in three places
   (`pyproject.toml`, `io_export.py`, `main_window.py`).
 
@@ -45,6 +45,12 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 - 2026-10-15 **Code quality:** the `choose_smoothing_window` docstring no
   longer claims that every vehicle gets window 1; slow driving gets 3.
+
+- 2026-10-15 **Correctness:** the integration-time text says how the time was
+  actually obtained: supplied, inferred, inferred then clipped to 1-60 s, or
+  assumed for a single sample. The "inferred" warning no longer fires for a
+  Track that carries its own integration time; two tests had relied on that
+  false warning.
 
 ## Rejected
 

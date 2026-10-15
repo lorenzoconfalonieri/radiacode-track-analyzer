@@ -461,6 +461,26 @@ class Track:
             return _INTEGRATION_BOUNDS[0]
         return float(np.clip(np.median(self.dt_s), *_INTEGRATION_BOUNDS))
 
+    @property
+    def integration_time_source(self) -> str:
+        """How :attr:`effective_integration_time_s` was arrived at, in words.
+
+        "Inferred from median spacing" is only true when there was a spacing
+        and it was used as is. A single sample has none, and a median outside
+        the believable range is clipped; both are assumptions of a different
+        kind, and the text that qualifies every detection limit says which.
+        """
+        if self.integration_time_s is not None:
+            return "supplied"
+        if self.dt_s.size == 0:
+            return "assumed: a single sample has no spacing to infer from"
+        median = float(np.median(self.dt_s))
+        lo, hi = _INTEGRATION_BOUNDS
+        if median < lo or median > hi:
+            return (f"inferred from median spacing ({median:.3g} s), clipped "
+                    f"to the {lo:g}-{hi:g} s range")
+        return "inferred from median spacing"
+
     @cached_property
     def counts(self) -> np.ndarray:
         """Estimated counts per sample."""
@@ -581,10 +601,8 @@ class Track:
                 f"(raw fixes give {raw / 1000.0:.2f} km, {inflation:.1f}x more; "
                 "the excess is GPS jitter, not travel)")
 
-        source = ("supplied" if self.integration_time_s is not None
-                  else "inferred from median spacing")
         lines.append(f"integration: {self.effective_integration_time_s:.1f} s "
-                     f"per sample ({source})")
+                     f"per sample ({self.integration_time_source})")
 
         ok = self.valid_mask
         if ok.any():

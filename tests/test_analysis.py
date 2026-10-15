@@ -31,9 +31,20 @@ def test_parameters_are_carried_on_the_result():
 
 
 def test_an_inferred_integration_time_is_warned_about():
+    from dataclasses import replace
     track, _ = synthetic.make(n=400, shuffle=False)
+    # As a file loads: the format records no integration time.
+    track = replace(track, integration_time_s=None)
     a = analyze_track(track, AnalysisParams(n_boot=50))
-    assert any("integration time was inferred" in w for w in a.warnings)
+    assert any("integration time is" in w and "inferred from median spacing" in w
+               for w in a.warnings)
+
+
+def test_a_track_that_carries_its_integration_time_is_not_warned_about():
+    track, _ = synthetic.make(n=400, shuffle=False)
+    assert track.integration_time_s is not None
+    a = analyze_track(track, AnalysisParams(n_boot=50))
+    assert not any("integration time is" in w for w in a.warnings)
 
 
 def test_a_supplied_integration_time_is_not_warned_about():
@@ -58,8 +69,11 @@ def test_warnings_are_collected_from_every_stage():
     reports them, because only the loader knows what the file claimed. The
     real-file case is covered in test_io.
     """
+    from dataclasses import replace
     track, _ = synthetic.make(n=600, shuffle=True, accuracy_outliers=50,
                               gaps=[(300, 600.0)], seed=2)
+    # As a file loads: no recorded integration time, so it is inferred.
+    track = replace(track, integration_time_s=None)
     a = analyze_track(track, AnalysisParams(n_boot=50))
     assert any("accuracy" in w for w in a.warnings)
     assert any("dropout" in w for w in a.warnings)

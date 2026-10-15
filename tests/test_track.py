@@ -355,3 +355,26 @@ def test_a_masked_sample_takes_no_part_in_the_geometry():
 def test_a_point_describes_itself_in_the_requested_unit(sample):
     text = sample.point(0).describe("uSv/h")
     assert "uSv/h" in text and "nSv/h" not in text
+
+
+def _timed(times):
+    n = len(times)
+    return Track(time_s=np.asarray(times, float), lat=np.full(n, 40.0),
+                 lon=np.full(n, -111.9), accuracy_m=np.full(n, 8.0),
+                 dose_rate=np.full(n, 70.0), count_rate=np.full(n, 5.0))
+
+
+def test_a_single_sample_does_not_claim_an_inferred_integration_time():
+    track = _timed([0.0])
+    assert "no spacing to infer from" in track.integration_time_source
+    assert "median spacing" not in track.describe()
+
+
+def test_a_clipped_integration_time_says_it_was_clipped():
+    assert track_source([0.0, 0.2, 0.4]).startswith(
+        "inferred from median spacing (0.2 s), clipped")
+    assert track_source([0.0, 2.0, 4.0]) == "inferred from median spacing"
+
+
+def track_source(times):
+    return _timed(times).integration_time_source
