@@ -406,9 +406,8 @@ class MainWindow(QtWidgets.QMainWindow):
             # Not Ctrl+H: on macOS that is Cmd+H, which hides the application.
             "Ctrl+Shift+H"))
         analysis_menu.addSeparator()
-        self._needs_selection.append(self._action(
-            analysis_menu, "Use selection as &background",
-            self._mark_reference))
+        self._use_reference_action = self._action(
+            analysis_menu, "Use selection as &background", self._mark_reference)
         self._reference_action = self._action(
             analysis_menu, "&Clear reference background", self._clear_reference)
 
@@ -484,7 +483,17 @@ class MainWindow(QtWidgets.QMainWindow):
                 action.setEnabled(ready)
                 action.setToolTip("" if ready else reason)
 
-        self.selection_dock.set_selection_available(has_selection)
+        # A reference background is one contiguous span: a selection of
+        # several runs is refused, so say so before the click, not after.
+        contiguous = has_selection and self._selection.is_interval
+        reason = ("" if contiguous else
+                  "Select a clean span first." if not has_selection else
+                  "The selection has separate runs; a reference background "
+                  "must be one contiguous clean span.")
+        self._use_reference_action.setEnabled(contiguous)
+        self._use_reference_action.setToolTip(reason)
+        self.selection_dock.set_selection_available(has_selection,
+                                                    reference_reason=reason)
 
     def _wire(self) -> None:
         self.map.selectionDrawn.connect(self._on_map_selection)

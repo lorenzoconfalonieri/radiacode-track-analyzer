@@ -1898,7 +1898,10 @@ def test_a_selection_of_separate_runs_is_refused_as_a_reference(loaded):
     mask[100:150] = True
     mask[300:350] = True
     loaded._broadcast(Selection(mask=mask, source="test"))
-    loaded._mark_reference()
+    action = _action(loaded, "Use selection as &background")
+    assert not action.isEnabled() and "separate runs" in action.toolTip()
+    assert not loaded.selection_dock.reference_button.isEnabled()
+    loaded._mark_reference()                  # and refused if reached anyway
     assert loaded._reference_span is None
     assert loaded._analysis.background.params.method != "reference"
     assert "2 separate runs" in loaded.log.toPlainText()

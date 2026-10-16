@@ -384,7 +384,8 @@ class SelectionDock(QtWidgets.QWidget):
         self.caption.setText(caption)
         self.text.setPlainText(text)
 
-    def set_selection_available(self, available: bool) -> None:
+    def set_selection_available(self, available: bool, *,
+                                reference_reason: str | None = None) -> None:
         """Grey the three buttons that need a selection to mean anything.
 
         "Zoom to" survives, because with nothing selected it is still a useful
@@ -393,11 +394,13 @@ class SelectionDock(QtWidgets.QWidget):
         dock, which is not where a user who just pressed a button is looking.
         """
         available = bool(available)
-        for button in (self.reference_button, self.clear_button):
-            button.setEnabled(available)
+        if reference_reason is None:
+            reference_reason = "" if available else "Select a clean span first."
+        self.clear_button.setEnabled(available)
+        self.reference_button.setEnabled(not reference_reason)
         self.reference_button.setToolTip(
-            "Mark this span as clean and estimate the background from it."
-            if available else "Select a clean span first.")
+            reference_reason or
+            "Mark this span as clean and estimate the background from it.")
         self.clear_button.setToolTip("" if available else "Nothing is selected.")
 
 
