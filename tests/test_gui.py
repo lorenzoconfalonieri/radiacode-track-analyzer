@@ -1887,3 +1887,18 @@ def test_series_curves_paint_downsampled_with_fast_pens(loaded):
         assert curve.opts["clipToView"], name
     for name in ("dose", "count", "background", "significance"):
         assert loaded.series._curves[name].opts["pen"].widthF() <= 1.0, name
+
+
+def test_a_selection_of_separate_runs_is_refused_as_a_reference(loaded):
+    """Its hull would count the unselected samples between the runs --
+    say, a source selected around -- as background."""
+    import numpy as np
+    from rcta.core.selection import Selection
+    mask = np.zeros(loaded._track.n, dtype=bool)
+    mask[100:150] = True
+    mask[300:350] = True
+    loaded._broadcast(Selection(mask=mask, source="test"))
+    loaded._mark_reference()
+    assert loaded._reference_span is None
+    assert loaded._analysis.background.params.method != "reference"
+    assert "2 separate runs" in loaded.log.toPlainText()

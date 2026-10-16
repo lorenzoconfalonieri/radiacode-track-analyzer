@@ -6,6 +6,9 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 ## Backlog
 
+- **GUI:** "Use as background" stays enabled for a multi-run selection and
+  refuses only on click. Grey it, with the reason as its tooltip, as the
+  other selection actions do.
 - **GUI:** the Track summary (13 lines) shows about 9 in its dock. Instead
   of forcing height (rejected below), move it to a "Summary" tab in the
   bottom stack, or let the Track dock collapse to a one-line caption with
@@ -250,6 +253,13 @@ correctness, tests, GUI usability, performance (measured), code quality.
   with eight callers. Same 993 tests, none skipped. Hover on a 100k-sample
   track was also re-measured at 0.05 s after the series fix, so it needs no
   change.
+
+- 2026-10-16 **Correctness:** "Use selection as background" refuses a
+  selection of separate runs. It used the selection's hull, which takes in
+  every unselected sample between the runs, so two clean stretches either
+  side of a source made that source part of the background. The Profile
+  panel was also profiled at 100k samples (0.17 s per refresh) and needs
+  no change.
 
 ## Rejected
 

@@ -1296,6 +1296,18 @@ class MainWindow(QtWidgets.QMainWindow):
         if self._track is None or self._selection is None or self._selection.is_empty:
             self.log.log("select a clean span first", "warning")
             return
+        if not self._selection.is_interval:
+            # The background takes one span, and the hull of several runs
+            # takes in every unselected sample between them -- quite
+            # possibly the very source the user selected around.
+            runs = len(self._selection.runs())
+            message = (f"the selection has {runs} separate runs; a reference "
+                       "background must be one contiguous clean span, or the "
+                       "samples between the runs would be counted as "
+                       "background too")
+            self.log.log(message, "warning")
+            self.statusBar().showMessage(message, 10000)
+            return
         span = self._selection.time_span(self._track.time_s)
         self._reference_span = span
         self.analysis_dock.background.setCurrentText("reference")
