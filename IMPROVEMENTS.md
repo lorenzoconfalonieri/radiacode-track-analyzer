@@ -280,6 +280,12 @@ correctness, tests, GUI usability, performance (measured), code quality.
   that names the flag, the expected form and an example, instead of
   "invalid literal for int() with base 10".
 
+- 2026-10-16 **Correctness:** `rcta-cli flight --integration-time 0` is
+  refused, as `analyze` already refused it. It had been treated as not
+  given and the time inferred (2.0 s) without a word. The audit of the
+  flight flags otherwise found clean refusals for bad steps, gaps,
+  statistics, dates, airports and missing files.
+
 ## Rejected
 
 - 2026-10-15 **Investigated, no change:** the Flight caption's "scatter

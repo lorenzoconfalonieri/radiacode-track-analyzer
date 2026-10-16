@@ -364,7 +364,9 @@ def _obtain_trajectory(track, args) -> tuple[object, list[str]]:
 def cmd_flight(args) -> int:
     track = assess(load_track(args.path), QualityParams(
         max_accuracy_m=args.max_accuracy, max_speed_m_s=args.max_speed))
-    if args.integration_time:
+    # "is not None", not truthiness: 0 is a value the user typed, and the
+    # Track refuses it as analyze does, rather than silently inferring one.
+    if args.integration_time is not None:
         track = track.with_mask(integration_time_s=args.integration_time)
 
     print(RULE)

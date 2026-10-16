@@ -657,3 +657,14 @@ def test_good_scales_still_parse(sample_path, capsys):
                  "--n-boot", "10"]) == 0
     out = capsys.readouterr().out
     assert "    2 samples" in out and "    8 samples" in out
+
+
+@pytest.mark.parametrize("command", ["analyze", "flight"])
+def test_a_zero_integration_time_is_refused_by_every_command(
+        command, sample_path, sample_trajectory_path, capsys):
+    """flight used to treat 0 as 'not given' and infer one in silence."""
+    argv = [command, str(sample_path), "--integration-time", "0"]
+    if command == "flight":
+        argv += ["--trajectory", str(sample_trajectory_path)]
+    assert main(argv) == 1
+    assert "integration_time_s must be positive" in capsys.readouterr().err
