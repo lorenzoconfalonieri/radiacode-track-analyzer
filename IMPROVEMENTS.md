@@ -1,3 +1,8 @@
+BACKLOG EXHAUSTED (2026-10-15): the one remaining item, the Track
+summary layout, trades screen space for a summary the user can already
+read by resizing the dock, and was rejected once for forcing the window
+taller than a laptop screen. Larger directions are in IDEAS.md.
+
 # Improvements
 
 Small, one-commit improvements (under ~100 lines each), worked one per
