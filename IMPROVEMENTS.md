@@ -208,6 +208,14 @@ correctness, tests, GUI usability, performance (measured), code quality.
   Deliberate schema change: two columns renamed in each file; the
   header-stability test was updated.
 
+- 2026-10-15 **Performance:** the block bootstrap ranked x and y again for
+  each of its 500 surrogates, which was 60 % of a GUI load. Shuffling
+  blocks only reorders the ranks, so Spearman now ranks once and does one
+  dot product per surrogate. Bootstrap 0.085 s to 0.004 s; flight load
+  0.188 s to 0.071 s; test suite 61 s to 51 s. P-values identical in 122
+  cases with ties; CLI output byte-identical. A test pins the fast path to
+  the general one.
+
 ## Rejected
 
 - 2026-10-15 **Investigated, no change:** the Flight caption's "scatter

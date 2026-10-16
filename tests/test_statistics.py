@@ -342,3 +342,19 @@ def test_rolling_trimmed_mean_validates_and_handles_empty_input():
     with pytest.raises(ValueError):
         st.rolling_trimmed_mean(np.ones(5), np.arange(5.0), window_s=10,
                                 trim_fraction=0.5)
+
+
+@pytest.mark.parametrize("seed", range(6))
+def test_the_rank_once_bootstrap_matches_the_general_path(seed):
+    """Spearman takes a fast path that ranks once; any other statistic
+    re-ranks every surrogate. Both must give the same p-value, ties
+    included."""
+    rng = np.random.default_rng(seed)
+    n = 400 + 150 * seed
+    time_s = np.cumsum(rng.uniform(1.0, 10.0, n))
+    x = rng.integers(0, 6, n).astype(float) if seed % 2 else rng.normal(size=n).cumsum()
+    y = 0.2 * x + rng.normal(size=n)
+    fast = st.block_bootstrap_p(x, y, time_s, n_boot=200, seed=seed)
+    general = st.block_bootstrap_p(x, y, time_s, n_boot=200, seed=seed,
+                                   statistic=lambda a, b: st.spearman_rho(a, b))
+    assert fast == general

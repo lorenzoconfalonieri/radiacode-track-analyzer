@@ -396,6 +396,28 @@ def block_bootstrap_p(x, y, time_s, *, statistic=None, block_s: float = 300.0,
 
     rng = np.random.default_rng(seed)
     exceed = 0
+    if statistic is spearman_rho:
+        # Shuffling whole blocks of y reorders its values, so it reorders
+        # their ranks the same way: rank once, centre once, and each
+        # surrogate is one dot product. The blocks partition the series, so
+        # a surrogate is always full length, and the denominator does not
+        # depend on the order. The same numbers as ranking 2 x n_boot
+        # series from scratch, which was most of a GUI load's time.
+        from scipy.stats import rankdata
+        rx = rankdata(x)
+        ry = rankdata(y)
+        rx = rx - rx.mean()
+        ry = ry - ry.mean()
+        denom = float(np.sqrt(np.dot(rx, rx) * np.dot(ry, ry)))
+        if denom <= 0:
+            return 1.0
+        for _ in range(int(n_boot)):
+            order = rng.permutation(len(blocks))
+            shuffled = np.concatenate([ry[blocks[j][0]:blocks[j][1]]
+                                       for j in order])
+            if abs(float(np.dot(rx, shuffled) / denom)) >= observed:
+                exceed += 1
+        return (exceed + 1) / (int(n_boot) + 1)
     for _ in range(int(n_boot)):
         order = rng.permutation(len(blocks))
         pieces = [y[blocks[j][0]:blocks[j][1]] for j in order]
