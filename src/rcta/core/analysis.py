@@ -111,6 +111,10 @@ class TrackAnalysis:
         ]
         if self.significant:
             blocks += [a.describe(unit) for a in self.significant]
+        elif not self.anomalies and not self.mda_table:
+            # Not a null result: no window was tested, so there is neither a
+            # detection nor a detection limit to report.
+            blocks.append("nothing was tested: no scan window fits this track")
         else:
             blocks.append(
                 f"no anomalies above L_C at "
@@ -164,7 +168,11 @@ def analyze_track(track: Track, params: AnalysisParams | None = None, *,
     track, quality = assess_with_report(track, params.quality)
 
     live = track.effective_integration_time_s
-    max_scan_window_s = max(params.scan.scales) * live
+    # Only scales that fit the track are scanned, so only they may size the
+    # background: --scales 100000 on a 348-sample walk once widened it to
+    # 5 000 000 s for a window that was never tested.
+    fitting = [s for s in params.scan.scales if s <= track.n]
+    max_scan_window_s = max(fitting or [1]) * live
 
     # Scale separation depends on the logging cadence, which the caller cannot
     # know in advance. A device sampling every 10 s makes the default 64-sample
@@ -203,6 +211,11 @@ def analyze_track(track: Track, params: AnalysisParams | None = None, *,
             f"{max_scan_window_s:.0f} s at this cadence and the background "
             f"must be {background_params.scale_separation:g}x wider; set a "
             "window explicitly to override")
+    if not fitting:
+        warnings.append(
+            f"no scan window fits: every scale "
+            f"({', '.join(str(s) for s in sorted(set(params.scan.scales)))} "
+            f"samples) exceeds the track's {track.n}, so nothing was tested")
     # Warn only when the time really was inferred: a Track built in code may
     # carry its own, and calling that "inferred" would be false.
     if track.integration_time_s is None:

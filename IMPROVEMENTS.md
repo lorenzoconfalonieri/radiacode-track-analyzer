@@ -6,6 +6,11 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 ## Backlog
 
+- **Correctness:** `TrackAnalysis.status_line()` (the GUI status bar) still
+  says "no anomalies above L_C" when no scan window fit the track; it
+  should say nothing was tested, as `describe()` now does.
+- **GUI/CLI:** `--scales a,b` fails with the raw "invalid literal for int()
+  with base 10"; name the flag and the expected form.
 - **GUI:** the Track summary (13 lines) shows about 9 in its dock. Instead
   of forcing height (rejected below), move it to a "Summary" tab in the
   bottom stack, or let the Track dock collapse to a one-line caption with
@@ -261,6 +266,14 @@ correctness, tests, GUI usability, performance (measured), code quality.
 - 2026-10-16 **GUI:** "Use selection as background" (menu and dock button)
   is greyed for a multi-run selection, with the reason as its tooltip,
   instead of refusing only on click.
+
+- 2026-10-16 **Correctness:** scan scales longer than the track no longer
+  produce a false null result. The summary said "no anomalies above L_C"
+  over an empty MDA table, though nothing was tested; it now says so and
+  warns. The unusable scale also no longer sizes the background window
+  (5,000,000 s for `--scales 100000` on the walk). The audit of 15 CLI flag
+  combinations found the rest refused cleanly or handled correctly.
+  Bundled output is byte-identical.
 
 ## Rejected
 

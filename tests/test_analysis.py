@@ -246,3 +246,17 @@ def test_an_explicit_window_is_not_reported_as_widened():
     a = analyze_track(track, AnalysisParams(
         background=BackgroundParams(window_s=1200.0), n_boot=20))
     assert not any("widened" in w for w in a.warnings)
+
+
+def test_scan_scales_longer_than_the_track_are_not_a_null_result():
+    """Nothing was tested, so 'no anomalies above L_C' would be a claim."""
+    from rcta.core.anomalies import ScanParams
+    track, _ = synthetic.make(n=200, dt_s=10.0, shuffle=False, from_file=True)
+    a = analyze_track(track, AnalysisParams(scan=ScanParams(scales=(500,)),
+                                            n_boot=20))
+    text = a.describe()
+    assert "nothing was tested" in text
+    assert "no anomalies above L_C" not in text
+    assert any("no scan window fits" in w for w in a.warnings)
+    # The unusable scale no longer drives the background window.
+    assert a.background.params.window_s == 900.0
