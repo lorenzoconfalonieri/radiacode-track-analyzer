@@ -460,3 +460,21 @@ def test_the_flight_report_carries_its_provenance():
     assert trajectory["callsign"] == "DAL2618"
     assert trajectory["altitude_kind"] == "barometric"
     assert trajectory["start"] < trajectory["end"]
+
+
+def test_anomaly_dose_rates_carry_a_canonical_copy_named_by_unit():
+    """net_dose_rate is in the display unit; a reader of the JSON alone
+    could not tell that, so the canonical value sits beside it."""
+    from rcta.core.io_export import report_to_json
+    track, _ = synthetic.make(n=400, shuffle=False, sources=[(200, 60.0, 6)])
+    nano = json.loads(report_to_json(analyze_track(
+        track, AnalysisParams(unit="nSv/h", n_boot=20))))
+    micro = json.loads(report_to_json(analyze_track(
+        track, AnalysisParams(unit="uSv/h", n_boot=20))))
+    assert nano["anomalies"], "the injected source must be found"
+    for a, b in zip(nano["anomalies"], micro["anomalies"]):
+        assert a["net_dose_rate_nsv_h"] == b["net_dose_rate_nsv_h"]
+        assert a["net_dose_rate"] == pytest.approx(a["net_dose_rate_nsv_h"],
+                                                   abs=1e-4)
+        assert b["net_dose_rate"] == pytest.approx(
+            b["net_dose_rate_nsv_h"] / 1000.0, abs=1e-4)

@@ -489,7 +489,11 @@ def report_to_json(analysis, *, indent=2) -> str:
             "lat": round(a.lat, 7),
             "lon": round(a.lon, 7),
             "net_counts": round(a.net_counts, 2),
+            # In parameters.unit, as it always was; the canonical copy beside
+            # it follows the rest of the report, where a dose field names its
+            # unit in the key, so a script never has to look the unit up.
             "net_dose_rate": round(float(convert_dose_rate(a.net_dose_rate, unit)), 4),
+            "net_dose_rate_nsv_h": round(float(a.net_dose_rate), 4),
             "significance_sigma": round(a.significance, 3),
             "threshold_sigma": round(a.threshold_sigma, 3),
             "critical_level_counts": round(a.limits.critical_level, 2),
