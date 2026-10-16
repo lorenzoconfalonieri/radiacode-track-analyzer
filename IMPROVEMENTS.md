@@ -1,8 +1,3 @@
-BACKLOG EXHAUSTED (2026-10-15): the one remaining item, the Track
-summary layout, trades screen space for a summary the user can already
-read by resizing the dock, and was rejected once for forcing the window
-taller than a laptop screen. Larger directions are in IDEAS.md.
-
 # Improvements
 
 Small, one-commit improvements (under ~100 lines each), worked one per
@@ -11,6 +6,9 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 ## Backlog
 
+- **Audit:** areas not yet probed for edge cases: hotspot clustering with
+  a single anomaly or coincident passes; `compare_branches` when one
+  branch is missing; the scan on a constant-count track.
 - **GUI:** the Track summary (13 lines) shows about 9 in its dock. Instead
   of forcing height (rejected below), move it to a "Summary" tab in the
   bottom stack, or let the Track dock collapse to a one-line caption with
@@ -224,6 +222,12 @@ correctness, tests, GUI usability, performance (measured), code quality.
 - 2026-10-15 **Performance:** the heatmap's distance-to-track KD-tree query
   (0.33 s of 0.36 s on the flight) runs on all cores. Flight grid 0.355 s
   to 0.062 s; the exported .asc is byte-identical; suite 51 s to 45 s.
+
+- 2026-10-16 **Tests:** direct tests for the last untested public core
+  helpers: `geo.median_accuracy` (NaN, inf, empty), `format_signed_dose_rate`
+  (sign, zero, unit) and `load_airlines` (the bundled table, a custom path,
+  the schema check). Also confirmed that GPX and GeoJSON leave out masked
+  samples rather than writing borrowed values.
 
 ## Rejected
 

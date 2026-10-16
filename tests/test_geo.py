@@ -276,3 +276,12 @@ def test_a_platform_that_never_moved_gets_the_widest_window():
     lat, lon = _walk(step_m=0.0, sigma_m=8.0)
     assert choose_smoothing_window(lat, lon, np.full(lat.size, 8.0),
                                    max_window=121) == 121
+
+
+def test_median_accuracy_ignores_unrecorded_fixes():
+    """A missing accuracy is NaN; it must neither count as a perfect fix
+    nor poison the median that sizes the smoothing and the kernel."""
+    assert geo.median_accuracy([8.0, np.nan, 12.0, np.inf]) == pytest.approx(10.0)
+    assert geo.median_accuracy([np.nan, np.nan]) == 0.0
+    assert geo.median_accuracy([]) == 0.0
+    assert geo.median_accuracy([5.0]) == 5.0

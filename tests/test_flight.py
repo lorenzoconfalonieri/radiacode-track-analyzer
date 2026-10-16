@@ -577,3 +577,18 @@ def test_a_sample_landing_on_a_waypoint_is_not_gap_masked(flight_case):
         trajectory.altitude_m[150])
     # The samples strictly inside the hole are still masked.
     assert not np.isfinite(join.altitude_m[on_waypoint[0] + 5])
+
+
+def test_the_airline_table_maps_iata_to_icao_and_checks_its_schema(tmp_path):
+    from rcta.core.flight import load_airlines
+    table = load_airlines()
+    assert table["DL"]["icao"] == "DAL" and table["BA"]["icao"] == "BAW"
+    custom = tmp_path / "airlines.json"
+    custom.write_text('{"schema_version": 1, "airlines": '
+                      '[{"iata": "ZZ", "icao": "ZZZ", "name": "Test Air"}]}',
+                      encoding="utf-8")
+    assert load_airlines(custom) == {"ZZ": {"iata": "ZZ", "icao": "ZZZ",
+                                            "name": "Test Air"}}
+    custom.write_text('{"schema_version": 2, "airlines": []}', encoding="utf-8")
+    with pytest.raises(ValueError, match="schema_version 2"):
+        load_airlines(custom)

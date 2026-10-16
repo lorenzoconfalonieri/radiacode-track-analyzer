@@ -210,3 +210,11 @@ def test_a_track_with_nothing_observed_has_no_mean_rate_not_a_zero_one():
     text = summary.describe()
     assert "undefined, nothing observed" in text
     assert "mean rate  : 0.00" not in text
+
+
+def test_signed_dose_rate_always_carries_a_sign_and_converts():
+    from rcta.core.dose import format_signed_dose_rate
+    assert format_signed_dose_rate(81.51) == "+81.51 nSv/h"
+    assert format_signed_dose_rate(-3.2) == "-3.20 nSv/h"
+    assert format_signed_dose_rate(0.0) == "+0.00 nSv/h"
+    assert format_signed_dose_rate(81.51, "uSv/h") == "+0.0815 uSv/h"
