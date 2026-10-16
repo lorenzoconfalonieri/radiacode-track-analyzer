@@ -258,5 +258,8 @@ def test_scan_scales_longer_than_the_track_are_not_a_null_result():
     assert "nothing was tested" in text
     assert "no anomalies above L_C" not in text
     assert any("no scan window fits" in w for w in a.warnings)
+    assert a.nothing_tested
+    assert "nothing tested" in a.status_line()
+    assert "no anomalies" not in a.status_line()
     # The unusable scale no longer drives the background window.
     assert a.background.params.window_s == 900.0

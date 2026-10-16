@@ -6,9 +6,6 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 ## Backlog
 
-- **Correctness:** `TrackAnalysis.status_line()` (the GUI status bar) still
-  says "no anomalies above L_C" when no scan window fit the track; it
-  should say nothing was tested, as `describe()` now does.
 - **GUI/CLI:** `--scales a,b` fails with the raw "invalid literal for int()
   with base 10"; name the flag and the expected form.
 - **GUI:** the Track summary (13 lines) shows about 9 in its dock. Instead
@@ -274,6 +271,11 @@ correctness, tests, GUI usability, performance (measured), code quality.
   (5,000,000 s for `--scales 100000` on the walk). The audit of 15 CLI flag
   combinations found the rest refused cleanly or handled correctly.
   Bundled output is byte-identical.
+
+- 2026-10-16 **Correctness:** the GUI status line says "nothing tested: no
+  scan window fits" instead of "no anomalies above L_C" when no window fit
+  the track. A `TrackAnalysis.nothing_tested` property is shared with
+  `describe()`.
 
 ## Rejected
 

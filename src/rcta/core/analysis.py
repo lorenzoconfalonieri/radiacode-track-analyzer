@@ -111,7 +111,7 @@ class TrackAnalysis:
         ]
         if self.significant:
             blocks += [a.describe(unit) for a in self.significant]
-        elif not self.anomalies and not self.mda_table:
+        elif self.nothing_tested:
             # Not a null result: no window was tested, so there is neither a
             # detection nor a detection limit to report.
             blocks.append("nothing was tested: no scan window fits this track")
@@ -140,12 +140,22 @@ class TrackAnalysis:
             blocks += [f"! {w}" for w in self.warnings]
         return "\n".join(blocks)
 
+    @property
+    def nothing_tested(self) -> bool:
+        """No scan window fitted the track: neither a detection nor a limit."""
+        return not self.anomalies and not self.mda_table
+
     def status_line(self, unit: str | None = None) -> str:
         """One line for the GUI status bar, dose in ``unit`` (default: the
         analysis's own)."""
-        verdict = (f"{len(self.significant)} anomal"
-                   f"{'y' if len(self.significant) == 1 else 'ies'} above L_C"
-                   if self.significant else "no anomalies above L_C")
+        if self.significant:
+            verdict = (f"{len(self.significant)} anomal"
+                       f"{'y' if len(self.significant) == 1 else 'ies'} "
+                       "above L_C")
+        elif self.nothing_tested:
+            verdict = "nothing tested: no scan window fits"
+        else:
+            verdict = "no anomalies above L_C"
         return (f"{self.track.n} samples  |  "
                 f"{self.summary.distance_m / 1000.0:.2f} km  |  "
                 f"{self.quality.n_legs} legs  |  "
