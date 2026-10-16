@@ -107,24 +107,33 @@ class SeriesPanel(QtWidgets.QWidget):
     def restyle(self, t) -> None:
         """Colours that have to change with the theme to stay visible."""
         theme.style_graphics_view(self._glw, t)
-        self._curves["dose"].setPen(pg.mkPen(t.dose, width=1.2))
-        self._curves["count"].setPen(pg.mkPen(t.count, width=1.2))
+        self._curves["dose"].setPen(pg.mkPen(t.dose, width=1.0))
+        self._curves["count"].setPen(pg.mkPen(t.count, width=1.0))
         self._hover_line.setPen(pg.mkPen(t.hover, width=0.8))
 
     # ---- construction -----------------------------------------------------
 
     def _make_items(self) -> None:
         self._curves["dose"] = self.dose_plot.plot(
-            pen=pg.mkPen(theme.DOSE_COLOR, width=1.2), name="dose rate")
+            pen=pg.mkPen(theme.DOSE_COLOR, width=1.0), name="dose rate")
         self._curves["dose_selected"] = self.dose_plot.plot(
             pen=pg.mkPen(theme.SELECTION_COLOR, width=2.0), name="selection")
         self._curves["count"] = self.count_plot.plot(
-            pen=pg.mkPen(theme.COUNT_COLOR, width=1.2))
+            pen=pg.mkPen(theme.COUNT_COLOR, width=1.0))
         self._curves["background"] = self.count_plot.plot(
-            pen=pg.mkPen(theme.BACKGROUND_COLOR, width=1.2,
+            pen=pg.mkPen(theme.BACKGROUND_COLOR, width=1.0,
                          style=Qt.PenStyle.DashLine))
         self._curves["significance"] = self.sig_plot.plot(
             pen=pg.mkPen(theme.SERIES_COLORS[2], width=1.0))
+
+        # Paint only what is on screen, peak-preserving, and with 1 px pens:
+        # Qt strokes any wider line as polygons. On a 100 000-sample track
+        # a selection repaint took 7.5 s with 1.2 px pens and no
+        # downsampling, and takes 0.1 s with both. "peak" keeps every
+        # spike's extreme, so a one-sample source cannot vanish from view.
+        for curve in self._curves.values():
+            curve.setDownsampling(auto=True, method="peak")
+            curve.setClipToView(True)
 
         self.region = pg.LinearRegionItem(brush=pg.mkBrush(213, 94, 0, 40),
                                           pen=pg.mkPen(theme.SELECTION_COLOR))

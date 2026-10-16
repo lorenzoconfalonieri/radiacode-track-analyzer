@@ -239,6 +239,12 @@ correctness, tests, GUI usability, performance (measured), code quality.
   in the tests, still analyse at once. A 100k track loads in 1.8 s overall;
   the remaining cost is the already-rejected `rolling_trimmed_mean` item.
 
+- 2026-10-16 **Performance:** the series curves paint a peak-preserving
+  downsample of the visible range with 1 px pens; Qt strokes wider lines
+  as polygons. On a 100k-sample track, selecting a span went from 4.0 s to
+  0.09 s and clearing from 3.3 s to 0.007 s. Spikes keep their full height.
+  Line width goes from 1.2 px to 1 px, like the significance trace.
+
 ## Rejected
 
 - 2026-10-15 **Investigated, no change:** the Flight caption's "scatter

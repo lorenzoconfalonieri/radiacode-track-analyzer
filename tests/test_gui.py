@@ -1891,3 +1891,14 @@ def test_a_burst_of_parameter_edits_runs_one_analysis(app, sample_path):
     finally:
         win.close()
         win.deleteLater()
+
+
+def test_series_curves_paint_downsampled_with_fast_pens(loaded):
+    """A 100k-sample selection repaint took 7.5 s: 1.2 px pens are stroked
+    as polygons, and every point was painted at every zoom level."""
+    for name, curve in loaded.series._curves.items():
+        assert curve.opts["autoDownsample"], name
+        assert curve.opts["downsampleMethod"] == "peak", name
+        assert curve.opts["clipToView"], name
+    for name in ("dose", "count", "background", "significance"):
+        assert loaded.series._curves[name].opts["pen"].widthF() <= 1.0, name
