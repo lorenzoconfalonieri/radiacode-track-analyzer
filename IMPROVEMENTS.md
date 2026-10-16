@@ -6,8 +6,6 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 ## Backlog
 
-- **Correctness:** the JSON report's hotspots carry no dose rate at all
-  (the CSV and the GUI table show the peak). Add `peak_dose_rate_nsv_h`.
 - **GUI:** the Track summary (13 lines) shows about 9 in its dock. Instead
   of forcing height (rejected below), move it to a "Summary" tab in the
   bottom stack, or let the Track dock collapse to a one-line caption with
@@ -199,6 +197,10 @@ correctness, tests, GUI usability, performance (measured), code quality.
   `net_dose_rate` is in the display unit while every other dose field is
   canonical and names its unit in the key; a script reading the JSON alone
   could not tell. Additive, so no existing reader breaks.
+
+- 2026-10-15 **Correctness:** JSON hotspots carry `peak_dose_rate_nsv_h`
+  and `mean_net_dose_rate_nsv_h`; the report had no hotspot dose rate at
+  all, though the CSV and the table show the peak.
 
 ## Rejected
 

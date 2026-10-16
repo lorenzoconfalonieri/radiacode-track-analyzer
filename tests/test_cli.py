@@ -640,3 +640,15 @@ def test_flight_quotes_every_dose_rate_in_the_requested_unit(
     out = capsys.readouterr().out
     assert "nSv" not in out
     assert "median difference 0.1011 uSv/h" in out
+
+
+def test_json_hotspots_carry_their_dose_rates(tmp_path):
+    """The hotspot CSV and table showed the peak; the JSON report did not."""
+    out = tmp_path / "walk.json"
+    assert main(["analyze", str(_walk_path()), "--json", str(out),
+                 "--n-boot", "10"]) == 0
+    report = json.loads(out.read_text())
+    assert report["hotspots"], "the walk has hotspots"
+    for h in report["hotspots"]:
+        assert h["peak_dose_rate_nsv_h"] > 0
+        assert "mean_net_dose_rate_nsv_h" in h

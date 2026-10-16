@@ -508,6 +508,10 @@ def report_to_json(analysis, *, indent=2) -> str:
             "n_samples": h.n_samples,
             "n_passes": h.n_passes,
             "net_counts": round(h.net_counts, 2),
+            # The CSV and the GUI table always showed these; the report,
+            # the one export meant to be complete, had no dose rate at all.
+            "peak_dose_rate_nsv_h": round(float(h.peak_dose_rate), 4),
+            "mean_net_dose_rate_nsv_h": round(float(h.mean_net_dose_rate), 4),
             "significance_sigma": round(h.significance, 3),
             "score": round(h.score, 2),
             "evidence": h.evidence,
