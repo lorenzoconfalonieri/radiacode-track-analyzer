@@ -157,6 +157,17 @@ _ANOMALY_COLUMNS = [
 ]
 
 
+#: Columns whose values follow ``unit``; their headers say which unit, as the
+#: track CSV's dose column always has, so the file explains itself.
+_DOSE_COLUMNS = {"net_dose_rate", "peak_dose_rate", "mean_net_dose_rate"}
+
+
+def _header(columns, unit: str) -> str:
+    suffix = "_" + unit.replace("/", "_per_")
+    return ",".join(name + suffix if name in _DOSE_COLUMNS else name
+                    for name, _ in columns)
+
+
 def anomalies_to_csv(anomalies, *, unit="nSv/h") -> str:
     """Every candidate, significant or not, with the reason it was excluded.
 
@@ -164,7 +175,7 @@ def anomalies_to_csv(anomalies, *, unit="nSv/h") -> str:
     are exactly what a reviewer needs to see to judge whether the flagging was
     right.
     """
-    rows = [",".join(name for name, _ in _ANOMALY_COLUMNS)]
+    rows = [_header(_ANOMALY_COLUMNS, unit)]
     for a in anomalies:
         rows.append(",".join(str(fn(a, unit)) for _, fn in _ANOMALY_COLUMNS))
     return "\n".join(rows) + "\n"
@@ -190,7 +201,7 @@ _HOTSPOT_COLUMNS = [
 
 
 def hotspots_to_csv(hotspots, *, unit="nSv/h") -> str:
-    rows = [",".join(name for name, _ in _HOTSPOT_COLUMNS)]
+    rows = [_header(_HOTSPOT_COLUMNS, unit)]
     for h in hotspots:
         rows.append(",".join(str(fn(h, unit)) for _, fn in _HOTSPOT_COLUMNS))
     return "\n".join(rows) + "\n"

@@ -202,6 +202,12 @@ correctness, tests, GUI usability, performance (measured), code quality.
   and `mean_net_dose_rate_nsv_h`; the report had no hotspot dose rate at
   all, though the CSV and the table show the peak.
 
+- 2026-10-15 **Correctness:** the anomaly and hotspot CSVs name the unit in
+  their dose-rate headers (`peak_dose_rate_nSv_per_h`), as the track CSV
+  always has. The values followed `--unit` but the header did not say so.
+  Deliberate schema change: two columns renamed in each file; the
+  header-stability test was updated.
+
 ## Rejected
 
 - 2026-10-15 **Investigated, no change:** the Flight caption's "scatter

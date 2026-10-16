@@ -71,7 +71,8 @@ def test_anomaly_csv_includes_excluded_candidates_and_their_reason():
 def test_hotspot_csv_header_is_stable():
     assert hotspots_to_csv([]).strip() == (
         "lat,lon,radius_m,n_samples,n_passes,first_iso,last_iso,"
-        "peak_dose_rate,mean_net_dose_rate,net_counts,significance_sigma,"
+        "peak_dose_rate_nSv_per_h,mean_net_dose_rate_nSv_per_h,net_counts,"
+        "significance_sigma,"
         "score,evidence,flags")
 
 
@@ -478,3 +479,14 @@ def test_anomaly_dose_rates_carry_a_canonical_copy_named_by_unit():
                                                    abs=1e-4)
         assert b["net_dose_rate"] == pytest.approx(
             b["net_dose_rate_nsv_h"] / 1000.0, abs=1e-4)
+
+
+def test_dose_columns_name_their_unit_in_every_csv():
+    """The values followed --unit but the header did not say which."""
+    track, _ = synthetic.make(n=400, shuffle=False, sources=[(200, 60.0, 6)])
+    a = analyze_track(track, AnalysisParams(unit="uSv/h", n_boot=20))
+    header = anomalies_to_csv(a.anomalies, unit="uSv/h").splitlines()[0]
+    assert "net_dose_rate_uSv_per_h" in header.split(",")
+    assert "peak_dose_rate_uSv_per_h" in header.split(",")
+    assert hotspots_to_csv([], unit="uSv/h").startswith("lat,lon")
+    assert "peak_dose_rate_uSv_per_h" in hotspots_to_csv([], unit="uSv/h")
