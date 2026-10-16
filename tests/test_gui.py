@@ -1849,3 +1849,20 @@ def test_selecting_a_leg_row_selects_that_legs_samples(loaded):
     expected = loaded._analysis.quality.leg_index == leg["leg"]
     assert np.array_equal(loaded._selection.mask, expected)
     assert loaded._selection.count == leg["n"]
+
+
+def test_zoom_to_track_and_clear_selection_have_keys(loaded):
+    from PySide6.QtGui import QKeySequence
+    from rcta.core.selection import Selection
+    import numpy as np
+    zoom = _action(loaded, "Zoom to &track")
+    clear = _action(loaded, "&Clear selection")
+    assert zoom.shortcut() == QKeySequence("Ctrl+0")
+    assert clear.shortcut() == QKeySequence("Esc")
+    assert not clear.isEnabled()                 # nothing selected yet
+    mask = np.zeros(loaded._track.n, dtype=bool)
+    mask[10:50] = True
+    loaded._broadcast(Selection(mask=mask, source="test"))
+    assert clear.isEnabled()
+    clear.trigger()
+    assert loaded._selection.is_empty and not clear.isEnabled()

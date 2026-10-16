@@ -57,7 +57,9 @@ space the map wants. **Ctrl+1** through **Ctrl+7** switch straight to a panel
 in that order, reopening it if it was closed, and **Ctrl+PgDown** /
 **Ctrl+PgUp** (or **Ctrl+]** / **Ctrl+[**) step along the stack. The same
 actions are under *View → Panels* with their keys shown; the tab bar above
-the panel does the job with the mouse.
+the panel does the job with the mouse. **Ctrl+0** zooms the map to the whole
+track, **Esc** clears the selection, and double-clicking a row in the
+Anomalies, Hotspots or Legs table zooms to it.
 
 ## Walking surveys: what the tool corrects for you
 

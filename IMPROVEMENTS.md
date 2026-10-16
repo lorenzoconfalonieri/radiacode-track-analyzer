@@ -189,6 +189,10 @@ correctness, tests, GUI usability, performance (measured), code quality.
   after switching to uSv/h found it was the last place still showing nSv/h.
   The Flight panel already followed the unit.
 
+- 2026-10-15 **GUI:** keyboard shortcuts. Ctrl+0 zooms to the track, and a
+  new View > Clear selection is on Esc (greyed with nothing selected). The
+  README's navigation paragraph lists them and the table double-click.
+
 ## Rejected
 
 - 2026-10-15 **Investigated, no change:** the Flight caption's "scatter

@@ -404,10 +404,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         view_menu = self.menuBar().addMenu("&View")
         self._make_basemap_menu(view_menu.addMenu("&Basemap"))
+        # Ctrl+0 is the conventional "fit everything"; Ctrl+1..7 are taken
+        # by the panels. Esc clears a selection, as it does in most editors.
         self._needs_track.append(self._action(
-            view_menu, "Zoom to &track", self.map.zoom_to_track))
+            view_menu, "Zoom to &track", self.map.zoom_to_track, "Ctrl+0"))
         self._needs_track.append(self._action(
             view_menu, "Zoom to &selection", self._zoom_to_selection))
+        self._needs_selection.append(self._action(
+            view_menu, "&Clear selection", self._on_selection_cleared, "Esc"))
         self._action(view_menu, "&Select mode (or hold Shift)",
                      self.map.set_select_mode, "Ctrl+E", checkable=True)
         view_menu.addSeparator()
