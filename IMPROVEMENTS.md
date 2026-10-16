@@ -6,9 +6,6 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 ## Backlog
 
-- **Audit:** areas not yet probed for edge cases: hotspot clustering with
-  a single anomaly or coincident passes; `compare_branches` when one
-  branch is missing; the scan on a constant-count track.
 - **GUI:** the Track summary (13 lines) shows about 9 in its dock. Instead
   of forcing height (rejected below), move it to a "Summary" tab in the
   bottom stack, or let the Track dock collapse to a one-line caption with
@@ -228,6 +225,13 @@ correctness, tests, GUI usability, performance (measured), code quality.
   (sign, zero, unit) and `load_airlines` (the bundled table, a custom path,
   the schema check). Also confirmed that GPX and GeoJSON leave out masked
   samples rather than writing borrowed values.
+
+- 2026-10-16 **Correctness:** a hotspot's radius is measured to its
+  farthest positioned sample, not its farthest anomaly centre. The walk's
+  single-pass hotspot had read "r=0 m, 8 samples" (now 15 m), and the
+  two-pass one 92 m (now 117 m). Radius is descriptive only: no score or
+  detection changes. The audit also found the constant-count, zero-count
+  and no-descent cases clean, with no RuntimeWarnings.
 
 ## Rejected
 

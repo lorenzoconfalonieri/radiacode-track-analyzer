@@ -272,3 +272,18 @@ def test_sample_grid_is_mostly_unsupported(sample):
     grid = interpolate(track, GridParams(bandwidth_m=2000.0, grid_size=96))
     assert grid.coverage < 0.35
     assert np.isnan(grid.values).any()
+
+
+def test_a_single_anomaly_hotspot_has_the_radius_of_its_samples():
+    """Measured on anomaly centres, one anomaly always gave radius 0."""
+    import synthetic
+    from rcta.core.analysis import AnalysisParams, analyze_track
+    track, _ = synthetic.make(n=500, shuffle=False, sources=[(250, 80.0, 4)])
+    a = analyze_track(track, AnalysisParams(n_boot=20))
+    assert len(a.hotspots) == 1
+    hotspot = a.hotspots[0]
+    member = a.significant[0]
+    span = a.track.distance_along_m[member.stop_index - 1] \
+        - a.track.distance_along_m[member.start_index]
+    # Roughly half the feature's length either side of its centre.
+    assert 0.3 * span < hotspot.radius_m < 1.2 * span

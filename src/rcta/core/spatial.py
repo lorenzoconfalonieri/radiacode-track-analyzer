@@ -428,8 +428,21 @@ def _hotspot(track, group, xs, ys, inflation, revisit_gap_s) -> Hotspot:
         cx, cy = float(xs.mean()), float(ys.mean())
     lon, lat = geo.web_mercator_to_lonlat(cx, cy)
 
-    radius = (float(np.hypot(xs - cx, ys - cy).max()) / inflation
-              if xs.size > 1 else 0.0)
+    # Out to the farthest positioned *sample* of the member anomalies, not
+    # the farthest anomaly centre. Measured on centres, a hotspot made of
+    # one anomaly always had radius 0 -- "r=0 m, 16 samples" for a feature
+    # 45 m long -- and a cluster's radius understated its footprint by
+    # half an anomaly's length.
+    rows = np.zeros(track.n, dtype=bool)
+    for a in group:
+        rows[a.start_index:a.stop_index] = True
+    rows &= track.position_mask
+    if rows.any():
+        radius = float(np.hypot(track.merc_x[rows] - cx,
+                                track.merc_y[rows] - cy).max()) / inflation
+    else:
+        radius = (float(np.hypot(xs - cx, ys - cy).max()) / inflation
+                  if xs.size > 1 else 0.0)
 
     times = np.sort(np.array([a.time_s for a in group]))
     passes = 1 + int((np.diff(times) > revisit_gap_s).sum()) if times.size else 0
