@@ -233,6 +233,12 @@ correctness, tests, GUI usability, performance (measured), code quality.
   detection changes. The audit also found the constant-count, zero-count
   and no-descent cases clean, with no RuntimeWarnings.
 
+- 2026-10-16 **GUI:** auto re-analysis waits 250 ms after the last parameter
+  edit, so a burst of spin-box clicks runs one analysis instead of one per
+  click (about 1.2 s each on a 100k-sample track). Synchronous windows, as
+  in the tests, still analyse at once. A 100k track loads in 1.8 s overall;
+  the remaining cost is the already-rejected `rolling_trimmed_mean` item.
+
 ## Rejected
 
 - 2026-10-15 **Investigated, no change:** the Flight caption's "scatter

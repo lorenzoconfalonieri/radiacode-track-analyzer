@@ -1866,3 +1866,28 @@ def test_zoom_to_track_and_clear_selection_have_keys(loaded):
     assert clear.isEnabled()
     clear.trigger()
     assert loaded._selection.is_empty and not clear.isEnabled()
+
+
+def test_a_burst_of_parameter_edits_runs_one_analysis(app, sample_path):
+    """Each spin-box click used to re-run the whole analysis at once."""
+    from PySide6 import QtCore as _QtCore
+    from rcta.gui.main_window import MainWindow
+    win = MainWindow(offline=True)              # asynchronous, as the app runs
+    try:
+        assert win.load(str(sample_path))
+        runs = []
+        original = win.analyse
+        win.analyse = lambda: (runs.append(1), original())
+        win._reanalyse_timer.timeout.disconnect()
+        win._reanalyse_timer.timeout.connect(win.analyse)
+        for value in (0.04, 0.03, 0.02, 0.01):
+            win.analysis_dock.alpha.setValue(value)
+        assert not runs                          # nothing yet: still settling
+        deadline = _QtCore.QDeadlineTimer(3000)
+        while not runs and not deadline.hasExpired():
+            app.processEvents()
+        assert runs == [1]
+        assert win._analysis.params.scan.alpha == 0.01
+    finally:
+        win.close()
+        win.deleteLater()

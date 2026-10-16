@@ -158,6 +158,16 @@ class MainWindow(QtWidgets.QMainWindow):
 
         from rcta.gui.worker import JobQueue
         self.jobs = JobQueue(self, synchronous=synchronous)
+        # Parameter edits arrive in bursts -- five clicks on a spin box
+        # arrow -- and each used to re-run the whole analysis (about 1.2 s
+        # on a 100 000-sample track), so the clicks queued up behind each
+        # other. They now settle for a moment and run once. Synchronous
+        # windows, as the tests build them, still analyse immediately.
+        self._synchronous = bool(synchronous)
+        self._reanalyse_timer = QtCore.QTimer(self)
+        self._reanalyse_timer.setSingleShot(True)
+        self._reanalyse_timer.setInterval(250)
+        self._reanalyse_timer.timeout.connect(self.analyse)
         self.jobs.finished.connect(self._on_job_finished)
         self.jobs.failed.connect(self._on_job_failed)
         self.jobs.progress.connect(self._on_job_progress)
@@ -487,7 +497,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.series.intervalCleared.connect(self._on_selection_cleared)
         self.series.pointHovered.connect(self._on_hover)
 
-        self.analysis_dock.changed.connect(self.analyse)
+        self.analysis_dock.changed.connect(self._parameters_changed)
         self.analysis_dock.background.currentTextChanged.connect(
             self._on_background_method)
         self.analysis_dock.runRequested.connect(self.analyse)
@@ -1261,6 +1271,12 @@ class MainWindow(QtWidgets.QMainWindow):
             self.map.zoom_to_track()
 
     # ---- background reference --------------------------------------------
+
+    def _parameters_changed(self) -> None:
+        if self._synchronous:
+            self.analyse()
+        else:
+            self._reanalyse_timer.start()      # restarts: the last edit wins
 
     def _on_background_method(self, method: str) -> None:
         """Say so when "reference" is chosen with no reference to use.
