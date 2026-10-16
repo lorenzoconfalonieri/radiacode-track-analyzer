@@ -216,6 +216,10 @@ correctness, tests, GUI usability, performance (measured), code quality.
   cases with ties; CLI output byte-identical. A test pins the fast path to
   the general one.
 
+- 2026-10-15 **Performance:** the heatmap's distance-to-track KD-tree query
+  (0.33 s of 0.36 s on the flight) runs on all cores. Flight grid 0.355 s
+  to 0.062 s; the exported .asc is byte-identical; suite 51 s to 45 s.
+
 ## Rejected
 
 - 2026-10-15 **Investigated, no change:** the Flight caption's "scatter

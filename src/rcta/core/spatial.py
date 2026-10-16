@@ -310,7 +310,11 @@ def _distance_to_track(track: Track, usable, xc, yc, resolution_proj):
 
     tree = cKDTree(np.vstack(points))
     grid = np.column_stack([np.repeat(yc, xc.size), np.tile(xc, yc.size)])
-    distance, _ = tree.query(grid[:, ::-1])
+    # All cores: the query is nearly all of the heatmap's cost (0.33 s of
+    # 0.36 s on the bundled flight, most cells being far from any fix) and
+    # parallelises with identical results. It runs on the GUI's worker, so
+    # it adds no thread the GUI can see.
+    distance, _ = tree.query(grid[:, ::-1], workers=-1)
     return distance.reshape(yc.size, xc.size)
 
 
