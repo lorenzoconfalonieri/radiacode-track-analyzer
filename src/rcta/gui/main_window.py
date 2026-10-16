@@ -840,7 +840,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.log.log("heatmap cleared: the fixes it was built from changed; "
                          "compute it again")
 
-        self.track_dock.set_text(track.describe())
+        self.track_dock.set_text(track.describe(self._unit))
         for warning in analysis.background.warnings:
             self.log.log(warning, "warning")
         self.analysis_dock.set_applied_window(
@@ -1352,6 +1352,8 @@ class MainWindow(QtWidgets.QMainWindow):
         user's colour limits for nothing.
         """
         self._unit = unit
+        if self._analysis is not None:
+            self.track_dock.set_text(self._analysis.track.describe(unit))
         for view in (self.flight, self.map, self.series, self.profile,
                      self.anomaly_model, self.hotspot_model, self.leg_model):
             view.set_unit(unit)

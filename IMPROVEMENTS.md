@@ -184,6 +184,11 @@ correctness, tests, GUI usability, performance (measured), code quality.
   had stayed in nSv/h. In nSv/h they now carry two decimals (582.03, not
   582); FLIGHT.md's rounded table is unaffected.
 
+- 2026-10-15 **GUI:** the Track dock summary follows the display unit. A
+  sweep of every label, text box, table tooltip, axis and the status bar
+  after switching to uSv/h found it was the last place still showing nSv/h.
+  The Flight panel already followed the unit.
+
 ## Rejected
 
 - 2026-10-15 **Investigated, no change:** the Flight caption's "scatter

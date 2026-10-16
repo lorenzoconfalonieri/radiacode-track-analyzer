@@ -1551,6 +1551,7 @@ def test_the_display_unit_reaches_every_dose_on_screen(loaded):
     assert "peak (uSv/h)" in headers and not any("nSv" in h for h in headers)
     assert "uSv/h" in loaded.selection_dock.text.toPlainText()
     assert "nSv/h" not in loaded.selection_dock.text.toPlainText()
+    assert "nSv" not in loaded.track_dock.text.toPlainText()
 
     loaded._on_hover(10)
     assert "uSv/h" in loaded.statusBar().currentMessage()
