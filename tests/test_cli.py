@@ -630,3 +630,13 @@ def test_analyze_quotes_every_dose_rate_in_the_requested_unit(sample_path,
     out = capsys.readouterr().out
     assert "nSv" not in out
     assert "1.1600 uSv/h" in out          # the 2 s MDA, 1159.97 nSv/h
+
+
+def test_flight_quotes_every_dose_rate_in_the_requested_unit(
+        sample_path, sample_trajectory_path, capsys):
+    """The profile, fit and climb/descent lines used to stay in nSv/h."""
+    assert main(["flight", str(sample_path), "--trajectory",
+                 str(sample_trajectory_path), "--unit", "uSv/h"]) == 0
+    out = capsys.readouterr().out
+    assert "nSv" not in out
+    assert "median difference 0.1011 uSv/h" in out

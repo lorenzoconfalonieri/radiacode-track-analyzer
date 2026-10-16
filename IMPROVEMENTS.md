@@ -179,6 +179,11 @@ correctness, tests, GUI usability, performance (measured), code quality.
   in nSv/h. The MDA lines keep their nSv/h text byte for byte; the README's
   anomaly line now shows two decimals (+81.51).
 
+- 2026-10-15 **Correctness:** `rcta-cli flight --unit` now reaches the
+  altitude profile, the scale-height fit and the climb/descent lines, which
+  had stayed in nSv/h. In nSv/h they now carry two decimals (582.03, not
+  582); FLIGHT.md's rounded table is unaffected.
+
 ## Rejected
 
 - 2026-10-15 **Investigated, no change:** the Flight caption's "scatter

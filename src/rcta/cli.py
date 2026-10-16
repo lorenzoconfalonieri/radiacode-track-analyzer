@@ -423,7 +423,7 @@ def cmd_flight(args) -> int:
     print(THIN)
     print(f"  dose rate against altitude  ({args.branch})")
     print(THIN)
-    print(profile.describe())
+    print(profile.describe(args.unit))
     print()
     print(_ascii_altitude_plot(profile, unit=args.unit))
     print()
@@ -433,13 +433,13 @@ def cmd_flight(args) -> int:
     print(THIN)
     print("  the exponential")
     print(THIN)
-    print(fit_scale_height(profile, floor_m=args.fit_floor).describe())
+    print(fit_scale_height(profile, floor_m=args.fit_floor).describe(args.unit))
 
     print()
     print(THIN)
     print("  control: does the descent reproduce the climb?")
     print(THIN)
-    print(compare_branches(join, step_m=args.branch_step).describe())
+    print(compare_branches(join, step_m=args.branch_step).describe(args.unit))
 
     if args.csv:
         Path(args.csv).write_text(

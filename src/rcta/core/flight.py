@@ -66,6 +66,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 import numpy as np
 
 from rcta.core import geo
+from rcta.core.dose import format_dose_rate
 from rcta.core.track import Track
 
 __all__ = [
@@ -1035,7 +1036,7 @@ class AltitudeProfile:
                 "real variation dominates, so the error bars are the observed "
                 "spread, not Poisson")
 
-    def describe(self) -> str:
+    def describe(self, unit: str = "nSv/h") -> str:
         m = self.occupied
         if not m.any():
             return f"altitude profile ({self.branch}) is empty"
@@ -1043,8 +1044,8 @@ class AltitudeProfile:
             f"{int(m.sum())} occupied bins of {self.step_m:.0f} m over "
             f"{self.altitude_m[m].min():.0f} .. {self.altitude_m[m].max():.0f} m "
             f"({self.branch}, {self.statistic}); {self.n_empty} empty",
-            f"dose rate {np.nanmin(self.dose_rate[m]):.1f} .. "
-            f"{np.nanmax(self.dose_rate[m]):.1f} nSv/h over "
+            f"dose rate {format_dose_rate(np.nanmin(self.dose_rate[m]), unit)} .. "
+            f"{format_dose_rate(np.nanmax(self.dose_rate[m]), unit)} over "
             f"{int(self.n_samples.sum())} samples "
             f"({self.live_time_s.sum() / 60.0:.0f} min of live time)",
             self.scatter_note,
@@ -1172,7 +1173,7 @@ class ScaleHeight:
     branch: str = "all"
     note: str = ""
 
-    def describe(self) -> str:
+    def describe(self, unit: str = "nSv/h") -> str:
         if not self.constrained:
             return f"scale height : not constrained -- {self.note}"
         lines = [
@@ -1180,7 +1181,7 @@ class ScaleHeight:
             f"{self.scale_height_sd_m / 1000.0:.2f} km e-folding",
             f"             : dose rate doubles every "
             f"{self.doubling_m:.0f} m of climb",
-            f"             : {self.dose_at_reference:.0f} nSv/h at "
+            f"             : {format_dose_rate(self.dose_at_reference, unit)} at "
             f"{_fmt_alt(self.reference_altitude_m)}",
             f"fitted over  : {self.n_bins} bins, "
             f"{self.fitted_low_m:.0f} .. {self.fitted_high_m:.0f} m "
@@ -1340,7 +1341,7 @@ class BranchComparison:
     consistent: bool
     note: str = ""
 
-    def describe(self) -> str:
+    def describe(self, unit: str = "nSv/h") -> str:
         if self.n_shared == 0:
             return ("climb vs descent : no shared altitude bin -- "
                     + (self.note or "one branch was not sampled"))
@@ -1348,7 +1349,8 @@ class BranchComparison:
                    else "INCONSISTENT beyond counting statistics")
         lines = [
             f"climb vs descent : {verdict} over {self.n_shared} shared bin(s)",
-            f"  median difference {self.median_abs_difference:.1f} nSv/h "
+            f"  median difference "
+            f"{format_dose_rate(self.median_abs_difference, unit)} "
             f"({self.median_relative_difference * 100.0:.1f} % of the level)",
             f"  worst bin {self.max_abs_z:.2f} sigma against a "
             f"{self.threshold_sigma:.2f} sigma threshold "
