@@ -397,7 +397,7 @@ def test_the_parser_defaults_are_the_core_defaults():
     assert args.bg_window == BackgroundParams().window_s
     assert args.bg_trim == BackgroundParams().trim_fraction
     assert args.alpha == ScanParams().alpha
-    assert args.scales == ",".join(str(s) for s in ScanParams().scales)
+    assert args.scales == tuple(ScanParams().scales)
     assert args.max_accuracy == QualityParams().max_accuracy_m
     assert args.max_speed == QualityParams().max_speed_m_s
     assert args.gap_threshold == QualityParams().gap_threshold_s
@@ -639,3 +639,21 @@ def test_json_hotspots_carry_their_dose_rates(tmp_path, walk_path):
     for h in report["hotspots"]:
         assert h["peak_dose_rate_nsv_h"] > 0
         assert "mean_net_dose_rate_nsv_h" in h
+
+
+@pytest.mark.parametrize("value", ["a,b", "4,,8", "0,4"])
+def test_bad_scales_are_a_usage_error_naming_the_flag(value, sample_path,
+                                                      capsys):
+    """Junk used to surface as "invalid literal for int() with base 10"."""
+    with pytest.raises(SystemExit) as stop:
+        main(["analyze", str(sample_path), f"--scales={value}"])
+    assert stop.value.code == 2
+    err = capsys.readouterr().err
+    assert "--scales" in err and "invalid literal" not in err
+
+
+def test_good_scales_still_parse(sample_path, capsys):
+    assert main(["analyze", str(sample_path), "--scales", "2,8",
+                 "--n-boot", "10"]) == 0
+    out = capsys.readouterr().out
+    assert "    2 samples" in out and "    8 samples" in out

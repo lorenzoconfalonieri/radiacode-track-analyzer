@@ -119,7 +119,7 @@ def _build_params(args) -> AnalysisParams:
         reference_span=tuple(args.reference) if args.reference else None,
     )
     scan = ScanParams(
-        scales=tuple(int(s) for s in args.scales.split(",")),
+        scales=args.scales,
         alpha=args.alpha,
         bonferroni=not args.no_bonferroni,
     )
@@ -473,6 +473,20 @@ _SCAN_DEFAULTS = ScanParams()
 _ANALYSIS_DEFAULTS = AnalysisParams()
 
 
+def _scales(text: str) -> tuple[int, ...]:
+    """--scales as a tuple, or a usage error naming the expected form."""
+    try:
+        scales = tuple(int(part) for part in text.split(","))
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"expected comma-separated sample counts such as 1,2,4,8; "
+            f"got {text!r}") from None
+    if any(s <= 0 for s in scales):
+        raise argparse.ArgumentTypeError(
+            f"sample counts must be positive; got {text!r}")
+    return scales
+
+
 def _add_analysis_flags(parser) -> None:
     parser.add_argument("--background", default=_BACKGROUND_DEFAULTS.method,
                         choices=["rolling", "flank", "reference", "global"])
@@ -486,7 +500,7 @@ def _add_analysis_flags(parser) -> None:
                         help="unix seconds of a span known to be clean")
     parser.add_argument("--integration-time", type=float, metavar="S",
                         help="detector live time per sample; inferred if omitted")
-    parser.add_argument("--scales",
+    parser.add_argument("--scales", type=_scales,
                         default=",".join(str(s) for s in _SCAN_DEFAULTS.scales),
                         help="comma-separated scan window widths in samples")
     parser.add_argument("--alpha", type=float, default=_SCAN_DEFAULTS.alpha)

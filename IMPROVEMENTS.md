@@ -6,8 +6,6 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 ## Backlog
 
-- **GUI/CLI:** `--scales a,b` fails with the raw "invalid literal for int()
-  with base 10"; name the flag and the expected form.
 - **GUI:** the Track summary (13 lines) shows about 9 in its dock. Instead
   of forcing height (rejected below), move it to a "Summary" tab in the
   bottom stack, or let the Track dock collapse to a one-line caption with
@@ -276,6 +274,11 @@ correctness, tests, GUI usability, performance (measured), code quality.
   scan window fits" instead of "no anomalies above L_C" when no window fit
   the track. A `TrackAnalysis.nothing_tested` property is shared with
   `describe()`.
+
+- 2026-10-16 **CLI usability:** `--scales` is parsed by an argparse type, so
+  junk ("a,b", "4,,8") or non-positive values give a usage error (exit 2)
+  that names the flag, the expected form and an example, instead of
+  "invalid literal for int() with base 10".
 
 ## Rejected
 
