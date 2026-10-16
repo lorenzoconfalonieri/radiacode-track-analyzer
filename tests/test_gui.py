@@ -1758,21 +1758,14 @@ def test_marking_a_reference_raises_no_such_warning(loaded):
     assert "no reference span marked yet" not in loaded.log.toPlainText()
 
 
-def test_the_gui_logs_a_widened_background_window(window):
-    from pathlib import Path
-    walk = (Path(__file__).resolve().parents[1] / "sample-data"
-            / "Track 07 Sep 2026 14-30-57.rctrk")
-    if not walk.exists():
-        pytest.skip("walk sample not present")
+def test_the_gui_logs_a_widened_background_window(window, walk_path):
+    walk = walk_path
     assert window.load(str(walk))
     assert "background window widened from 900 s" in window.log.toPlainText()
 
 
-def test_the_window_box_shows_the_window_actually_applied(window, sample_path):
-    from pathlib import Path
-    walk = sample_path.parent / "Track 07 Sep 2026 14-30-57.rctrk"
-    if not walk.exists():
-        pytest.skip("walk sample not present")
+def test_the_window_box_shows_the_window_actually_applied(window, sample_path, walk_path):
+    walk = walk_path
     window.show()
     assert window.load(str(walk))
     note = window.analysis_dock.window_applied
@@ -1792,14 +1785,10 @@ def test_fetch_with_no_flight_number_says_what_to_type(loaded):
     assert "Type a flight number first" in loaded.flight.caption.text()
 
 
-def test_tables_sort_numerically_and_rows_still_select_their_samples(window):
+def test_tables_sort_numerically_and_rows_still_select_their_samples(window, walk_path):
     """Sorting goes through a proxy, so a view row is not a model row."""
-    from pathlib import Path
     from PySide6.QtCore import QItemSelectionModel, Qt as _Qt
-    walk = (Path(__file__).resolve().parents[1] / "sample-data"
-            / "Track 07 Sep 2026 14-30-57.rctrk")
-    if not walk.exists():
-        pytest.skip("walk sample not present")
+    walk = walk_path
     assert window.load(str(walk))
     view, model = window.anomaly_view, window.anomaly_model
     sigma = [h for h in range(model.columnCount())
@@ -1818,12 +1807,8 @@ def test_tables_sort_numerically_and_rows_still_select_their_samples(window):
     assert window._selection.count == strongest.stop_index - strongest.start_index
 
 
-def test_double_clicking_an_anomaly_row_zooms_the_map_to_it(window):
-    from pathlib import Path
-    walk = (Path(__file__).resolve().parents[1] / "sample-data"
-            / "Track 07 Sep 2026 14-30-57.rctrk")
-    if not walk.exists():
-        pytest.skip("walk sample not present")
+def test_double_clicking_an_anomaly_row_zooms_the_map_to_it(window, walk_path):
+    walk = walk_path
     window.resize(1200, 800)
     window.show()
     assert window.load(str(walk))

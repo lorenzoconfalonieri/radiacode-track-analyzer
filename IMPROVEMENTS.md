@@ -245,6 +245,12 @@ correctness, tests, GUI usability, performance (measured), code quality.
   0.09 s and clearing from 3.3 s to 0.007 s. Spikes keep their full height.
   Line width goes from 1.2 px to 1 px, like the significance trace.
 
+- 2026-10-16 **Code quality:** a session `walk_path` fixture in conftest
+  replaces six hand-built paths to the walk sample and a private helper
+  with eight callers. Same 993 tests, none skipped. Hover on a 100k-sample
+  track was also re-measured at 0.05 s after the series fix, so it needs no
+  change.
+
 ## Rejected
 
 - 2026-10-15 **Investigated, no change:** the Flight caption's "scatter

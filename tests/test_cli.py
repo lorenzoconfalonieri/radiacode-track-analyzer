@@ -438,13 +438,10 @@ def test_an_unknown_provider_is_an_error_not_a_traceback(sample_path, capsys):
     assert "unknown --provider 'nonesuch'" in capsys.readouterr().err
 
 
-def test_the_json_report_records_the_applied_background_window(tmp_path):
+def test_the_json_report_records_the_applied_background_window(tmp_path,
+                                                              walk_path):
     """The default window is widened on a 10 s walk; the report must say so."""
-    from pathlib import Path
-    walk = Path(__file__).resolve().parents[1] / "sample-data" \
-        / "Track 07 Sep 2026 14-30-57.rctrk"
-    if not walk.exists():
-        pytest.skip("walk sample not present")
+    walk = walk_path
     out = tmp_path / "walk.json"
     assert main(["analyze", str(walk), "--n-boot", "20",
                  "--json", str(out)]) == 0
@@ -464,33 +461,23 @@ def test_grid_writes_an_asc_and_its_projection(sample_path, tmp_path, capsys):
     assert "supported" in printed and "NODATA" in printed
 
 
-def test_grid_excess_needs_no_extra_input(sample_path, tmp_path):
+def test_grid_excess_needs_no_extra_input(sample_path, tmp_path, walk_path):
     out = tmp_path / "net.asc"
     assert main(["grid", str(sample_path), "-o", str(out), "--value", "excess",
                  "--grid-size", "32", "--n-boot", "10"]) == 0
     assert out.exists()
 
 
-def _walk_path():
-    from pathlib import Path
-    walk = (Path(__file__).resolve().parents[1] / "sample-data"
-            / "Track 07 Sep 2026 14-30-57.rctrk")
-    if not walk.exists():
-        pytest.skip("walk sample not present")
-    return walk
-
-
-def test_info_takes_several_tracks_as_the_readme_shows(sample_path, capsys):
+def test_info_takes_several_tracks_as_the_readme_shows(sample_path, capsys, walk_path):
     """`rcta-cli info sample-data/Track*.rctrk` used to be a usage error."""
-    assert main(["info", str(sample_path), str(_walk_path())]) == 0
+    assert main(["info", str(sample_path), str(walk_path)]) == 0
     out = capsys.readouterr().out
     assert "2964" in out and "348" in out
 
 
-def test_analyze_writes_an_array_of_reports_for_several_tracks(
-        sample_path, tmp_path):
+def test_analyze_writes_an_array_of_reports_for_several_tracks(sample_path, tmp_path, walk_path):
     out = tmp_path / "reports.json"
-    assert main(["analyze", str(sample_path), str(_walk_path()),
+    assert main(["analyze", str(sample_path), str(walk_path),
                  "--json", str(out), "--n-boot", "10"]) == 0
     reports = json.loads(out.read_text())
     assert isinstance(reports, list) and len(reports) == 2
@@ -498,8 +485,8 @@ def test_analyze_writes_an_array_of_reports_for_several_tracks(
 
 
 def test_analyze_refuses_one_anomaly_csv_for_several_tracks(sample_path,
-                                                            tmp_path, capsys):
-    assert main(["analyze", str(sample_path), str(_walk_path()),
+                                                            tmp_path, capsys, walk_path):
+    assert main(["analyze", str(sample_path), str(walk_path),
                  "--csv", str(tmp_path / "a.csv"), "--n-boot", "10"]) == 1
     assert "single track" in capsys.readouterr().err
 
@@ -540,9 +527,9 @@ def test_sparkline_survives_masked_readings():
     assert _sparkline(np.full(4, np.nan)) == "____"
 
 
-def test_info_runs_on_a_track_with_masked_markers(tmp_path, capsys):
+def test_info_runs_on_a_track_with_masked_markers(tmp_path, capsys, walk_path):
     out = tmp_path / "broken.rctrk"
-    walk = _walk_path()
+    walk = walk_path
     data = json.loads(walk.read_text())
     for marker in data["markers"][::50]:
         marker.pop("doseRate", None)
@@ -551,9 +538,9 @@ def test_info_runs_on_a_track_with_masked_markers(tmp_path, capsys):
     assert "nan" not in capsys.readouterr().out.lower()
 
 
-def test_info_reports_the_same_distance_as_analyze(capsys):
+def test_info_reports_the_same_distance_as_analyze(capsys, walk_path):
     """info used to describe the track before quality assessment."""
-    walk = str(_walk_path())
+    walk = str(walk_path)
     assert main(["info", walk]) == 0
     info = capsys.readouterr().out
     assert main(["analyze", walk, "--n-boot", "10"]) == 0
@@ -596,10 +583,10 @@ _COMMANDS = {
 
 
 @pytest.mark.parametrize("command", sorted(_COMMANDS))
-def test_every_command_survives_masked_markers(command, tmp_path, capsys):
+def test_every_command_survives_masked_markers(command, tmp_path, capsys, walk_path):
     """Masked readings are NaN; `info` once crashed on int(nan)."""
     import re
-    track = _with_masked_markers(_walk_path(), tmp_path)
+    track = _with_masked_markers(walk_path, tmp_path)
     assert main(_COMMANDS[command](track, tmp_path)) == 0
     captured = capsys.readouterr()
     assert not re.search(r"\bnan\b", captured.out, re.I)
@@ -642,10 +629,10 @@ def test_flight_quotes_every_dose_rate_in_the_requested_unit(
     assert "median difference 0.1011 uSv/h" in out
 
 
-def test_json_hotspots_carry_their_dose_rates(tmp_path):
+def test_json_hotspots_carry_their_dose_rates(tmp_path, walk_path):
     """The hotspot CSV and table showed the peak; the JSON report did not."""
     out = tmp_path / "walk.json"
-    assert main(["analyze", str(_walk_path()), "--json", str(out),
+    assert main(["analyze", str(walk_path), "--json", str(out),
                  "--n-boot", "10"]) == 0
     report = json.loads(out.read_text())
     assert report["hotspots"], "the walk has hotspots"

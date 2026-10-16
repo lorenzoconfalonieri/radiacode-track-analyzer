@@ -19,6 +19,17 @@ def sample_path():
     return SAMPLE
 
 
+WALK = SAMPLE.with_name("Track 07 Sep 2026 14-30-57.rctrk")
+
+
+@pytest.fixture(scope="session")
+def walk_path():
+    """The bundled 2 h walking survey: 348 samples at a 10 s cadence."""
+    if not WALK.exists():
+        pytest.skip(f"walk sample not present at {WALK}")
+    return WALK
+
+
 @pytest.fixture(scope="session")
 def sample(sample_path):
     return load_track(sample_path)
