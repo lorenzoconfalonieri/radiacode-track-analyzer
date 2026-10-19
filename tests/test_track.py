@@ -378,3 +378,22 @@ def test_a_clipped_integration_time_says_it_was_clipped():
 
 def track_source(times):
     return _timed(times).integration_time_source
+
+
+@pytest.mark.parametrize("accuracy, raw_factor", [(3.0, 2.1), (8.0, 5.2)])
+def test_the_readme_jitter_figures_hold(accuracy, raw_factor):
+    """README, 'Walking surveys': raw distance overstates a walk 5.2x at 8 m
+    and 2.1x at 3 m, and the correction lands within 3 % across 3-20 m.
+    The tests above allow 10-12 %; this pins the published claim, averaged
+    over seeds so it is the figure and not one draw."""
+    raw = [(_walk(accuracy_m=accuracy, seed=s)) for s in range(8)]
+    ratio = np.mean([t.raw_distance_along_m[-1] / 1000.0 / km for t, km in raw])
+    assert ratio == pytest.approx(raw_factor, abs=0.15)
+
+
+@pytest.mark.parametrize("accuracy", [3.0, 8.0, 20.0])
+def test_the_correction_is_within_three_percent_as_published(accuracy):
+    for seed in range(8):
+        track, true_km = _walk(accuracy_m=accuracy, seed=seed)
+        assert float(track.distance_along_m[-1]) / 1000.0 == pytest.approx(
+            true_km, rel=0.03)

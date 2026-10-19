@@ -320,6 +320,12 @@ correctness, tests, GUI usability, performance (measured), code quality.
   docs follow. The Profile panel's resampling was checked and uses the
   full track's distances.
 
+- 2026-10-19 **Tests:** the README's GPS-jitter figures are pinned at
+  their published precision: raw distance 5.2x the truth at 8 m and 2.1x at
+  3 m (measured 5.13x and 2.09x over 20 seeds), and the correction within
+  3 % at 3, 8 and 20 m (worst 2.8 %). The existing tests allowed 10-12 %.
+  The 0.25-quantile bias claim was already tested.
+
 ## Rejected
 
 - 2026-10-15 **Investigated, no change:** the Flight caption's "scatter
