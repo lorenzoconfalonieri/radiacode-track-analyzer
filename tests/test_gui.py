@@ -1958,3 +1958,39 @@ def test_no_force_is_offered_for_a_trajectory_that_never_overlaps(
     window._load_trajectory(str(late), "auto")
     assert window._join() is None
     assert "NOT CHECKED" in window.flight.caption.text()
+
+
+def _displaced_trajectory(source, tmp_path, degrees_east=5.0):
+    """The bundled trajectory, same times, about 450 km east of the track."""
+    import json
+    data = json.loads(source.read_text(encoding="utf-8"))
+    data["path"] = [[p[0], p[1], p[2] + degrees_east] + p[3:] for p in data["path"]]
+    out = tmp_path / "displaced.json"
+    out.write_text(json.dumps(data), encoding="utf-8")
+    return str(out)
+
+
+@pytest.mark.parametrize("answer, joined", [("Ignore", True), ("Cancel", False)])
+def test_a_trajectory_that_overlaps_but_disagrees_offers_a_forced_join(
+        window, sample_path, sample_trajectory_path, tmp_path, monkeypatch,
+        answer, joined):
+    """The other half of the no-overlap test: here a residual exists, so the
+    dialog must appear, and only an explicit 'Join anyway' may force it."""
+    from PySide6 import QtWidgets
+    offered = []
+
+    def fake_exec(box):
+        offered.append(box.text())
+        return getattr(QtWidgets.QMessageBox.StandardButton, answer)
+    monkeypatch.setattr(QtWidgets.QMessageBox, "exec", fake_exec)
+    assert window.load(str(sample_path))
+    window._load_trajectory(_displaced_trajectory(sample_trajectory_path,
+                                                  tmp_path), "auto")
+    assert len(offered) == 1 and "km from the positions" in offered[0]
+    assert "nan" not in offered[0]
+    join = window._join()
+    if joined:
+        assert join is not None and join.match.forced
+        assert "overridden by the user" in window.log.toPlainText()
+    else:
+        assert join is None

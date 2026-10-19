@@ -351,6 +351,11 @@ correctness, tests, GUI usability, performance (measured), code quality.
   positions" and offered a forced join of nothing. The Flight dock's
   NOT CHECKED explanation stands alone.
 
+- 2026-10-19 **Tests:** the force dialog is tested for a trajectory that
+  overlaps in time but runs 450 km off: it is offered once, quotes a real
+  distance, forces the join only on "Join anyway" (marked forced and
+  logged), and leaves no join on Cancel. Nothing had covered this path.
+
 ## Rejected
 
 - 2026-10-15 **Investigated, no change:** the Flight caption's "scatter
