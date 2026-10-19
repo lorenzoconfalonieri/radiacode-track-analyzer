@@ -292,6 +292,13 @@ correctness, tests, GUI usability, performance (measured), code quality.
   0.180 s; the parsed arrays are identical on four files, including one
   with masked markers.
 
+- 2026-10-19 **Correctness:** the accumulated dose of a selection of
+  separate runs no longer integrates across the unselected stretches
+  between them. Two flight runs 22 s apart had reported 51.2 nSv over
+  198 s at 100 % coverage; now 45.1 nSv over 176 s (the sum of the runs),
+  89 % of the hull. Whole-track output is byte-identical. The TSV loader
+  was also measured (0.14 s for 100k rows) and needs no change.
+
 ## Rejected
 
 - 2026-10-15 **Investigated, no change:** the Flight caption's "scatter

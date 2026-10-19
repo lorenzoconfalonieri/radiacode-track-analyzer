@@ -218,3 +218,22 @@ def test_signed_dose_rate_always_carries_a_sign_and_converts():
     assert format_signed_dose_rate(-3.2) == "-3.20 nSv/h"
     assert format_signed_dose_rate(0.0) == "+0.00 nSv/h"
     assert format_signed_dose_rate(81.51, "uSv/h") == "+0.0815 uSv/h"
+
+
+def test_a_selection_of_runs_does_not_integrate_the_time_between_them():
+    """Two runs 22 s apart on the flight summed to 45.1 nSv over 176 s, but
+    together reported 51.2 nSv over 198 s at 100 % coverage: the unselected
+    stretch counted as observed."""
+    track = _track(n=400, dt=2.0)
+    a = np.zeros(track.n, bool); a[100:150] = True
+    b = np.zeros(track.n, bool); b[160:200] = True
+    one, two, both = (accumulated_dose(track, mask=m) for m in (a, b, a | b))
+    assert both.total_nsv == pytest.approx(one.total_nsv + two.total_nsv)
+    assert both.covered_time_s == pytest.approx(one.covered_time_s
+                                                + two.covered_time_s)
+    assert both.naive_total_nsv == pytest.approx(one.naive_total_nsv
+                                                 + two.naive_total_nsv)
+    assert both.coverage < 1.0
+    # A single contiguous run is unchanged.
+    whole = accumulated_dose(track, mask=a)
+    assert whole.coverage == pytest.approx(1.0)

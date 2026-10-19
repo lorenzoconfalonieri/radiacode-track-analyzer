@@ -185,6 +185,10 @@ def accumulated_dose(track: Track, *, quality=None, max_gap_s: float = 30.0,
     time_s = track.time_s
     rate = track.dose_rate
     valid = track.valid_mask
+    # Where a selection of several runs jumps over unselected samples. That
+    # stretch was measured but not selected, so it is no more "observed" for
+    # this selection than a dropout is, and no total may integrate across it.
+    run_break = None
     if mask is not None:
         mask = np.asarray(mask, dtype=bool)
         if mask.size != track.n:
@@ -192,6 +196,7 @@ def accumulated_dose(track: Track, *, quality=None, max_gap_s: float = 30.0,
         if mask.sum() < 2:
             raise ValueError("need at least two samples to integrate a dose")
         time_s, rate, valid = time_s[mask], rate[mask], valid[mask]
+        run_break = np.diff(np.flatnonzero(mask)) != 1
 
     n = time_s.size
     peak = float(rate[valid].max()) if valid.any() else 0.0
@@ -213,8 +218,13 @@ def accumulated_dose(track: Track, *, quality=None, max_gap_s: float = 30.0,
     # unobserved time exactly like a dropout. The naive total bridges it from
     # the readings on either side, as it bridges a dropout.
     observed = ~is_gap & valid[:-1] & valid[1:]
-    t_ok, r_ok = time_s[valid], rate[valid]
-    naive = float((0.5 * (r_ok[:-1] + r_ok[1:]) * np.diff(t_ok)).sum() / 3600.0)
+    run = np.zeros(n, dtype=np.int64)
+    if run_break is not None:
+        observed &= ~run_break
+        run[1:] = np.cumsum(run_break)
+    t_ok, r_ok, run_ok = time_s[valid], rate[valid], run[valid]
+    pieces = 0.5 * (r_ok[:-1] + r_ok[1:]) * np.diff(t_ok) / 3600.0
+    naive = float(pieces[run_ok[:-1] == run_ok[1:]].sum())
 
     return DoseSummary(
         total_nsv=float(per_interval[observed].sum()),
