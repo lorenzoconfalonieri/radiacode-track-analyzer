@@ -346,6 +346,11 @@ correctness, tests, GUI usability, performance (measured), code quality.
   rejected up front. Real offsets, including the wrong sign, already
   behaved correctly.
 
+- 2026-10-19 **GUI:** a trajectory with no time overlap no longer opens the
+  "Join anyway" dialog, which had said "the trajectory sits nan km from the
+  positions" and offered a forced join of nothing. The Flight dock's
+  NOT CHECKED explanation stands alone.
+
 ## Rejected
 
 - 2026-10-15 **Investigated, no change:** the Flight caption's "scatter

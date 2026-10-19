@@ -1938,3 +1938,23 @@ def test_the_trajectory_dialog_starts_beside_the_track(loaded, sample_path,
                         staticmethod(fake_open))
     loaded.flight.choose_file()
     assert Path(seen["start"]) == sample_path.resolve().parent
+
+
+def test_no_force_is_offered_for_a_trajectory_that_never_overlaps(
+        window, sample_path, sample_trajectory_path, tmp_path, monkeypatch):
+    """The dialog said 'sits nan km away' and offered a join of nothing."""
+    import json
+    from PySide6 import QtWidgets
+    data = json.loads(sample_trajectory_path.read_text(encoding="utf-8"))
+    year = 31_536_000
+    data["startTime"] += year
+    data["endTime"] += year
+    data["path"] = [[p[0] + year] + p[1:] for p in data["path"]]
+    late = tmp_path / "late.json"
+    late.write_text(json.dumps(data), encoding="utf-8")
+    monkeypatch.setattr(QtWidgets.QMessageBox, "exec",
+                        lambda self: pytest.fail("force dialog was offered"))
+    assert window.load(str(sample_path))
+    window._load_trajectory(str(late), "auto")
+    assert window._join() is None
+    assert "NOT CHECKED" in window.flight.caption.text()

@@ -1153,6 +1153,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _offer_force(self, report) -> None:
         """Ask once, in a dialog that states what forcing actually means."""
+        if report.n_compared == 0:
+            # No sample overlapped the trajectory in time, so there is no
+            # residual to quote ("sits nan km away") and nothing a forced
+            # join could attach an altitude to. The dock already says why.
+            return
         box = QtWidgets.QMessageBox(self)
         box.setIcon(QtWidgets.QMessageBox.Icon.Warning)
         box.setWindowTitle("Trajectory does not match this track")
