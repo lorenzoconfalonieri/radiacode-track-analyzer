@@ -95,8 +95,11 @@ class SummaryStats:
             f"{self.n_poor_position} with poor position)",
             f"duration   : {hours} h {minutes} m {seconds} s"
             f"   coverage {self.coverage * 100.0:.1f} %",
-            f"distance   : {self.distance_m / 1000.0:.2f} km"
-            + ("" if self.contiguous else "   (selection is not contiguous)"),
+            (f"distance   : {self.distance_m / 1000.0:.2f} km"
+             if self.contiguous else
+             # The NaN is deliberate (see summarise); printing it as "nan km"
+             # read as a fault rather than a refusal.
+             "distance   : not quoted (selection is not contiguous)"),
             f"dose rate  : {lo:.{digits}f} .. {hi:.{digits}f} {unit}   "
             f"mean {mean:.{digits}f}, median {median:.{digits}f}, "
             f"p95 {p95:.{digits}f}",
@@ -137,7 +140,11 @@ def summarise(track: Track, *, mask=None, quality=None) -> SummaryStats:
         sub = track
 
     try:
-        dose = accumulated_dose(sub, quality=quality if mask is None else None)
+        # The full track and the mask, not the selected sub-track: in the
+        # sub-track separate runs sit back to back, so the time between them
+        # was integrated as if observed (51.2 nSv for two runs worth 45.1).
+        dose = (accumulated_dose(track, quality=quality) if mask is None
+                else accumulated_dose(track, mask=mask))
         accumulated, coverage = dose.total_nsv, dose.coverage
     except ValueError:
         accumulated, coverage = 0.0, 1.0

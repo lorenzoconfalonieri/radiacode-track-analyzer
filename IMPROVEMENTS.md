@@ -299,6 +299,13 @@ correctness, tests, GUI usability, performance (measured), code quality.
   89 % of the hull. Whole-track output is byte-identical. The TSV loader
   was also measured (0.14 s for 100k rows) and needs no change.
 
+- 2026-10-19 **Correctness:** the Selection dock now gets the fixed dose.
+  `summarise` integrated over `track.select(mask)`, where separate runs sit
+  back to back, so the previous commit's fix never reached it: the dock
+  still showed 51.2 nSv. It passes the mask now, giving 45.1 nSv at 88.9 %
+  coverage. A disjoint selection's deliberate NaN distance prints as "not
+  quoted" instead of "nan km".
+
 ## Rejected
 
 - 2026-10-15 **Investigated, no change:** the Flight caption's "scatter

@@ -212,3 +212,18 @@ def test_too_few_readings_are_not_described_as_a_split():
     assert "n=0" not in text
     assert bimodality(np.zeros(0)).describe().startswith("too few readings")
     assert "split at" in bimodality(np.array([1.0, 2.0, 9.0, 10.0])).describe()
+
+
+def test_a_multi_run_selection_summary_counts_only_its_runs(sample):
+    """The Selection dock integrated dose across the unselected stretch and
+    printed "nan km" for the distance."""
+    from rcta.core.quality import assess
+    from rcta.core.profile import summarise
+    track = assess(sample)
+    a = np.zeros(track.n, bool); a[1000:1050] = True
+    b = np.zeros(track.n, bool); b[1060:1100] = True
+    one, two, both = (summarise(track, mask=m) for m in (a, b, a | b))
+    assert both.accumulated_dose_nsv == pytest.approx(
+        one.accumulated_dose_nsv + two.accumulated_dose_nsv)
+    assert both.coverage < 1.0
+    assert "nan" not in both.describe()
