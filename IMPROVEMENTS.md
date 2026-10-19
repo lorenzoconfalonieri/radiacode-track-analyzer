@@ -312,6 +312,14 @@ correctness, tests, GUI usability, performance (measured), code quality.
   track gives 313 m and 0.51 m/s for the same samples. `summarise` was the
   only user of `track.select`. Whole-track output is byte-identical.
 
+- 2026-10-19 **Tests:** the paper's quoted walk figures (348 samples,
+  2.99 km, 5.31 cps / 70.1 nSv/h background, the 7.4 and 4.6 sigma
+  hotspots and their evidence, 80.9 vs 153.8 nSv over 3856 s, n_eff 126,
+  p 0.113 to 0.343) and the flight's two quoted MDAs are now pinned by
+  tests, so a code change that moves a published number fails until the
+  docs follow. The Profile panel's resampling was checked and uses the
+  full track's distances.
+
 ## Rejected
 
 - 2026-10-15 **Investigated, no change:** the Flight caption's "scatter

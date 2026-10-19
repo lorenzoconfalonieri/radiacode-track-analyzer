@@ -263,3 +263,40 @@ def test_scan_scales_longer_than_the_track_are_not_a_null_result():
     assert "no anomalies" not in a.status_line()
     # The unusable scale no longer drives the background window.
     assert a.background.params.window_s == 900.0
+
+
+# ---- figures quoted in the paper and README -------------------------------
+
+
+@pytest.fixture(scope="module")
+def walk_analysis(walk_path):
+    from rcta.core.io_radiacode import load_track
+    return analyze_track(load_track(walk_path))
+
+
+def test_the_walk_figures_quoted_in_the_paper_still_hold(walk_analysis):
+    """paper.tex Fig. 1 and section 3 quote these numbers, and the docs have
+    drifted from the program before (1160.02 vs 1159.97). This test is the
+    tripwire: if it fails, fix the paper and the README in the same commit."""
+    a = walk_analysis
+    assert a.track.n == 348
+    assert round(a.summary.distance_m / 1000.0, 2) == 2.99
+    assert round(a.background.median_count_rate, 2) == 5.31
+    assert round(float(np.median(a.background.dose_rate)), 1) == 70.1
+    sigmas = sorted((round(h.significance, 1) for h in a.hotspots), reverse=True)
+    assert sigmas[:2] == [7.4, 4.6]
+    assert [h.evidence for h in a.hotspots[:2]] == ["strong", "possible"]
+    assert round(a.dose.total_nsv, 1) == 80.9
+    assert round(a.dose.naive_total_nsv, 1) == 153.8
+    assert round(a.dose.covered_time_s) == 3856
+    assert round(a.speed_dose.n_effective) == 126
+    assert round(a.speed_dose.p_naive, 3) == 0.113
+    assert round(a.speed_dose.p_effective, 3) == 0.343
+
+
+def test_the_flight_detection_limits_quoted_in_the_paper_still_hold(sample):
+    """paper.tex section 3: 1160 nSv/h in one 2 s sample, 133 over 128 s."""
+    table = {width: mda for width, _, mda in
+             analyze_track(sample, AnalysisParams(n_boot=20)).mda_table}
+    assert round(table[1], 2) == 1159.97
+    assert round(table[64], 2) == 132.56
