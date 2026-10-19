@@ -43,6 +43,7 @@ from __future__ import annotations
 import csv
 import io
 import json
+import math
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -110,7 +111,9 @@ def _number(value) -> float:
         number = float(value)
     except (TypeError, ValueError):
         return np.nan
-    return number if np.isfinite(number) else np.nan
+    # math, not numpy: called per field per marker, and np.isfinite on a
+    # Python float costs several times more for the same answer.
+    return number if math.isfinite(number) else np.nan
 
 
 def _nearest(good: np.ndarray, rows: np.ndarray) -> np.ndarray:
@@ -192,7 +195,7 @@ def load_rctrk_json(path) -> Track:
         dose[i] = field["doseRate"] * RCTRK_DOSE_TO_NSV_H
         count[i] = field["countRate"]
         accuracy[i] = field["acc"]
-        if not all(np.isfinite(field[key]) for key in _REQUIRED):
+        if not all(math.isfinite(field[key]) for key in _REQUIRED):
             valid[i] = False
             bad.append(i)
 

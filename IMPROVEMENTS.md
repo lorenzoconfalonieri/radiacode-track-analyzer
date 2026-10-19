@@ -286,6 +286,12 @@ correctness, tests, GUI usability, performance (measured), code quality.
   flight flags otherwise found clean refusals for bad steps, gaps,
   statistics, dates, airports and missing files.
 
+- 2026-10-19 **Performance:** the JSON track loader checks finiteness with
+  `math.isfinite` rather than `np.isfinite` on single Python floats (1.3
+  million calls at 100k markers). Loading 100k markers went from 0.448 s to
+  0.180 s; the parsed arrays are identical on four files, including one
+  with masked markers.
+
 ## Rejected
 
 - 2026-10-15 **Investigated, no change:** the Flight caption's "scatter
