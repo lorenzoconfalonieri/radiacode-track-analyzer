@@ -306,6 +306,12 @@ correctness, tests, GUI usability, performance (measured), code quality.
   coverage. A disjoint selection's deliberate NaN distance prints as "not
   quoted" instead of "nan km".
 
+- 2026-10-19 **Correctness:** the selection summary takes distance and speed
+  from the full track instead of re-smoothing the selection in isolation.
+  A 40-sample walk selection had read 256 m and a median 0.25 m/s; the
+  track gives 313 m and 0.51 m/s for the same samples. `summarise` was the
+  only user of `track.select`. Whole-track output is byte-identical.
+
 ## Rejected
 
 - 2026-10-15 **Investigated, no change:** the Flight caption's "scatter

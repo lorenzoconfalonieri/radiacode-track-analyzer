@@ -149,7 +149,19 @@ def summarise(track: Track, *, mask=None, quality=None) -> SummaryStats:
     except ValueError:
         accumulated, coverage = 0.0, 1.0
 
-    distance = float(sub.distance_along_m[-1]) if contiguous else float("nan")
+    # Distance and speed from the full track, not the sub-track. A sub-track
+    # re-smooths its positions in isolation, holding its own endpoints, so a
+    # 40-sample stretch of the walk measured 256 m and a median 0.25 m/s
+    # against the 313 m and 0.51 m/s the map and the legs report for the
+    # very same samples.
+    rows = np.ones(track.n, dtype=bool) if mask is None else mask
+    if contiguous:
+        first, last = np.flatnonzero(rows)[[0, -1]]
+        distance = float(track.distance_along_m[last]
+                         - track.distance_along_m[first])
+    else:
+        distance = float("nan")
+    speed = track.speed_m_s[rows]
     # Readings only from samples that have one; a selection of nothing but
     # masked samples reports NaN rather than a fabricated zero.
     dose = sub.dose_rate[sub.valid_mask]
@@ -168,8 +180,8 @@ def summarise(track: Track, *, mask=None, quality=None) -> SummaryStats:
         count_min=_stat(np.min, cps), count_max=_stat(np.max, cps),
         count_mean=_stat(np.mean, cps),
         count_median=_stat(np.median, cps),
-        speed_median=float(np.median(sub.speed_m_s)),
-        speed_max=float(sub.speed_m_s.max()),
+        speed_median=float(np.median(speed)),
+        speed_max=float(speed.max()),
         accuracy_median=_stat(np.median, accuracy),
         accuracy_max=_stat(np.max, accuracy),
         accumulated_dose_nsv=accumulated,

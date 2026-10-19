@@ -227,3 +227,19 @@ def test_a_multi_run_selection_summary_counts_only_its_runs(sample):
         one.accumulated_dose_nsv + two.accumulated_dose_nsv)
     assert both.coverage < 1.0
     assert "nan" not in both.describe()
+
+
+def test_a_selection_measures_the_same_distance_as_the_track(walk_path):
+    """The summary re-smoothed the selection on its own and reported a
+    shorter path (256 m) than the track gives for those samples (313 m)."""
+    from rcta.core.io_radiacode import load_track
+    from rcta.core.quality import assess
+    from rcta.core.profile import summarise
+    track = assess(load_track(walk_path))
+    mask = np.zeros(track.n, bool); mask[20:60] = True
+    s = summarise(track, mask=mask)
+    along = track.distance_along_m
+    assert s.distance_m == pytest.approx(along[59] - along[20])
+    assert s.speed_median == pytest.approx(np.median(track.speed_m_s[mask]))
+    # The whole track is unchanged.
+    assert summarise(track).distance_m == pytest.approx(along[-1])
