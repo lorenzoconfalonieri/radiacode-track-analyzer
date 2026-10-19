@@ -729,8 +729,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self._load_trajectory(paths[0], "auto")
 
     def open_dialog(self) -> None:
+        # Start where the last track was, the folder a user keeps them in.
+        recent = self.recent_files()
+        start = str(Path(recent[0]).parent) if recent else ""
         path, _ = QtWidgets.QFileDialog.getOpenFileName(
-            self, "Open track", "", "RadiaCode track (*.rctrk);;All files (*)")
+            self, "Open track", start, "RadiaCode track (*.rctrk);;All files (*)")
         if path:
             self.load(path)
 
@@ -1433,7 +1436,7 @@ class MainWindow(QtWidgets.QMainWindow):
                    "samples": "CSV (*.csv)", "profile": "CSV (*.csv)",
                    "trajectory": "CSV (*.csv)", "report": "JSON (*.json)",
                    "grid": "ESRI ASCII grid (*.asc)"}
-        suggested = self._suggested_export_name(kind)
+        suggested = self._suggested_export_path(kind)
         path, _ = QtWidgets.QFileDialog.getSaveFileName(
             self, f"Export {kind}", suggested, filters[kind])
         if not path:
@@ -1500,12 +1503,24 @@ class MainWindow(QtWidgets.QMainWindow):
         }
         return names.get(kind, "")
 
+    def _suggested_export_path(self, kind: str) -> str:
+        """The suggested name, in the track's own folder.
+
+        A bare name opened the dialog in whatever directory the program
+        was started from -- the home folder, or the app bundle -- not
+        beside the track the export belongs with.
+        """
+        name = self._suggested_export_name(kind)
+        if not self._path:
+            return name
+        return str(Path(self._path).resolve().parent / name)
+
     def _export_image(self) -> None:
         """Render the map to a PNG with attribution baked into the pixels."""
         if self._analysis is None:
             return
         path, _ = QtWidgets.QFileDialog.getSaveFileName(
-            self, "Export map image", self._suggested_export_name("image"),
+            self, "Export map image", self._suggested_export_path("image"),
             "PNG image (*.png)")
         if not path:
             return
@@ -1542,7 +1557,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self._analysis is None:
             return
         path, _ = QtWidgets.QFileDialog.getSaveFileName(
-            self, "Export map SVG", self._suggested_export_name("svg"),
+            self, "Export map SVG", self._suggested_export_path("svg"),
             "SVG image (*.svg)")
         if not path:
             return

@@ -6,6 +6,8 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 ## Backlog
 
+- **GUI:** the Flight dock's "From file..." trajectory dialog still opens in
+  the working directory; it could start beside the loaded track.
 - **GUI:** the Track summary (13 lines) shows about 9 in its dock. Instead
   of forcing height (rejected below), move it to a "Summary" tab in the
   bottom stack, or let the Track dock collapse to a one-line caption with
@@ -325,6 +327,10 @@ correctness, tests, GUI usability, performance (measured), code quality.
   3 m (measured 5.13x and 2.09x over 20 seeds), and the correction within
   3 % at 3, 8 and 20 m (worst 2.8 %). The existing tests allowed 10-12 %.
   The 0.25-quantile bias claim was already tested.
+
+- 2026-10-19 **GUI:** export dialogs suggest the file in the track's own
+  folder, not the program's working directory, and Open track starts in the
+  folder of the most recent track.
 
 ## Rejected
 

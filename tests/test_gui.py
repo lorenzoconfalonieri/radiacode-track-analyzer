@@ -1905,3 +1905,21 @@ def test_a_selection_of_separate_runs_is_refused_as_a_reference(loaded):
     assert loaded._reference_span is None
     assert loaded._analysis.background.params.method != "reference"
     assert "2 separate runs" in loaded.log.toPlainText()
+
+
+def test_exports_and_the_open_dialog_start_beside_the_track(loaded, sample_path,
+                                                            monkeypatch):
+    """Bare names opened every dialog in the program's working directory."""
+    from pathlib import Path
+    from PySide6 import QtWidgets
+    folder = sample_path.resolve().parent
+    assert Path(loaded._suggested_export_path("json")).parent == folder
+    seen = {}
+
+    def fake_open(parent, caption, start, filters):
+        seen["start"] = start
+        return "", ""
+    monkeypatch.setattr(QtWidgets.QFileDialog, "getOpenFileName",
+                        staticmethod(fake_open))
+    loaded.open_dialog()
+    assert Path(seen["start"]) == folder
