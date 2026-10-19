@@ -88,6 +88,7 @@ class FlightPanel(QtWidgets.QWidget):
         super().__init__(parent)
         self._join = None
         self._unit = "nSv/h"
+        self._start_folder = ""
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -325,10 +326,16 @@ class FlightPanel(QtWidgets.QWidget):
             return
         self.fetchRequested.emit(text, self.date.date().toString("yyyy-MM-dd"))
 
+    def set_start_folder(self, folder: str) -> None:
+        """Where the trajectory dialog opens: beside the loaded track, where a
+        trajectory exported for that flight is most likely to have been
+        saved. Set by the window, which knows the path; never emits."""
+        self._start_folder = str(folder)
+
     def choose_file(self) -> None:
         """Public: the File menu offers the same gesture."""
         path, _ = QtWidgets.QFileDialog.getOpenFileName(
-            self, "Open flight trajectory", "",
+            self, "Open flight trajectory", self._start_folder,
             "Trajectory (*.json *.csv *.tsv *.txt);;All files (*)")
         if path:
             self.fileRequested.emit(path, self.altitude_unit.currentText())

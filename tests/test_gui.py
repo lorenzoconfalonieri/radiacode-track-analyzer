@@ -1923,3 +1923,18 @@ def test_exports_and_the_open_dialog_start_beside_the_track(loaded, sample_path,
                         staticmethod(fake_open))
     loaded.open_dialog()
     assert Path(seen["start"]) == folder
+
+
+def test_the_trajectory_dialog_starts_beside_the_track(loaded, sample_path,
+                                                       monkeypatch):
+    from pathlib import Path
+    from PySide6 import QtWidgets
+    seen = {}
+
+    def fake_open(parent, caption, start, filters):
+        seen["start"] = start
+        return "", ""
+    monkeypatch.setattr(QtWidgets.QFileDialog, "getOpenFileName",
+                        staticmethod(fake_open))
+    loaded.flight.choose_file()
+    assert Path(seen["start"]) == sample_path.resolve().parent

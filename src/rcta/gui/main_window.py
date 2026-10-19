@@ -765,6 +765,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._path = str(path)
         self.flight.set_trajectory_available(False)
         self.flight.set_default_date(self._departure_local_start(track))
+        self.flight.set_start_folder(str(Path(path).resolve().parent))
         # Status first, then the join: clearing the join restores the panel's
         # own "there is no altitude yet" message, and wiping the caption
         # afterwards would leave the dock silently blank.
