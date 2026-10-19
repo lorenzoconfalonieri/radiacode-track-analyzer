@@ -78,7 +78,13 @@ class _BaseModel(QtCore.QAbstractTableModel):
     def columnCount(self, parent=QtCore.QModelIndex()) -> int:
         return 0 if parent.isValid() else len(self.COLUMNS)
 
+    #: Column header -> tooltip, for headers whose meaning is not obvious.
+    HEADER_TIPS: dict = {}
+
     def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
+        if (role == Qt.ItemDataRole.ToolTipRole
+                and orientation == Qt.Orientation.Horizontal):
+            return self.HEADER_TIPS.get(self.COLUMNS[section][0])
         if role != Qt.ItemDataRole.DisplayRole:
             return None
         if orientation == Qt.Orientation.Horizontal:
@@ -120,6 +126,17 @@ class AnomalyTableModel(_BaseModel):
         ("MDA (cps)", lambda a, u: f"{a.limits.mda_cps:.2f}"),
         ("flags", lambda a, u: " ".join(a.flags)),
     ]
+
+    HEADER_TIPS = {
+        # 506 s for a 64-sample window that counted for 128 s, on the flight.
+        "dur (s)": "Elapsed time from the window's first sample to its last, "
+                   "including any dropout inside it. The counting time is the "
+                   "scale times the integration time, and can be far shorter.",
+        "L_C": "Currie critical level, in net counts: the excess a window "
+               "must exceed to be called a detection at the chosen alpha.",
+        "MDA (cps)": "Minimum detectable activity for this window, as a net "
+                     "count rate, at 95 % detection probability.",
+    }
 
     def _decoration(self, anomaly, index, role):
         if role == Qt.ItemDataRole.ForegroundRole and not anomaly.is_significant:

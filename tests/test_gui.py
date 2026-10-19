@@ -1994,3 +1994,17 @@ def test_a_trajectory_that_overlaps_but_disagrees_offers_a_forced_join(
         assert "overridden by the user" in window.log.toPlainText()
     else:
         assert join is None
+
+
+def test_ambiguous_anomaly_headers_explain_themselves(app):
+    """'dur (s)' is the elapsed span (506 s for a 128 s count on the flight)."""
+    from PySide6.QtCore import Qt as _Qt
+    from rcta.gui.models import AnomalyTableModel
+    model = AnomalyTableModel()
+    headers = [model.headerData(i, _Qt.Orientation.Horizontal)
+               for i in range(model.columnCount())]
+    tip = model.headerData(headers.index("dur (s)"), _Qt.Orientation.Horizontal,
+                           _Qt.ItemDataRole.ToolTipRole)
+    assert "dropout" in tip and "counting time" in tip
+    assert model.headerData(headers.index("L_C"), _Qt.Orientation.Horizontal,
+                            _Qt.ItemDataRole.ToolTipRole)

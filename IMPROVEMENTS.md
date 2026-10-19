@@ -366,6 +366,11 @@ correctness, tests, GUI usability, performance (measured), code quality.
   distance, forces the join only on "Join anyway" (marked forced and
   logged), and leaves no join on Cancel. Nothing had covered this path.
 
+- 2026-10-19 **GUI:** the Anomalies table's ambiguous headers carry
+  tooltips. "dur (s)" is the elapsed span including dropouts (506 s for a
+  64-sample window that counted 128 s on the flight); L_C and MDA (cps)
+  say what they are.
+
 ## Rejected
 
 - 2026-10-19 **Performance:** faster map recolouring at 100k samples
