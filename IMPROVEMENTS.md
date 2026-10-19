@@ -334,6 +334,11 @@ correctness, tests, GUI usability, performance (measured), code quality.
   opens beside the loaded track; the window sets the folder on load, since
   panels never see paths.
 
+- 2026-10-19 **Code quality:** one `MainWindow._warn()` puts a warning in
+  the log and the status bar; three sites that did both by hand use it, and
+  the drop refusal no longer words the two differently. The tile-status
+  message stays separate, since it must persist while tiles are pending.
+
 ## Rejected
 
 - 2026-10-15 **Investigated, no change:** the Flight caption's "scatter

@@ -684,6 +684,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self.log.log("basemap returned a non-image response; "
                          "you may be behind a captive portal", "warning")
 
+    def _warn(self, message: str, timeout_ms: int = 10000) -> None:
+        """A warning in the log, where it stays, and in the status bar, where
+        a user who just clicked is looking. One place, so the two cannot be
+        worded differently."""
+        self.log.log(message, "warning")
+        self.statusBar().showMessage(message, timeout_ms)
+
     def _on_tile_status(self, message, pending) -> None:
         if message:
             self.log.log(message, "warning")
@@ -721,9 +728,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.load(track)
             return
         if self._track is None:
-            self.log.log("drop a .rctrk track first; a trajectory needs a "
-                         "track to join to", "warning")
-            self.statusBar().showMessage("Drop a .rctrk track file first")
+            self._warn("drop a .rctrk track first; a trajectory needs a "
+                       "track to join to")
             return
         self.show_panel(self._flight_dock)
         self._load_trajectory(paths[0], "auto")
@@ -1302,8 +1308,7 @@ class MainWindow(QtWidgets.QMainWindow):
             message = ("no reference span marked yet, so the rolling "
                        "background is used: select a clean span and choose "
                        "Analysis > Use selection as background")
-            self.log.log(message, "warning")
-            self.statusBar().showMessage(message, 10000)
+            self._warn(message)
 
     def _mark_reference(self) -> None:
         if self._track is None or self._selection is None or self._selection.is_empty:
@@ -1318,8 +1323,7 @@ class MainWindow(QtWidgets.QMainWindow):
                        "background must be one contiguous clean span, or the "
                        "samples between the runs would be counted as "
                        "background too")
-            self.log.log(message, "warning")
-            self.statusBar().showMessage(message, 10000)
+            self._warn(message)
             return
         span = self._selection.time_span(self._track.time_s)
         self._reference_span = span
