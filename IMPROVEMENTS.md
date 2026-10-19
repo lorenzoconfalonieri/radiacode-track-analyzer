@@ -358,6 +358,13 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 ## Rejected
 
+- 2026-10-19 **Performance:** faster map recolouring at 100k samples
+  (0.30 s per colour-map, scale or re-analysis change). The cost is
+  pyqtgraph applying 100k per-point brushes. Passing an object array saves
+  7 %; one scatter item per colour level halves it (0.185 s to 0.095 s in
+  isolation). That would restructure the map's main point layer, which
+  hover, selection and tests rely on, for a path that runs only on a
+  recolour and matters only on very long tracks.
 - 2026-10-15 **Investigated, no change:** the Flight caption's "scatter
   inside bins is 0.2x the counting error -- below Poisson" on the bundled
   flight (0.02x at 50 m bins). Suspected single-sample bins, but they
