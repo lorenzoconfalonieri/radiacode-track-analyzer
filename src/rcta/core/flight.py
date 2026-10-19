@@ -657,10 +657,20 @@ class FlightMatchError(ValueError):
     """
 
     def __init__(self, report: MatchReport) -> None:
-        super().__init__(
-            f"trajectory does not match this track: median position residual "
-            f"{report.residual_median_m / 1000.0:.1f} km exceeds the "
-            f"{report.tolerance_m / 1000.0:.1f} km tolerance")
+        if report.n_compared == 0:
+            # Nothing overlapped in time, so there is no residual to quote;
+            # "nan km exceeds the tolerance" blamed positions for a timing
+            # problem.
+            message = ("trajectory does not overlap this track in time: no "
+                       "sample had both a usable fix and a trajectory "
+                       "position. Check the date, the flight, or the time "
+                       "offset")
+        else:
+            message = (f"trajectory does not match this track: median "
+                       f"position residual "
+                       f"{report.residual_median_m / 1000.0:.1f} km exceeds "
+                       f"the {report.tolerance_m / 1000.0:.1f} km tolerance")
+        super().__init__(message)
         self.report = report
 
 
@@ -804,6 +814,8 @@ def join_altitude(track: Track, trajectory: Trajectory, *,
     """
     if max_gap_s <= 0:
         raise ValueError("max_gap_s must be positive")
+    if not math.isfinite(float(time_offset_s)):
+        raise ValueError(f"time_offset_s must be finite, got {time_offset_s}")
 
     alt_ok = trajectory.has_altitude
     if int(alt_ok.sum()) < 2:

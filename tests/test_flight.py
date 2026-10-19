@@ -592,3 +592,16 @@ def test_the_airline_table_maps_iata_to_icao_and_checks_its_schema(tmp_path):
     custom.write_text('{"schema_version": 2, "airlines": []}', encoding="utf-8")
     with pytest.raises(ValueError, match="schema_version 2"):
         load_airlines(custom)
+
+
+def test_a_join_with_no_time_overlap_says_so_instead_of_nan_km(flight_case):
+    """An offset that slides the track off the trajectory used to be refused
+    as 'median position residual nan km exceeds the tolerance'."""
+    from rcta.core.flight import FlightMatchError, join_altitude
+    track, trajectory, _ = flight_case
+    with pytest.raises(FlightMatchError) as refused:
+        join_altitude(track, trajectory, time_offset_s=1e9)
+    assert "does not overlap this track in time" in str(refused.value)
+    assert "nan" not in str(refused.value)
+    with pytest.raises(ValueError, match="finite"):
+        join_altitude(track, trajectory, time_offset_s=float("nan"))

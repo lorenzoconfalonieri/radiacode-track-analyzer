@@ -339,6 +339,13 @@ correctness, tests, GUI usability, performance (measured), code quality.
   the drop refusal no longer words the two differently. The tile-status
   message stays separate, since it must persist while tiles are pending.
 
+- 2026-10-19 **Correctness:** a trajectory join with no time overlap (e.g.
+  a wild `--time-offset`) is refused as "does not overlap this track in
+  time ... check the date, the flight, or the time offset", not "median
+  position residual nan km exceeds the tolerance". A NaN offset is
+  rejected up front. Real offsets, including the wrong sign, already
+  behaved correctly.
+
 ## Rejected
 
 - 2026-10-15 **Investigated, no change:** the Flight caption's "scatter
