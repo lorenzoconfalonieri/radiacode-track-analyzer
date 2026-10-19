@@ -1,3 +1,9 @@
+BACKLOG EXHAUSTED (2026-10-19): the last audit (four degenerate tracks
+through every command, RuntimeWarnings as errors) found nothing. What
+remains needs the owner: the walk's leg-distance attribution (changes
+published figures), the User-Agent contact URL (repo is private), and
+the Track summary layout trade-off.
+
 # Improvements
 
 Small, one-commit improvements (under ~100 lines each), worked one per
