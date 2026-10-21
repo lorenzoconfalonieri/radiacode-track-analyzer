@@ -37,6 +37,7 @@ a calendar day at the departure airport; elsewhere the system's own is used.
 ```sh
 rcta                                  # the desktop application
 rcta sample-data/Track*.rctrk         # opening a file directly
+rcta --offline                        # never fetch basemap tiles
 
 rcta-cli info    sample-data/Track*.rctrk
 rcta-cli analyze sample-data/Track*.rctrk --json report.json
@@ -349,7 +350,7 @@ src/rcta/data/    bundled tables: airlines; airports, with their IANA
                   timezones; basemap and trajectory providers
 src/rcta/data/LICENSE
                   ODbL 1.0, for airports.json alone -- see Licence below
-tests/            1159 tests; run with pytest
+tests/            1161 tests; run with pytest
 tools/            maintenance scripts; not part of the package
 docs/FORMAT.md    the reverse-engineered .rctrk specification
 docs/FLIGHT.md    importing altitude for an airborne track

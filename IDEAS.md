@@ -400,7 +400,15 @@ Engineering, also done: ruff in `dev` and in CI; layer-direction rules in the
 architecture test (no relative imports, `core` imports nothing above it, `net`
 never imports the GUI); CI on Linux, macOS and Windows under Python 3.10 and
 3.12 (the CI part of 6.1); and `core/flight.py` split into flight-number
-parsing, the join and the profile behind a re-exporting facade.
+parsing, the join and the profile behind a re-exporting facade. Earlier:
+the version defined once, an install hint when the GUI extra is missing,
+`rcta` parsed with argparse (`--offline`, `--version`, Qt options passed
+through), and direct tests for `smooth_positions`,
+`choose_smoothing_window`, `rolling_trimmed_mean`, `flight_report_to_json`
+and `compose_attribution`. Of the review's performance items the bootstrap
+now ranks once; `rolling_trimmed_mean`, `spatial.interpolate` and the scan
+were measured at 19-26 ms, 24 ms and 16 ms warm on the flight and left
+alone (IMPROVEMENTS.md has the numbers).
 
 Measured and not adopted:
 

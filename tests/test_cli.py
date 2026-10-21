@@ -505,6 +505,28 @@ def test_the_gui_without_its_extra_explains_how_to_install_it(
     assert "rcta-cli" in err
 
 
+def test_the_gui_arguments_are_parsed_and_the_rest_left_for_qt():
+    from rcta.gui.app import parse_args
+    options, qt = parse_args(["rcta", "--offline", "-style=fusion", "a.rctrk"])
+    assert options.offline and options.track == "a.rctrk"
+    assert qt == ["rcta", "-style=fusion"]
+
+    options, qt = parse_args(["rcta"])
+    assert not options.offline and options.track is None and qt == ["rcta"]
+
+
+def test_the_gui_version_needs_no_qt(monkeypatch, capsys):
+    import sys
+
+    from rcta import __version__
+    from rcta.gui import app
+    monkeypatch.setitem(sys.modules, "PySide6", None)
+    with pytest.raises(SystemExit) as exit_:
+        app.main(["rcta", "--version"])
+    assert exit_.value.code == 0
+    assert __version__ in capsys.readouterr().out
+
+
 def test_the_version_is_defined_once():
     """pyproject, the GPX creator and the About box used to repeat it."""
     import inspect

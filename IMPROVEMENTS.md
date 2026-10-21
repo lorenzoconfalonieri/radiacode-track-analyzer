@@ -455,14 +455,18 @@ correctness, tests, GUI usability, performance (measured), code quality.
   (8 lines). The Selection box showed all its lines, but the window's
   minimum height grew from 950 to 1108 px, taller than many laptop screens.
   Reverted.
-- 2026-10-15 **Blocked on the owner, not rejected:** the `USER_AGENT`
-  contact URL. It points at `github.com/rcta/...`, a placeholder that may
-  belong to someone else; this is the suite's one xfail. The real
-  repository is private, so a tile-server operator could not use it
-  either. It needs a public contact (make the repo public, an address or a
-  project page), which is the owner's call. The GPX namespace URL is an
-  identifier and need not resolve; changing it would orphan files already
-  exported.
+- 2026-10-15 **Blocked on the owner, since resolved:** the `USER_AGENT`
+  contact URL pointed at a placeholder (`github.com/rcta/...`). It now
+  names the real repository (2026-10-21, under Done). The GPX namespace URL
+  is an identifier and need not resolve; changing it would orphan files
+  already exported.
+- 2026-10-21 **Performance:** `spatial.interpolate` via `histogram2d` and
+  `gaussian_filter`. Warm, the whole call is 83 ms on the 2964-sample
+  flight, the per-sample loop 24 ms of it; the 0.5 s first call is the
+  scipy import. Binning would also snap samples to cell centres and change
+  the surface. Not adopted.
+- 2026-10-21 **Performance:** building scan candidates lazily. The scan is
+  16 ms (163 candidates) of a 37 ms warm analysis. Not adopted.
 - 2026-10-15 **Performance:** `rolling_trimmed_mean` vectorisation. Measured
   19 ms on the 2964-sample flight, of a 118 ms warm analysis, and 0.55 s at
   100k samples: not worth a rewrite. The real first-analysis cost is
