@@ -409,6 +409,10 @@ correctness, tests, GUI usability, performance (measured), code quality.
   to 150 bins of 20 m. Display only; the bin stays editable. The dark-theme
   sweep of the Flight and Profile panels found nothing.
 
+- 2026-10-21 **Correctness:** the User-Agent names the real repository
+  instead of the placeholder github.com/rcta/..., which may be a stranger's
+  account. The suite's one xfail becomes a passing test.
+
 ## Rejected
 
 - 2026-10-21 **Correctness, reverted after measuring:** a local (31-sample

@@ -411,8 +411,10 @@ Still open:
 - **Leg distances on smoothed tracks.** Per-leg smoothing holds leg ends, so
   a walk's legs (2.64 km) and dropouts (0.09 km) do not sum to its total
   (2.99 km). Fixing it changes published figures; deferred by the owner.
-- **The User-Agent contact.** It names a placeholder repository; the real
-  one is private. Needs a public contact before wider use.
+- **The User-Agent contact.** It now names the real repository
+  (github.com/lorenzoconfalonieri/radiacode-track-analyzer), which reaches the
+  owner's public profile even while the repository is private. Making the
+  repository public, or adding a contact address, would make it fully useful.
 - **Closed windows are never freed.** Signal connections keep a closed
   `MainWindow` alive. Harmless with one window; a future "open in new
   window" would leak.

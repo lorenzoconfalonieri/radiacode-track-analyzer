@@ -11,5 +11,9 @@ __version__ = "0.1.0"
 #: the OpenStreetMap tile policy and is poor manners towards every other
 #: volunteer-funded service, so this names the application and offers a
 #: contact URL.
+#: The project's real home. While the repository is private, an operator who
+#: follows it still lands on the owner's public GitHub profile, which is a
+#: working way to reach somebody; the placeholder it replaced may have been
+#: someone else's account.
 USER_AGENT = (f"RadiacodeTrackAnalyzer/{__version__} "
-              "(+https://github.com/rcta/radiacode-track-analyzer)")
+              "(+https://github.com/lorenzoconfalonieri/radiacode-track-analyzer)")

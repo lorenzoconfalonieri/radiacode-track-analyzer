@@ -43,14 +43,11 @@ def test_user_agent_carries_a_contact_url():
     assert "+http" in USER_AGENT
 
 
-def test_the_placeholder_repository_url_must_be_replaced_before_release():
-    """The cheapest possible guard against shipping a policy violation.
-
-    Delete this test only when the URL below is a real repository that a tile
-    server operator could actually use to contact somebody.
-    """
-    if "github.com/rcta/" in USER_AGENT:
-        pytest.xfail("User-Agent still carries the placeholder repository URL")
+def test_the_user_agent_names_the_real_project_not_the_placeholder():
+    """The OSM tile policy asks for a contact that reaches somebody. The
+    original placeholder, github.com/rcta/..., may belong to a stranger."""
+    assert "github.com/rcta/" not in USER_AGENT
+    assert "github.com/lorenzoconfalonieri/radiacode-track-analyzer" in USER_AGENT
 
 
 def test_providers_load_and_osm_is_the_default():
