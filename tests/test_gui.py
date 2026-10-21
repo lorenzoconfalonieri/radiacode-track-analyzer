@@ -2078,3 +2078,19 @@ def test_the_dwells_table_lists_the_walks_dwell_and_selects_it(window, walk_path
         | QItemSelectionModel.SelectionFlag.Rows)
     assert window._selection.count == dwell.stop_index - dwell.start_index
     assert window._selection.mask[dwell.start_index]
+
+
+def test_fetch_is_greyed_while_a_lookup_runs(loaded, monkeypatch, sample_path):
+    """A second click used to queue a second request for the same flight."""
+    seen = []
+    monkeypatch.setattr(loaded.jobs, "submit",
+                        lambda name, *a, **k: seen.append(
+                            loaded.flight.fetch_button.isEnabled()))
+    loaded._fetch_flight("DL2618", "2026-09-07")
+    assert seen == [False]
+    assert loaded.flight.fetch_button.text() == "Fetching..."
+    loaded._on_job_failed("flight", 0, "network down")
+    assert loaded.flight.fetch_button.isEnabled()
+    loaded.flight.set_fetching(True)
+    assert loaded.load(str(sample_path))     # a new track drops the lookup
+    assert loaded.flight.fetch_button.isEnabled()

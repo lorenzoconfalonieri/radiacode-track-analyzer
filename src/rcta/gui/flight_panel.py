@@ -326,6 +326,12 @@ class FlightPanel(QtWidgets.QWidget):
             return
         self.fetchRequested.emit(text, self.date.date().toString("yyyy-MM-dd"))
 
+    def set_fetching(self, busy: bool) -> None:
+        """Grey Fetch while a lookup runs: a second click would queue a
+        second request to the provider for the same flight. Never emits."""
+        self.fetch_button.setEnabled(not busy)
+        self.fetch_button.setText("Fetching..." if busy else "Fetch")
+
     def set_start_folder(self, folder: str) -> None:
         """Where the trajectory dialog opens: beside the loaded track, where a
         trajectory exported for that flight is most likely to have been

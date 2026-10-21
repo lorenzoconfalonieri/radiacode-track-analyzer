@@ -768,6 +768,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # have nothing to write rather than the last file's results under
         # this file's name.
         self.jobs.cancel_all()
+        # A cancelled lookup never reports back, so its button must be
+        # released here or it would read "Fetching..." for good.
+        self.flight.set_fetching(False)
         self._analysis = None
         self._track = track
         self._selection = Selection.empty(track.n)
@@ -1053,6 +1056,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.statusBar().showMessage(f"fetching {flight.callsign}...")
         # The lookup is keyed by departure airport, so the track supplies
         # where as well as when; see OpenSkyClient.find_flight.
+        self.flight.set_fetching(True)
         self.jobs.submit("flight", fetch_trajectory, flight, begin_s=begin,
                          end_s=end,
                          origin=(float(track.lat[0]), float(track.lon[0])),
@@ -1374,6 +1378,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _on_job_finished(self, name, token, result) -> None:
         if name == "flight":
+            self.flight.set_fetching(False)
             self._apply_trajectory(result)
             return
         if name == "grid":
@@ -1393,6 +1398,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def _on_job_failed(self, name, token, message) -> None:
         self.log.log(f"{name} failed: {message}", "error")
         if name == "flight":
+            self.flight.set_fetching(False)
             self._report_fetch_failure(message)
 
     def _report_fetch_failure(self, message: str) -> None:
