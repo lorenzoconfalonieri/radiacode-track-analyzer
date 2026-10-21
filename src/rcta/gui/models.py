@@ -170,6 +170,7 @@ class HotspotTableModel(_BaseModel):
         ("peak ({unit})", lambda h, u: _dose(h.peak_dose_rate, u)),
         ("net counts", lambda h, u: f"{h.net_counts:.0f}"),
         ("sigma", lambda h, u: f"{h.significance:.2f}"),
+        ("combined", lambda h, u: f"{h.combined_significance:.2f}"),
         ("score", lambda h, u: f"{h.score:.0f}"),
         ("evidence", lambda h, u: h.evidence),
     ]
@@ -181,6 +182,11 @@ class HotspotTableModel(_BaseModel):
                   "A second pass is the corroboration a single one lacks.",
         "net counts": "Counts above the background, summed over every "
                       "member anomaly.",
+        "sigma": "Significance of the best single member, which is what the "
+                 "scan's corrected threshold tested.",
+        "combined": "All the passes together: summed net counts over the "
+                    "root of the summed variances. A second pass over the "
+                    "same source raises it; a fluke does not repeat.",
         "score": "Net counts times the square root of the passes: the "
                  "ranking order, not a significance. Use sigma for that.",
         "evidence": "strong: seen on more than one pass. possible: one pass "

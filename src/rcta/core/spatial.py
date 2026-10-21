@@ -340,6 +340,10 @@ class Hotspot:
     evidence: str
     anomaly_indices: tuple[int, ...]
     flags: tuple[str, ...] = ()
+    #: Net counts of every member over the root of their summed null
+    #: variances: what all the passes say together. ``significance`` stays
+    #: the best single member, which is what the scan's threshold tested.
+    combined_significance: float = 0.0
 
     def describe(self, unit: str = "nSv/h") -> str:
         from rcta.core.dose import format_dose_rate
@@ -349,7 +353,9 @@ class Hotspot:
                 f"r={self.radius_m:5.0f} m  {self.n_samples:3d} samples / "
                 f"{self.n_passes} pass(es)  "
                 f"peak {format_dose_rate(self.peak_dose_rate, unit)}  "
-                f"{self.significance:6.2f} sigma  {self.evidence}{flags}")
+                f"{self.significance:6.2f} sigma "
+                f"({self.combined_significance:.2f} combined)  "
+                f"{self.evidence}{flags}")
 
 
 def find_hotspots(track: Track, anomalies, background, *,
@@ -474,4 +480,21 @@ def _hotspot(track, group, xs, ys, inflation, revisit_gap_s) -> Hotspot:
         evidence=evidence,
         anomaly_indices=tuple(a.start_index for a in group),
         flags=tuple(flags),
+        combined_significance=_combined_significance(group),
     )
+
+
+def _combined_significance(group) -> float:
+    """Sum of net counts over the root of the summed null variances.
+
+    Each member's variance is the one its own significance was built on,
+    gross counts plus background counts scaled by the ratio of window to
+    reference length, so for a single member this is that member's sigma.
+    Merged members do not overlap, so their variances add.
+    """
+    net = sum(a.net_counts for a in group)
+    variance = sum(max(a.gross_counts, 0.0)
+                   + max(a.background_counts, 0.0)
+                   * (a.scale / max(a.n_background, 1e-12))
+                   for a in group)
+    return float(net / np.sqrt(variance)) if variance > 0 else 0.0

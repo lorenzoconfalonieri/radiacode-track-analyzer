@@ -72,7 +72,7 @@ def test_hotspot_csv_header_is_stable():
     assert hotspots_to_csv([]).strip() == (
         "lat,lon,radius_m,n_samples,n_passes,first_iso,last_iso,"
         "peak_dose_rate_nSv_per_h,mean_net_dose_rate_nSv_per_h,net_counts,"
-        "significance_sigma,"
+        "significance_sigma,combined_significance_sigma,"
         "score,evidence,flags")
 
 

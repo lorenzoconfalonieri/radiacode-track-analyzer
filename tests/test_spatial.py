@@ -287,3 +287,15 @@ def test_a_single_anomaly_hotspot_has_the_radius_of_its_samples():
         - a.track.distance_along_m[member.start_index]
     # Roughly half the feature's length either side of its centre.
     assert 0.3 * span < hotspot.radius_m < 1.2 * span
+
+
+def test_combined_significance_adds_the_evidence_of_every_pass(walk_path):
+    """A second pass over the same source raises the combined figure; a
+    hotspot of one anomaly keeps exactly that anomaly's sigma."""
+    from rcta.core.analysis import AnalysisParams, analyze_track
+    from rcta.core.io_radiacode import load_track
+    a = analyze_track(load_track(walk_path), AnalysisParams(n_boot=10))
+    two = next(h for h in a.hotspots if h.n_passes == 2)
+    one = next(h for h in a.hotspots if h.n_passes == 1)
+    assert two.combined_significance > two.significance
+    assert one.combined_significance == pytest.approx(one.significance, rel=1e-6)
