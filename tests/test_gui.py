@@ -2008,3 +2008,16 @@ def test_ambiguous_anomaly_headers_explain_themselves(app):
     assert "dropout" in tip and "counting time" in tip
     assert model.headerData(headers.index("L_C"), _Qt.Orientation.Horizontal,
                             _Qt.ItemDataRole.ToolTipRole)
+
+
+def test_hotspot_headers_explain_score_and_evidence(app):
+    from PySide6.QtCore import Qt as _Qt
+    from rcta.gui.models import HotspotTableModel
+    model = HotspotTableModel()
+    headers = [model.headerData(i, _Qt.Orientation.Horizontal)
+               for i in range(model.columnCount())]
+    tip = lambda name: model.headerData(headers.index(name),
+                                        _Qt.Orientation.Horizontal,
+                                        _Qt.ItemDataRole.ToolTipRole)
+    assert "not a significance" in tip("score")
+    assert "strong" in tip("evidence") and "possible" in tip("evidence")

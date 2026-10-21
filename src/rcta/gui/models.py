@@ -167,6 +167,19 @@ class HotspotTableModel(_BaseModel):
         ("evidence", lambda h, u: h.evidence),
     ]
 
+    HEADER_TIPS = {
+        "r (m)": "Distance from the hotspot's centre to its farthest "
+                 "positioned sample.",
+        "passes": "Separate visits to this spot, at least 5 minutes apart. "
+                  "A second pass is the corroboration a single one lacks.",
+        "net counts": "Counts above the background, summed over every "
+                      "member anomaly.",
+        "score": "Net counts times the square root of the passes: the "
+                 "ranking order, not a significance. Use sigma for that.",
+        "evidence": "strong: seen on more than one pass. possible: one pass "
+                    "only. weak: overlaps a feature flagged as a trend.",
+    }
+
     def _decoration(self, hotspot, index, role):
         if role == Qt.ItemDataRole.ForegroundRole:
             colour = theme.EVIDENCE_COLORS.get(hotspot.evidence)

@@ -1,9 +1,3 @@
-BACKLOG EXHAUSTED (2026-10-19): the last audit (four degenerate tracks
-through every command, RuntimeWarnings as errors) found nothing. What
-remains needs the owner: the walk's leg-distance attribution (changes
-published figures), the User-Agent contact URL (repo is private), and
-the Track summary layout trade-off.
-
 # Improvements
 
 Small, one-commit improvements (under ~100 lines each), worked one per
@@ -376,6 +370,11 @@ correctness, tests, GUI usability, performance (measured), code quality.
   tooltips. "dur (s)" is the elapsed span including dropouts (506 s for a
   64-sample window that counted 128 s on the flight); L_C and MDA (cps)
   say what they are.
+
+- 2026-10-21 **GUI:** the Hotspots table's headers carry tooltips like the
+  Anomalies table's: r (m), passes (at least 5 min apart), net counts,
+  score (a ranking, not a significance), and evidence (strong, possible,
+  weak).
 
 ## Rejected
 
