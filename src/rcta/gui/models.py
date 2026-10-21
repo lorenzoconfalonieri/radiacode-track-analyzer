@@ -21,8 +21,8 @@ from rcta.gui import theme
 
 Qt = QtCore.Qt
 
-__all__ = ["AnomalyTableModel", "DwellTableModel", "HotspotTableModel",
-           "LegTableModel"]
+__all__ = ["AnomalyTableModel", "DwellTableModel", "HotspotTableModel", "LegTableModel",
+           "SortProxy"]
 
 
 def _iso(seconds: float) -> str:
@@ -44,6 +44,20 @@ def _sort_key(text: str):
         return (0, float(text), "")
     except ValueError:
         return (1, 0.0, text)
+
+
+class SortProxy(QtCore.QSortFilterProxyModel):
+    """Sorts on :func:`_sort_key` of the displayed text, compared in Python.
+
+    The key is a tuple, and a tuple handed to Qt as a sort role is an opaque
+    Python object it cannot order: the result depended on the platform and
+    Qt version, and a descending sort could come out ascending.
+    """
+
+    def lessThan(self, left, right) -> bool:
+        role = Qt.ItemDataRole.DisplayRole
+        return (_sort_key(str(left.data(role)))
+                < _sort_key(str(right.data(role))))
 
 
 def _mean(values) -> float:
@@ -98,8 +112,6 @@ class _BaseModel(QtCore.QAbstractTableModel):
         obj = self._rows[index.row()]
         if role == Qt.ItemDataRole.DisplayRole:
             return self.COLUMNS[index.column()][1](obj, self._unit)
-        if role == Qt.ItemDataRole.UserRole:
-            return _sort_key(self.COLUMNS[index.column()][1](obj, self._unit))
         if role == Qt.ItemDataRole.FontRole:
             return self._font
         if role == Qt.ItemDataRole.TextAlignmentRole and index.column() > 0:

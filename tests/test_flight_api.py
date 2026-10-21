@@ -11,6 +11,7 @@ from __future__ import annotations
 import io
 import json
 import urllib.error
+from pathlib import Path
 
 import pytest
 
@@ -194,7 +195,7 @@ def test_the_environment_wins_over_an_unusable_file(provider, tmp_path):
 
 def test_the_cache_is_a_cache_location_not_application_data(monkeypatch):
     monkeypatch.setenv("RCTA_FLIGHT_CACHE", "/tmp/somewhere")
-    assert str(cache_dir()) == "/tmp/somewhere"
+    assert cache_dir() == Path("/tmp/somewhere")
     monkeypatch.delenv("RCTA_FLIGHT_CACHE")
     assert "ache" in str(cache_dir())            # Caches or .cache
 

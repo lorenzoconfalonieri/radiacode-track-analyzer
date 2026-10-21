@@ -75,28 +75,61 @@ def attribution_lines(analysis, provider=None, *, colormap: str = "viridis",
     return lines
 
 
+#: Never shrink the credit below this: at 3 pt it vanished entirely on
+#: Windows, and a licence notice nobody can read is not a licence notice.
+_MIN_CREDIT_PT = 6.0
+
+
+def _wrap(text: str, metrics, room: float) -> list[str]:
+    """Greedy word wrap of one line to ``room`` pixels."""
+    out, current = [], ""
+    for word in text.split(" "):
+        trial = word if not current else f"{current} {word}"
+        if current and metrics.horizontalAdvance(trial) > room:
+            out.append(current)
+            current = word
+        else:
+            current = trial
+    out.append(current)
+    return out
+
+
+def layout_attribution(lines, width: int, height: int, device=None):
+    """The font and the wrapped lines that fit ``width``.
+
+    Sized from the height first; then shrunk, in a loop because hinted glyph
+    widths do not scale linearly, until the widest line fits -- but never
+    below a legible size. What still does not fit is wrapped at word
+    boundaries, so a tall narrow export keeps the whole credit readable
+    instead of clipping it at the edge or shrinking it to nothing.
+    """
+    font = QtGui.QFont()
+    font.setPointSizeF(max(height / 90.0, 7.0))
+    def measure(f):
+        return (QtGui.QFontMetricsF(f, device) if device is not None
+                else QtGui.QFontMetricsF(f))
+    metrics = measure(font)
+    for _ in range(20):
+        room = width - 3.0 * metrics.height() * 0.4
+        widest = max(metrics.horizontalAdvance(line) for line in lines)
+        if widest <= room or font.pointSizeF() <= _MIN_CREDIT_PT:
+            break
+        font.setPointSizeF(max(font.pointSizeF() * 0.92, _MIN_CREDIT_PT))
+        metrics = measure(font)
+    room = max(width - 3.0 * metrics.height() * 0.4, 1.0)
+    wrapped = [piece for line in lines for piece in _wrap(line, metrics, room)]
+    return font, metrics, wrapped
+
+
 def compose_attribution(image: QtGui.QImage, lines) -> None:
     """Bake attribution into the pixels, bottom-left, on a translucent plate."""
     if not lines:
         return
+    font, metrics, lines = layout_attribution(lines, image.width(),
+                                              image.height(), image)
     painter = QtGui.QPainter(image)
     try:
         painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing, True)
-        font = QtGui.QFont()
-        font.setPointSizeF(max(image.height() / 90.0, 7.0))
-        metrics = QtGui.QFontMetricsF(font, image)
-        # Sized from the height alone, a tall narrow export ran the lines off
-        # the right edge and clipped the very credit the licence requires.
-        # Shrink until the widest line fits, padding included. A loop, not
-        # one proportional step: hinted glyph widths do not scale linearly
-        # at small sizes.
-        for _ in range(20):
-            widest = max(metrics.horizontalAdvance(line) for line in lines)
-            room = image.width() - 3.0 * metrics.height() * 0.4
-            if widest <= room or font.pointSizeF() <= 3.0:
-                break
-            font.setPointSizeF(max(font.pointSizeF() * 0.92, 3.0))
-            metrics = QtGui.QFontMetricsF(font, image)
         painter.setFont(font)
 
         pad = metrics.height() * 0.4
@@ -146,7 +179,12 @@ def render_image(map_panel, width: int, height: int, *, lines=(),
     lines = list(lines)
     # Reserve a band for the attribution rather than overlaying it on the axis
     # labels: the text has to stay legible for the licence to be satisfied.
-    band = int(max(height / 90.0, 7.0) * 1.9) * max(len(lines), 1) if lines else 0
+    band = 0
+    if lines:
+        # Room for the lines as they will actually be laid out, wrapping
+        # included, so the credit never overlays the axis labels.
+        _, metrics, wrapped = layout_attribution(lines, width, height)
+        band = int(metrics.height() * (len(wrapped) + 1.2) + 4)
 
     image = QtGui.QImage(int(width), int(height) + band,
                          QtGui.QImage.Format.Format_ARGB32_Premultiplied)
@@ -186,14 +224,38 @@ def render_svg(map_panel, path, *, lines=()) -> None:
     figure. The provenance lines are appended below it as real SVG text, as
     they are baked into the PNG.
     """
-    from pyqtgraph import exporters
+    from PySide6.QtSvg import QSvgGenerator
 
-    exporter = exporters.SVGExporter(map_panel._glw.scene())
-    # The basemap paints raster tiles, which the SVG generator would embed as
-    # images; it is removed rather than trusted to be skipped.
-    with theme.plots_in(map_panel, theme.LIGHT), \
-            _without_basemap(map_panel, True):
-        svg = exporter.export(toBytes=True).decode("utf-8")
+    # Qt's own SVG generator, not pyqtgraph's exporter: under PySide6 6.12
+    # that exporter's coordinate correction fails on the generator's polyline
+    # output ("not enough values to unpack") and no file was written at all.
+    view = map_panel._glw
+    source = view.mapToScene(view.viewport().rect()).boundingRect()
+    if source.isEmpty():
+        source = view.scene().sceneRect()
+    width = max(int(view.viewport().width()), 1)
+    height = max(int(view.viewport().height()), 1)
+
+    buffer = QtCore.QBuffer()
+    buffer.open(QtCore.QIODevice.OpenModeFlag.WriteOnly)
+    generator = QSvgGenerator()
+    generator.setOutputDevice(buffer)
+    generator.setSize(QtCore.QSize(width, height))
+    generator.setViewBox(QtCore.QRect(0, 0, width, height))
+    generator.setTitle("rcta map")
+
+    painter = QtGui.QPainter(generator)
+    try:
+        painter.fillRect(QtCore.QRectF(0, 0, width, height), QtGui.QColor("white"))
+        # The basemap paints raster tiles, which would be embedded as images;
+        # it is removed rather than trusted to be skipped.
+        with theme.plots_in(map_panel, theme.LIGHT), \
+                _without_basemap(map_panel, True):
+            view.scene().render(painter, QtCore.QRectF(0, 0, width, height),
+                                source, QtCore.Qt.AspectRatioMode.IgnoreAspectRatio)
+    finally:
+        painter.end()
+    svg = bytes(buffer.data()).decode("utf-8")
     Path(path).write_text(_append_lines(svg, list(lines)), encoding="utf-8")
 
 

@@ -52,7 +52,13 @@ from rcta.core.spatial import GridParams, interpolate
 from rcta.gui import theme
 from rcta.gui.flight_panel import FlightPanel
 from rcta.gui.map_panel import MapPanel
-from rcta.gui.models import AnomalyTableModel, DwellTableModel, HotspotTableModel, LegTableModel
+from rcta.gui.models import (
+    AnomalyTableModel,
+    DwellTableModel,
+    HotspotTableModel,
+    LegTableModel,
+    SortProxy,
+)
 from rcta.gui.panels import AnalysisDock, DisplayDock, LogDock, SelectionDock, TrackDock
 from rcta.gui.profile_panel import ProfilePanel
 from rcta.gui.series_panel import SeriesPanel
@@ -346,9 +352,8 @@ class MainWindow(QtWidgets.QMainWindow):
         view = QtWidgets.QTableView()
         # Sorted through a proxy, so the model keeps its own order and a row
         # handler maps a view row back with _source_row().
-        proxy = QtCore.QSortFilterProxyModel(view)
+        proxy = SortProxy(view)
         proxy.setSourceModel(model)
-        proxy.setSortRole(Qt.ItemDataRole.UserRole)
         view.setModel(proxy)
         view.setSelectionBehavior(
             QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
