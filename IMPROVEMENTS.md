@@ -411,6 +411,13 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 ## Rejected
 
+- 2026-10-21 **Correctness, not needed:** an exact Poisson tail in place of
+  the scan's normal approximation (Batch 3, item 21). Its premise, that the
+  approximation is anticonservative at low counts, is false for this
+  implementation. The variance is the gross count, and across 3093 cases
+  (0.2-500 background counts) the approximation is never above the exact
+  tail; on the walk 7.36 against 8.54. Switching would only raise
+  significances. A test now pins the conservativeness.
 - 2026-10-21 **GUI, no change:** an adaptive altitude bin for the Flight
   panel. Unlike distance, altitude is physically bounded, so the shared
   500 m default gives about 22 bins on any flight (0-11 km), and it matches

@@ -358,3 +358,19 @@ def test_the_rank_once_bootstrap_matches_the_general_path(seed):
     general = st.block_bootstrap_p(x, y, time_s, n_boot=200, seed=seed,
                                    statistic=lambda a, b: st.spearman_rho(a, b))
     assert fast == general
+
+
+def test_the_scan_significance_is_never_above_the_exact_poisson_tail():
+    """The plan proposed an exact Poisson tail because the normal
+    approximation is anticonservative at low counts. Checked across 3093
+    cases from 0.2 to 500 background counts, this one never is: its variance
+    is the gross count, not the background, which errs low whenever there is
+    an excess. This pins that, so a 'variance from the background' rewrite,
+    which would make the scan anticonservative, fails here first."""
+    from scipy import stats
+    for b in (0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 500):
+        for g in range(int(b) + 1, int(b * 5 + 40)):
+            zg = float(st.net_significance(g, b, 1, None))
+            p = stats.poisson.sf(g - 1, b)
+            zp = stats.norm.isf(p) if p > 0 else np.inf
+            assert zg <= zp + 1e-9, (b, g, zg, zp)
