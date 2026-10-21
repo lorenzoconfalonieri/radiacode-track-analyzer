@@ -32,6 +32,7 @@ from dataclasses import dataclass, field, replace
 from rcta.core.anomalies import Anomaly, ScanParams, scan, scan_mda
 from rcta.core.background import (BackgroundEstimate, BackgroundParams,
                                   estimate_background)
+from rcta.core.dwell import Dwell, DwellParams, find_dwells
 from rcta.core.dose import (DoseSummary, accumulated_dose,
                             format_accumulated_dose, format_dose_rate)
 from rcta.core.profile import (Bimodality, Correlation, SummaryStats,
@@ -59,6 +60,8 @@ class AnalysisParams:
     cluster_radius_m: float | None = None
     #: Bootstrap resamples for the speed/dose correlation.
     n_boot: int = 500
+    #: What counts as a stop-and-measure dwell.
+    dwell: DwellParams = field(default_factory=DwellParams)
 
 
 @dataclass(frozen=True)
@@ -78,6 +81,8 @@ class TrackAnalysis:
     #: (window_samples, seconds, MDA in nSv/h) at each scanned scale.
     mda_table: tuple[tuple[int, float, float], ...]
     warnings: tuple[str, ...] = ()
+    #: Stationary stretches, each tested as one long count.
+    dwells: tuple[Dwell, ...] = ()
 
     @property
     def significant(self) -> tuple[Anomaly, ...]:
@@ -130,6 +135,10 @@ class TrackAnalysis:
         if flagged:
             blocks += ["", f"{len(flagged)} candidate(s) excluded by flags:"]
             blocks += [f"  {a.describe(unit)}" for a in flagged[:10]]
+
+        if self.dwells:
+            blocks += ["", "-- dwells " + "-" * 60]
+            blocks += [d.describe(unit) for d in self.dwells]
 
         if self.hotspots:
             blocks += ["", "-- hotspots " + "-" * 58]
@@ -242,4 +251,6 @@ def analyze_track(track: Track, params: AnalysisParams | None = None, *,
         speed_dose=correlate_speed_dose(track, n_boot=params.n_boot),
         mda_table=tuple(scan_mda(track, background, params.scan)),
         warnings=tuple(warnings),
+        dwells=tuple(find_dwells(track, background, quality=quality,
+                                 params=params.dwell)),
     )

@@ -79,6 +79,13 @@ things follow that the obvious implementation gets wrong:
   under any absolute ceiling. Outliers are the union of a hard ceiling and a
   robust bound on *this* track's own speed, evaluated on unsmoothed fixes.
 
+**Stop-and-measure dwells.** Wherever the detector stood still for two
+minutes or more, the samples are added into one long count and tested
+against the background on their own, with a Bonferroni correction across
+the dwells. A dwell is the most sensitive measurement on a walk: on the
+bundled one, 80 s of live time reaches 12 nSv/h, against 64 nSv/h for a
+single sample. Dwells appear in the `analyze` summary and the JSON report.
+
 At walking scale the interpolated heatmap also becomes genuinely useful. On
 the bundled walk it keeps its 50 m bandwidth and 25 % of the bounding box is
 supported: every cell within 100 m of the route, with the rest left blank
