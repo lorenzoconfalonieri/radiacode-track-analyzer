@@ -4,8 +4,13 @@ from __future__ import annotations
 
 import pytest
 
-from rcta.core.airports import (MAX_AIRPORT_DISTANCE_M, Airport, find_airport,
-                                load_airports, nearest_airport)
+from rcta.core.airports import (
+    MAX_AIRPORT_DISTANCE_M,
+    Airport,
+    find_airport,
+    load_airports,
+    nearest_airport,
+)
 
 
 def test_the_table_loads_and_is_not_a_stub():
@@ -77,7 +82,8 @@ def test_the_default_radius_covers_a_large_field_but_not_the_next_one():
 
 
 def test_an_airport_is_frozen():
-    with pytest.raises(Exception):
+    from dataclasses import FrozenInstanceError
+    with pytest.raises(FrozenInstanceError):
         Airport("KAUS", 30.0, -97.0).icao = "KSLC"
 
 

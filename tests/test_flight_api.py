@@ -15,9 +15,15 @@ import urllib.error
 import pytest
 
 from rcta.core.flight import parse_flight_number
-from rcta.net.flights import (FlightCache, FlightFetchError, OpenSkyClient,
-                              cache_dir, credentials_from_env,
-                              fetch_trajectory, load_flight_providers)
+from rcta.net.flights import (
+    FlightCache,
+    FlightFetchError,
+    OpenSkyClient,
+    cache_dir,
+    credentials_from_env,
+    fetch_trajectory,
+    load_flight_providers,
+)
 
 TOKEN = {"access_token": "t0ken", "expires_in": 1800}
 

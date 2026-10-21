@@ -30,14 +30,18 @@ from __future__ import annotations
 from dataclasses import dataclass, field, replace
 
 from rcta.core.anomalies import Anomaly, ScanParams, scan, scan_mda
-from rcta.core.background import (BackgroundEstimate, BackgroundParams,
-                                  estimate_background)
-from rcta.core.dwell import Dwell, DwellParams, find_dwells
+from rcta.core.background import BackgroundEstimate, BackgroundParams, estimate_background
 from rcta.core.consistency import ConsistencyReport, check_consistency
-from rcta.core.dose import (DoseSummary, accumulated_dose,
-                            format_accumulated_dose, format_dose_rate)
-from rcta.core.profile import (Bimodality, Correlation, SummaryStats,
-                               bimodality, correlate_speed_dose, summarise)
+from rcta.core.dose import DoseSummary, accumulated_dose, format_accumulated_dose, format_dose_rate
+from rcta.core.dwell import Dwell, DwellParams, find_dwells
+from rcta.core.profile import (
+    Bimodality,
+    Correlation,
+    SummaryStats,
+    bimodality,
+    correlate_speed_dose,
+    summarise,
+)
 from rcta.core.quality import QualityParams, QualityReport, assess_with_report
 from rcta.core.spatial import Hotspot, find_hotspots
 from rcta.core.track import Track

@@ -31,8 +31,7 @@ import numpy as np
 
 from rcta import __version__
 from rcta.core.dose import DOSE_UNITS, convert_dose_rate
-from rcta.core.flight import (FLIGHT_LEVEL_M, compare_branches,
-                              fit_scale_height)
+from rcta.core.flight import FLIGHT_LEVEL_M, compare_branches, fit_scale_height
 
 __all__ = [
     "altitude_profile_to_csv",

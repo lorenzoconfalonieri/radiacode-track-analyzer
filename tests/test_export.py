@@ -10,10 +10,16 @@ import pytest
 import synthetic
 
 from rcta.core.analysis import AnalysisParams, analyze_track
-from rcta.core.io_export import (GPX_NAMESPACE, anomalies_to_csv,
-                                 hotspots_to_csv, hotspots_to_geojson,
-                                 report_to_json, track_to_csv,
-                                 track_to_geojson, track_to_gpx)
+from rcta.core.io_export import (
+    GPX_NAMESPACE,
+    anomalies_to_csv,
+    hotspots_to_csv,
+    hotspots_to_geojson,
+    report_to_json,
+    track_to_csv,
+    track_to_geojson,
+    track_to_gpx,
+)
 from rcta.core.quality import assess_with_report
 
 
@@ -326,8 +332,7 @@ def test_every_flight_csv_parses_as_plain_csv(join):
     import io
 
     from rcta.core.flight import bin_by_altitude
-    from rcta.core.io_export import (altitude_profile_to_csv,
-                                     altitude_samples_to_csv)
+    from rcta.core.io_export import altitude_profile_to_csv, altitude_samples_to_csv
     from rcta.core.io_flight import trajectory_to_csv
     for text in (altitude_samples_to_csv(join),
                  altitude_profile_to_csv(bin_by_altitude(join)),
@@ -498,8 +503,9 @@ def test_csv_geojson_and_gpx_agree_on_every_sample(walk_path, unit):
     import csv
     import io
     import re
-    from rcta.core.io_radiacode import load_track
+
     from rcta.core.io_export import track_to_csv, track_to_geojson, track_to_gpx
+    from rcta.core.io_radiacode import load_track
     a = analyze_track(load_track(walk_path), AnalysisParams(n_boot=10))
     t, q = a.track, a.quality
     rows = list(csv.DictReader(io.StringIO(

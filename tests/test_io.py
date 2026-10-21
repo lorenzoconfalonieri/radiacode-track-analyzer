@@ -9,8 +9,7 @@ from datetime import timezone
 import numpy as np
 import pytest
 
-from rcta.core.io_radiacode import (TrackParseError, load_rctrk_tsv, load_track)
-
+from rcta.core.io_radiacode import TrackParseError, load_rctrk_tsv, load_track
 
 # ---- the real file -------------------------------------------------------
 
@@ -286,6 +285,7 @@ def test_a_non_ascii_title_is_read_as_utf8(tmp_path):
     without the explicit encoding; it is Windows, whose default is cp1252,
     where the explicit encoding matters."""
     import json as _json
+
     from rcta.core.io_radiacode import load_track
     data = {"start": 1788813057, "title": "Strecke Zürich – Genève",
             "markers": [{"date": 1788813057 + 2 * i, "doseRate": 7.0,

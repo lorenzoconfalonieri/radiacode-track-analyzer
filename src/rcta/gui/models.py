@@ -73,10 +73,10 @@ class _BaseModel(QtCore.QAbstractTableModel):
     def row_object(self, row: int):
         return self._rows[row] if 0 <= row < len(self._rows) else None
 
-    def rowCount(self, parent=QtCore.QModelIndex()) -> int:
+    def rowCount(self, parent=QtCore.QModelIndex()) -> int:  # noqa: B008 (Qt idiom)
         return 0 if parent.isValid() else len(self._rows)
 
-    def columnCount(self, parent=QtCore.QModelIndex()) -> int:
+    def columnCount(self, parent=QtCore.QModelIndex()) -> int:  # noqa: B008 (Qt idiom)
         return 0 if parent.isValid() else len(self.COLUMNS)
 
     #: Column header -> tooltip, for headers whose meaning is not obvious.

@@ -5,8 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from rcta.core.quality import (QualityParams, assess_with_report, gap_segments,
-                               polyline)
+from rcta.core.quality import QualityParams, assess_with_report, gap_segments, polyline
 from rcta.core.track import Track
 
 
@@ -267,10 +266,12 @@ def test_a_stricter_accuracy_threshold_masks_more(sample):
 def _paused_track(pause_s=10.0, n=200, dt=2.0):
     """Two recording periods, with a pause shorter than the gap threshold."""
     from datetime import datetime, timezone
+
     from rcta.core.track import Period, Track, TrackMeta
     time_s = np.arange(n) * dt + 1_788_800_000.0
     time_s[n // 2:] += pause_s
-    utc = lambda t: datetime.fromtimestamp(t, tz=timezone.utc)
+    def utc(t):
+        return datetime.fromtimestamp(t, tz=timezone.utc)
     periods = (Period(distance_m=100.0, start=utc(time_s[0]), end=utc(time_s[n // 2 - 1] + 1)),
                Period(distance_m=100.0, start=utc(time_s[n // 2]), end=utc(time_s[-1] + 1)))
     return Track(time_s=time_s, lat=np.linspace(30.0, 30.01, n),

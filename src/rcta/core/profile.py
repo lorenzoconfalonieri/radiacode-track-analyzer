@@ -81,8 +81,7 @@ class SummaryStats:
     contiguous: bool = True
 
     def describe(self, unit: str = "nSv/h") -> str:
-        from rcta.core.dose import (accumulated_unit, convert_dose_rate,
-                                    format_accumulated_dose)
+        from rcta.core.dose import convert_dose_rate, format_accumulated_dose
         hours, rem = divmod(int(self.duration_s), 3600)
         minutes, seconds = divmod(rem, 60)
         lo, hi, mean, median, p95 = (

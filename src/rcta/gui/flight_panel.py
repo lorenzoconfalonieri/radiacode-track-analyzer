@@ -37,9 +37,13 @@ import pyqtgraph as pg
 from PySide6 import QtCore, QtWidgets
 
 from rcta.core.dose import convert_dose_rate
-from rcta.core.flight import (DEFAULT_ALTITUDE_STEP_M, DEFAULT_FIT_FLOOR_M,
-                              bin_by_altitude, compare_branches,
-                              fit_scale_height)
+from rcta.core.flight import (
+    DEFAULT_ALTITUDE_STEP_M,
+    DEFAULT_FIT_FLOOR_M,
+    bin_by_altitude,
+    compare_branches,
+    fit_scale_height,
+)
 from rcta.gui import theme
 
 Qt = QtCore.Qt

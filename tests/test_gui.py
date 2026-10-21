@@ -26,6 +26,7 @@ from PySide6.QtCore import Qt  # noqa: E402
 @pytest.fixture(scope="module")
 def app():
     from PySide6 import QtWidgets
+
     from rcta.gui import theme
     application = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     theme.apply(application)
@@ -315,7 +316,6 @@ def test_changing_only_the_scan_keeps_the_heatmap(loaded):
 
 def test_the_heatmap_grid_exports_with_its_projection(loaded, tmp_path,
                                                       monkeypatch):
-    from PySide6 import QtWidgets
     out = tmp_path / "grid.asc"
     _answer_save_dialog(monkeypatch, str(out))
     loaded.compute_grid()
@@ -370,7 +370,6 @@ def test_purging_the_cache_reports_what_it_freed(loaded):
     ("hotspots", "lat,lon"),
 ])
 def test_export_writes_the_file(loaded, tmp_path, monkeypatch, kind, check):
-    from PySide6 import QtWidgets
     out = tmp_path / f"out.{kind}"
     _answer_save_dialog(monkeypatch, str(out))
     loaded._export(kind)
@@ -379,7 +378,6 @@ def test_export_writes_the_file(loaded, tmp_path, monkeypatch, kind, check):
 
 
 def test_cancelling_the_export_dialog_writes_nothing(loaded, monkeypatch):
-    from PySide6 import QtWidgets
     _answer_save_dialog(monkeypatch, "")
     before = loaded.log.toPlainText()
     loaded._export("csv")
@@ -540,7 +538,6 @@ def test_exported_image_reserves_a_band_for_the_attribution(loaded):
 
 def test_an_export_blocked_by_provider_terms_says_so(loaded, tmp_path,
                                                      monkeypatch):
-    from PySide6 import QtWidgets
     out = tmp_path / "map.png"
     _answer_save_dialog(monkeypatch, str(out))
     loaded._set_provider("esri_imagery")
@@ -577,7 +574,6 @@ def test_a_basemap_that_may_not_be_exported_is_not_rendered(loaded,
 
 def test_the_svg_carries_the_colour_bar_and_provenance_but_no_tiles(
         loaded, tmp_path, monkeypatch):
-    from PySide6 import QtWidgets
     calls = _count_basemap_paints(monkeypatch)
     out = tmp_path / "map.svg"
     _answer_save_dialog(monkeypatch, str(out))
@@ -775,6 +771,7 @@ def test_the_disagreement_is_stated_in_the_caption(joined):
 def test_a_mismatched_trajectory_is_refused_and_clears_the_plot(
         loaded, tmp_path, monkeypatch):
     import json
+
     from PySide6 import QtWidgets
     path = tmp_path / "elsewhere.json"
     path.write_text(json.dumps({
@@ -796,6 +793,7 @@ def test_a_mismatched_trajectory_is_refused_and_clears_the_plot(
 def test_the_refusal_can_be_overridden_from_the_dialog(loaded, tmp_path,
                                                        monkeypatch):
     import json
+
     from PySide6 import QtWidgets
     path = tmp_path / "elsewhere.json"
     path.write_text(json.dumps({
@@ -962,7 +960,6 @@ def test_the_unit_change_reaches_the_flight_panel(joined):
 
 
 def test_the_flight_exports_need_a_join(loaded, tmp_path, monkeypatch):
-    from PySide6 import QtWidgets
     _answer_save_dialog(monkeypatch, tmp_path / "out.csv")
     loaded._export("profile")
     assert not (tmp_path / "out.csv").exists()
@@ -1019,6 +1016,7 @@ def test_toggling_the_dose_axis_does_not_leave_a_stale_error_bar(joined,
 def test_the_panel_repaints_without_stalling_the_event_loop(joined, app):
     """The observable symptom of the bug above, asserted directly."""
     import time
+
     from PySide6 import QtCore
     joined.flight.show()
     deadline = time.monotonic() + 5.0
@@ -1136,7 +1134,6 @@ def test_the_trajectory_export_round_trips_back_in(joined, saved, tmp_path):
 
 
 def test_a_cancelled_dialog_writes_nothing(joined, monkeypatch, tmp_path):
-    from PySide6 import QtWidgets
     _answer_save_dialog(monkeypatch, "")
     joined.flight._export_buttons["samples"].click()
     assert list(tmp_path.iterdir()) == []
@@ -1468,8 +1465,9 @@ def test_the_recession_is_set_before_the_tiles_are_requested(window, monkeypatch
 
 def test_switching_basemap_does_not_leave_stale_decoded_tiles(window):
     """The decoded cache is treated at the old amounts and must be dropped."""
-    from rcta.gui.tiles import TileKey
     from PySide6 import QtGui
+
+    from rcta.gui.tiles import TileKey
 
     window._set_provider("osm")
     image = QtGui.QImage(256, 256, QtGui.QImage.Format.Format_RGB32)
@@ -1590,7 +1588,8 @@ def test_the_app_icon_renders(app):
 
 
 def _drop(window, *paths):
-    from PySide6 import QtCore as _QtCore, QtGui as _QtGui
+    from PySide6 import QtCore as _QtCore
+    from PySide6 import QtGui as _QtGui
     mime = _QtCore.QMimeData()
     mime.setUrls([_QtCore.QUrl.fromLocalFile(str(p)) for p in paths])
     event = _QtGui.QDropEvent(_QtCore.QPointF(10, 10),
@@ -1624,6 +1623,7 @@ def test_a_trajectory_dropped_before_any_track_explains_itself(
 def test_longitude_labels_fit_side_by_side_on_a_walk(app):
     """At walking scale seconds labels used to run into one another."""
     from PySide6 import QtGui
+
     from rcta.core.geo import lonlat_to_web_mercator
     from rcta.gui.geo_axis import GeoAxisItem, format_degree
     axis = GeoAxisItem("bottom")
@@ -1670,6 +1670,7 @@ def test_opened_tracks_are_offered_again_most_recent_first(window, sample_path,
 def test_the_recent_list_persists_through_the_settings(app, sample_path,
                                                        tmp_path):
     from PySide6 import QtCore as _QtCore
+
     from rcta.gui.main_window import MainWindow
     settings = _QtCore.QSettings(str(tmp_path / "rcta.ini"),
                                  _QtCore.QSettings.Format.IniFormat)
@@ -1702,6 +1703,7 @@ def _inked_columns(image, rows):
 def test_the_attribution_stays_inside_the_image(app, size):
     """A tall narrow export used to clip the licence credit at the edge."""
     from PySide6 import QtGui
+
     from rcta.gui.map_export import compose_attribution
     width, height = size
     image = QtGui.QImage(width, height, QtGui.QImage.Format.Format_ARGB32)
@@ -1715,6 +1717,7 @@ def test_the_attribution_stays_inside_the_image(app, size):
 
 def test_no_lines_draws_nothing(app):
     from PySide6 import QtGui
+
     from rcta.gui.map_export import compose_attribution
     image = QtGui.QImage(200, 100, QtGui.QImage.Format.Format_ARGB32)
     image.fill(QtGui.QColor("white"))
@@ -1749,8 +1752,9 @@ def test_choosing_a_reference_with_none_marked_says_what_is_used(loaded):
 
 
 def test_marking_a_reference_raises_no_such_warning(loaded):
-    from rcta.core.selection import Selection
     import numpy as np
+
+    from rcta.core.selection import Selection
     mask = np.zeros(loaded._track.n, dtype=bool)
     mask[100:200] = True
     loaded._broadcast(Selection(mask=mask, source="test"))
@@ -1788,7 +1792,8 @@ def test_fetch_with_no_flight_number_says_what_to_type(loaded):
 
 def test_tables_sort_numerically_and_rows_still_select_their_samples(window, walk_path):
     """Sorting goes through a proxy, so a view row is not a model row."""
-    from PySide6.QtCore import QItemSelectionModel, Qt as _Qt
+    from PySide6.QtCore import QItemSelectionModel
+    from PySide6.QtCore import Qt as _Qt
     walk = walk_path
     assert window.load(str(walk))
     view, model = window.anomaly_view, window.anomaly_model
@@ -1823,8 +1828,8 @@ def test_double_clicking_an_anomaly_row_zooms_the_map_to_it(window, walk_path):
 
 
 def test_selecting_a_leg_row_selects_that_legs_samples(loaded):
-    from PySide6.QtCore import QItemSelectionModel
     import numpy as np
+    from PySide6.QtCore import QItemSelectionModel
     proxy = loaded.leg_view.model()
     assert proxy.rowCount() > 1
     index = proxy.index(1, 0)
@@ -1838,9 +1843,10 @@ def test_selecting_a_leg_row_selects_that_legs_samples(loaded):
 
 
 def test_zoom_to_track_and_clear_selection_have_keys(loaded):
-    from PySide6.QtGui import QKeySequence
-    from rcta.core.selection import Selection
     import numpy as np
+    from PySide6.QtGui import QKeySequence
+
+    from rcta.core.selection import Selection
     zoom = _action(loaded, "Zoom to &track")
     clear = _action(loaded, "&Clear selection")
     assert zoom.shortcut() == QKeySequence("Ctrl+0")
@@ -1857,6 +1863,7 @@ def test_zoom_to_track_and_clear_selection_have_keys(loaded):
 def test_a_burst_of_parameter_edits_runs_one_analysis(app, sample_path):
     """Each spin-box click used to re-run the whole analysis at once."""
     from PySide6 import QtCore as _QtCore
+
     from rcta.gui.main_window import MainWindow
     win = MainWindow(offline=True)              # asynchronous, as the app runs
     try:
@@ -1894,6 +1901,7 @@ def test_a_selection_of_separate_runs_is_refused_as_a_reference(loaded):
     """Its hull would count the unselected samples between the runs --
     say, a source selected around -- as background."""
     import numpy as np
+
     from rcta.core.selection import Selection
     mask = np.zeros(loaded._track.n, dtype=bool)
     mask[100:150] = True
@@ -1912,6 +1920,7 @@ def test_exports_and_the_open_dialog_start_beside_the_track(loaded, sample_path,
                                                             monkeypatch):
     """Bare names opened every dialog in the program's working directory."""
     from pathlib import Path
+
     from PySide6 import QtWidgets
     folder = sample_path.resolve().parent
     assert Path(loaded._suggested_export_path("json")).parent == folder
@@ -1929,6 +1938,7 @@ def test_exports_and_the_open_dialog_start_beside_the_track(loaded, sample_path,
 def test_the_trajectory_dialog_starts_beside_the_track(loaded, sample_path,
                                                        monkeypatch):
     from pathlib import Path
+
     from PySide6 import QtWidgets
     seen = {}
 
@@ -1945,6 +1955,7 @@ def test_no_force_is_offered_for_a_trajectory_that_never_overlaps(
         window, sample_path, sample_trajectory_path, tmp_path, monkeypatch):
     """The dialog said 'sits nan km away' and offered a join of nothing."""
     import json
+
     from PySide6 import QtWidgets
     data = json.loads(sample_trajectory_path.read_text(encoding="utf-8"))
     year = 31_536_000
@@ -2000,6 +2011,7 @@ def test_a_trajectory_that_overlaps_but_disagrees_offers_a_forced_join(
 def test_ambiguous_anomaly_headers_explain_themselves(app):
     """'dur (s)' is the elapsed span (506 s for a 128 s count on the flight)."""
     from PySide6.QtCore import Qt as _Qt
+
     from rcta.gui.models import AnomalyTableModel
     model = AnomalyTableModel()
     headers = [model.headerData(i, _Qt.Orientation.Horizontal)
@@ -2013,19 +2025,21 @@ def test_ambiguous_anomaly_headers_explain_themselves(app):
 
 def test_hotspot_headers_explain_score_and_evidence(app):
     from PySide6.QtCore import Qt as _Qt
+
     from rcta.gui.models import HotspotTableModel
     model = HotspotTableModel()
     headers = [model.headerData(i, _Qt.Orientation.Horizontal)
                for i in range(model.columnCount())]
-    tip = lambda name: model.headerData(headers.index(name),
-                                        _Qt.Orientation.Horizontal,
-                                        _Qt.ItemDataRole.ToolTipRole)
+    def tip(name):
+        return model.headerData(headers.index(name), _Qt.Orientation.Horizontal,
+                                _Qt.ItemDataRole.ToolTipRole)
     assert "not a significance" in tip("score")
     assert "strong" in tip("evidence") and "possible" in tip("evidence")
 
 
 def test_leg_headers_say_dropout_travel_is_not_in_the_distance(app):
     from PySide6.QtCore import Qt as _Qt
+
     from rcta.gui.models import LegTableModel
     model = LegTableModel()
     headers = [model.headerData(i, _Qt.Orientation.Horizontal)
@@ -2043,6 +2057,7 @@ def test_the_gui_json_report_is_the_cli_report(window, walk_path, tmp_path,
     """Front ends must agree on the answer; the GUI once ran a different
     n_boot from the CLI and quoted a different p-value."""
     import json
+
     from rcta.cli import main
     cli = tmp_path / "cli.json"
     assert main(["analyze", str(walk_path), "--json", str(cli)]) == 0
@@ -2058,6 +2073,7 @@ def test_the_profile_bin_suits_the_track(loaded, walk_path):
     """A fixed 100 m bin left the 1800 km flight's profile 84 % empty and,
     drawn with gaps at empty bins, all but invisible."""
     import numpy as np
+
     from rcta.core.profile import resample_by_distance
     flight_step = loaded.profile.step.value()
     assert flight_step >= 5000.0
@@ -2098,6 +2114,7 @@ def test_fetch_is_greyed_while_a_lookup_runs(loaded, monkeypatch, sample_path):
 
 def test_the_window_layout_and_basemap_survive_a_restart(app, tmp_path):
     from PySide6 import QtCore as _QtCore
+
     from rcta.gui.main_window import MainWindow
     settings = _QtCore.QSettings(str(tmp_path / "rcta.ini"),
                                  _QtCore.QSettings.Format.IniFormat)
@@ -2126,7 +2143,9 @@ def test_a_window_without_settings_saves_nothing(window, tmp_path):
 def test_a_selection_exports_its_own_rows_with_the_tracks_values(
         loaded, tmp_path, monkeypatch):
     import csv
+
     import numpy as np
+
     from rcta.core.selection import Selection
     mask = np.zeros(loaded._track.n, dtype=bool)
     mask[100:150] = True
@@ -2171,7 +2190,9 @@ def test_clock_ticks_fall_on_round_clock_times(loaded):
 def test_a_session_rebuilds_the_same_analysis_and_view(app, walk_path, tmp_path,
                                                        monkeypatch):
     import json
+
     import numpy as np
+
     from rcta.core.selection import Selection
     from rcta.gui.main_window import MainWindow
     first = MainWindow(offline=True, synchronous=True)

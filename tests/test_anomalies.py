@@ -6,8 +6,7 @@ import numpy as np
 import pytest
 import synthetic
 
-from rcta.core.anomalies import (ScanParams, bonferroni_k, scan, scan_mda,
-                                 significance_trace)
+from rcta.core.anomalies import ScanParams, bonferroni_k, scan, scan_mda, significance_trace
 from rcta.core.background import BackgroundParams, estimate_background
 from rcta.core.quality import assess_with_report
 
@@ -243,6 +242,7 @@ def test_scan_reports_progress(sample):
 def test_no_detection_limit_is_quoted_for_a_scale_the_scan_never_tested():
     """With every 3rd sample masked, no window of 4 or more is clean."""
     import synthetic
+
     from rcta.core.anomalies import ScanParams, scan_mda
     from rcta.core.background import estimate_background
     track, _ = synthetic.make(n=300, shuffle=False)
@@ -257,6 +257,7 @@ def test_no_detection_limit_is_quoted_for_a_scale_the_scan_never_tested():
 def test_an_excess_where_the_gps_fix_collapses_is_flagged_as_a_transition():
     """Walking indoors changes shielding and fix together; say so."""
     import synthetic
+
     from rcta.core.analysis import AnalysisParams, analyze_track
     from rcta.core.track import Track
     track, _ = synthetic.make(n=600, shuffle=False, sources=[(300, 40.0, 6)])
@@ -273,6 +274,7 @@ def test_an_excess_where_the_gps_fix_collapses_is_flagged_as_a_transition():
 
 def test_steady_gps_raises_no_transition_flag():
     import synthetic
+
     from rcta.core.analysis import AnalysisParams, analyze_track
     track, _ = synthetic.make(n=600, shuffle=False, sources=[(300, 40.0, 6)])
     a = analyze_track(track, AnalysisParams(n_boot=10))

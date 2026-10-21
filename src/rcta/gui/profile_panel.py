@@ -22,9 +22,8 @@ import numpy as np
 import pyqtgraph as pg
 from PySide6 import QtCore, QtWidgets
 
-from rcta.core.profile import (correlate_speed_dose, distribution,
-                               resample_by_distance)
 from rcta.core.dose import convert_dose_rate
+from rcta.core.profile import correlate_speed_dose, distribution, resample_by_distance
 from rcta.gui import theme
 from rcta.gui.geo_axis import nice_distance
 

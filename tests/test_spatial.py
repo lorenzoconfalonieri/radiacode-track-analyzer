@@ -277,6 +277,7 @@ def test_sample_grid_is_mostly_unsupported(sample):
 def test_a_single_anomaly_hotspot_has_the_radius_of_its_samples():
     """Measured on anomaly centres, one anomaly always gave radius 0."""
     import synthetic
+
     from rcta.core.analysis import AnalysisParams, analyze_track
     track, _ = synthetic.make(n=500, shuffle=False, sources=[(250, 80.0, 4)])
     a = analyze_track(track, AnalysisParams(n_boot=20))

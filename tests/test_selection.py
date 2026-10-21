@@ -5,8 +5,13 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from rcta.core.selection import (Selection, select_by_distance, select_by_polygon,
-                                 select_by_time, select_by_value)
+from rcta.core.selection import (
+    Selection,
+    select_by_distance,
+    select_by_polygon,
+    select_by_time,
+    select_by_value,
+)
 from rcta.core.track import Track
 
 

@@ -237,7 +237,6 @@ def _flank_background(rate, time_s, params: BackgroundParams):
     background, which would drive the apparent net signal toward zero exactly
     where it matters most.
     """
-    n = time_s.size
     half = params.window_s / 2.0
     guard = params.guard_s
 

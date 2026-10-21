@@ -10,7 +10,6 @@ from rcta.core.anomalies import ScanParams, scan
 from rcta.core.background import BackgroundParams, estimate_background
 from rcta.core.quality import assess_with_report
 
-
 # ---- parameter validation ------------------------------------------------
 
 

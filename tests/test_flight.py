@@ -9,10 +9,9 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-
 import synthetic
-from rcta.core import flight as F
 
+from rcta.core import flight as F
 
 # ---- flight numbers -------------------------------------------------------
 

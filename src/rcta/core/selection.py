@@ -59,22 +59,22 @@ class Selection:
     # ---- construction -----------------------------------------------------
 
     @classmethod
-    def empty(cls, n: int) -> "Selection":
+    def empty(cls, n: int) -> Selection:
         return cls(mask=np.zeros(int(n), dtype=bool), source="none")
 
     @classmethod
-    def all(cls, n: int) -> "Selection":
+    def all(cls, n: int) -> Selection:
         return cls(mask=np.ones(int(n), dtype=bool), source="none")
 
     @classmethod
-    def from_interval(cls, time_s, t0: float, t1: float) -> "Selection":
+    def from_interval(cls, time_s, t0: float, t1: float) -> Selection:
         lo, hi = (t0, t1) if t0 <= t1 else (t1, t0)
         time_s = np.asarray(time_s, dtype=float)
         return cls(mask=(time_s >= lo) & (time_s <= hi), source="series",
                    interval=(float(lo), float(hi)))
 
     @classmethod
-    def from_rect(cls, x, y, x0, y0, x1, y1) -> "Selection":
+    def from_rect(cls, x, y, x0, y0, x1, y1) -> Selection:
         """Samples inside an axis-aligned rectangle in projected metres."""
         x = np.asarray(x, dtype=float)
         y = np.asarray(y, dtype=float)
@@ -129,16 +129,16 @@ class Selection:
 
     # ---- set operations ---------------------------------------------------
 
-    def __and__(self, other: "Selection") -> "Selection":
+    def __and__(self, other: Selection) -> Selection:
         return replace(self, mask=self.mask & other.mask, interval=None)
 
-    def __or__(self, other: "Selection") -> "Selection":
+    def __or__(self, other: Selection) -> Selection:
         return replace(self, mask=self.mask | other.mask, interval=None)
 
-    def __invert__(self) -> "Selection":
+    def __invert__(self) -> Selection:
         return replace(self, mask=~self.mask, interval=None)
 
-    def without(self, other: "Selection") -> "Selection":
+    def without(self, other: Selection) -> Selection:
         return replace(self, mask=self.mask & ~other.mask, interval=None)
 
     def describe(self) -> str:

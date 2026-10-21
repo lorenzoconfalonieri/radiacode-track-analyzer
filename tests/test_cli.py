@@ -496,6 +496,7 @@ def test_the_gui_without_its_extra_explains_how_to_install_it(
         monkeypatch, capsys, missing):
     """A bare `pip install rcta` used to answer `rcta` with a traceback."""
     import sys
+
     from rcta.gui import app
     monkeypatch.setitem(sys.modules, missing, None)
     assert app.main(["rcta"]) == 1
@@ -506,10 +507,11 @@ def test_the_gui_without_its_extra_explains_how_to_install_it(
 
 def test_the_version_is_defined_once():
     """pyproject, the GPX creator and the About box used to repeat it."""
+    import inspect
     from pathlib import Path
+
     import rcta
     from rcta.core.io_export import track_to_gpx
-    import inspect
     root = Path(__file__).resolve().parents[1]
     assert 'dynamic = ["version"]' in (root / "pyproject.toml").read_text()
     default = inspect.signature(track_to_gpx).parameters["creator"].default
@@ -519,6 +521,7 @@ def test_the_version_is_defined_once():
 def test_sparkline_survives_masked_readings():
     """Masked samples are NaN; int(nan) used to crash `rcta-cli info`."""
     import numpy as np
+
     from rcta.cli import _sparkline
     values = np.array([1.0, np.nan, 3.0, np.nan, np.nan, 5.0])
     line = _sparkline(values, width=6)
@@ -545,7 +548,7 @@ def test_info_reports_the_same_distance_as_analyze(capsys, walk_path):
     info = capsys.readouterr().out
     assert main(["analyze", walk, "--n-boot", "10"]) == 0
     analyze = capsys.readouterr().out
-    line = next(l for l in info.splitlines() if l.startswith("distance"))
+    line = next(line for line in info.splitlines() if line.startswith("distance"))
     assert line.split(":")[1].split("(")[0].strip() == "2.99 km"
     assert "2.99 km" in analyze
 
@@ -688,5 +691,5 @@ def test_a_batch_run_ends_with_one_summary_line_per_track(sample_path,
                  "--fail-on-detection", "--n-boot", "10"]) == 5
     out = capsys.readouterr().out
     summary = out[out.index("  summary"):].splitlines()
-    assert any(sample_path.name[:38] in l and "clean" in l for l in summary)
-    assert any(walk_path.name[:38] in l and "DETECTION" in l for l in summary)
+    assert any(sample_path.name[:38] in line and "clean" in line for line in summary)
+    assert any(walk_path.name[:38] in line and "DETECTION" in line for line in summary)

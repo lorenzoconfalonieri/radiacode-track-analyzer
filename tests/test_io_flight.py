@@ -8,9 +8,13 @@ import numpy as np
 import pytest
 
 from rcta.core.flight import M_PER_FT
-from rcta.core.io_flight import (TrajectoryParseError, load_trajectory,
-                                 parse_opensky_states, parse_opensky_track,
-                                 trajectory_to_csv)
+from rcta.core.io_flight import (
+    TrajectoryParseError,
+    load_trajectory,
+    parse_opensky_states,
+    parse_opensky_track,
+    trajectory_to_csv,
+)
 
 
 def write(tmp_path, name, text):

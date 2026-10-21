@@ -7,7 +7,6 @@ import pytest
 
 from rcta.core import statistics as st
 
-
 # ---- Currie limits -------------------------------------------------------
 
 

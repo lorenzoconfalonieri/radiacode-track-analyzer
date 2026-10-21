@@ -299,7 +299,7 @@ def load_rctrk_tsv(path) -> Track:
                                      "dose_rate", "count_rate")}
     valid: list[bool] = []
     bad = 0
-    for lineno, row in enumerate(reader, start=offset + 2):
+    for row in reader:
         if not row or all(not cell.strip() for cell in row):
             continue
         parsed = {}

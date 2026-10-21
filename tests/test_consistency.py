@@ -46,6 +46,7 @@ def test_a_slow_drift_in_the_ratio_is_not_a_jump():
 
 def test_inconsistent_samples_reach_the_analysis_warnings_and_report():
     import json
+
     from rcta.core.analysis import AnalysisParams, analyze_track
     from rcta.core.io_export import report_to_json
     counts = np.full(300, 10.0)

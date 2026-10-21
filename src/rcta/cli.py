@@ -25,30 +25,44 @@ from pathlib import Path
 import numpy as np
 
 from rcta import __version__
-from rcta.core.analysis import AnalysisParams, analyze_track
 from rcta.core.airports import find_airport, nearest_airport
+from rcta.core.analysis import AnalysisParams, analyze_track
 from rcta.core.anomalies import ScanParams
 from rcta.core.background import BackgroundParams
 from rcta.core.dose import DOSE_UNITS, convert_dose_rate
-from rcta.core.flight import (FLIGHT_LEVEL_M, DEFAULT_ALTITUDE_STEP_M,
-                              DEFAULT_FIT_FLOOR_M, DEFAULT_MATCH_TOLERANCE_M,
-                              DEFAULT_MAX_GAP_S, FlightMatchError,
-                              bin_by_altitude, compare_branches,
-                              fit_scale_height, join_altitude,
-                              looks_like_flight, parse_flight_number,
-                              search_window)
-from rcta.core.io_export import (altitude_profile_to_csv,
-                                 altitude_samples_to_csv, anomalies_to_csv,
-                                 flight_report_to_json, grid_prj,
-                                 grid_to_asc, hotspots_to_csv,
-                                 report_to_json, track_to_csv,
-                                 track_to_geojson, track_to_gpx)
+from rcta.core.flight import (
+    DEFAULT_ALTITUDE_STEP_M,
+    DEFAULT_FIT_FLOOR_M,
+    DEFAULT_MATCH_TOLERANCE_M,
+    DEFAULT_MAX_GAP_S,
+    FLIGHT_LEVEL_M,
+    FlightMatchError,
+    bin_by_altitude,
+    compare_branches,
+    fit_scale_height,
+    join_altitude,
+    looks_like_flight,
+    parse_flight_number,
+    search_window,
+)
+from rcta.core.io_export import (
+    altitude_profile_to_csv,
+    altitude_samples_to_csv,
+    anomalies_to_csv,
+    flight_report_to_json,
+    grid_prj,
+    grid_to_asc,
+    hotspots_to_csv,
+    report_to_json,
+    track_to_csv,
+    track_to_geojson,
+    track_to_gpx,
+)
 from rcta.core.io_flight import load_trajectory, trajectory_to_csv
 from rcta.core.io_radiacode import TrackParseError, load_track
 from rcta.core.quality import QualityParams, assess
 from rcta.core.spatial import GridParams, interpolate
-from rcta.net.flights import (FlightFetchError, fetch_trajectory,
-                              load_flight_providers)
+from rcta.net.flights import FlightFetchError, fetch_trajectory, load_flight_providers
 
 RULE = "=" * 78
 THIN = "-" * 78

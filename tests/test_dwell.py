@@ -76,6 +76,7 @@ def test_the_flight_has_no_dwells_and_the_walk_has_one(sample, walk_path):
 
 def test_dwells_reach_the_summary_and_the_report():
     import json
+
     from rcta.core.io_export import report_to_json
     a = analyze_track(_walk_with_stop(source_cps=1.5), AnalysisParams(n_boot=10))
     assert "-- dwells" in a.describe() and "DETECTED" in a.describe()

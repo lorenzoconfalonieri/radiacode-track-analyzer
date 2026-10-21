@@ -14,10 +14,10 @@ from pathlib import Path
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 sys.path.insert(0, "src")
 
-from PySide6 import QtCore, QtWidgets                              # noqa: E402
+from PySide6 import QtCore, QtWidgets  # noqa: E402
 
-from rcta.gui import theme                                         # noqa: E402
-from rcta.gui.main_window import MainWindow                        # noqa: E402
+from rcta.gui import theme  # noqa: E402
+from rcta.gui.main_window import MainWindow  # noqa: E402
 
 WALK = "sample-data/Track 07 Sep 2026 14-30-57.rctrk"
 FLIGHT = "sample-data/Track 07 Sep 2026 07-53-59.rctrk"

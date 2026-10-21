@@ -499,7 +499,7 @@ class Track:
     # ---- masking and selection -------------------------------------------
 
     def with_mask(self, *, valid=None, position=None, geometry=None, legs=None,
-                  integration_time_s=None, meta=None, smoothing=None) -> "Track":
+                  integration_time_s=None, meta=None, smoothing=None) -> Track:
         """A copy with masks or metadata replaced. Columns are never touched."""
         changes = {}
         if valid is not None:
@@ -518,7 +518,7 @@ class Track:
             changes["meta"] = meta
         return replace(self, **changes)
 
-    def select(self, mask) -> "Track":
+    def select(self, mask) -> Track:
         """A Track over the selected samples, for per-selection statistics.
 
         ``distance_along_m`` restarts at zero on the result and is meaningless
@@ -598,7 +598,7 @@ class Track:
 
         ok = self.valid_mask
         if ok.any():
-            from rcta.core.dose import format_dose_rate   # dose imports us
+            from rcta.core.dose import format_dose_rate  # dose imports us
             dose, cps = self.dose_rate[ok], self.count_rate[ok]
             lines.append(f"dose rate  : {format_dose_rate(dose.min(), unit)} .. "
                          f"{format_dose_rate(dose.max(), unit)}   median "

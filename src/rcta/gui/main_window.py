@@ -20,8 +20,8 @@ import json
 import re
 import traceback
 from datetime import datetime, timezone
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from pathlib import Path
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import numpy as np
 from PySide6 import QtCore, QtGui, QtWidgets
@@ -29,26 +29,31 @@ from PySide6 import QtCore, QtGui, QtWidgets
 from rcta import __version__
 from rcta.core.analysis import AnalysisParams, analyze_track
 from rcta.core.anomalies import significance_trace
-from rcta.core.io_export import (altitude_profile_to_csv,
-                                 altitude_samples_to_csv, anomalies_to_csv,
-                                 flight_report_to_json, grid_prj,
-                                 grid_to_asc, hotspots_to_csv,
-                                 report_to_json, track_to_csv,
-                                 track_to_geojson, track_to_gpx)
-from rcta.core.io_flight import trajectory_to_csv
 from rcta.core.dose import format_dose_rate
 from rcta.core.flight import FlightMatchError, join_altitude, looks_like_flight
+from rcta.core.io_export import (
+    altitude_profile_to_csv,
+    altitude_samples_to_csv,
+    anomalies_to_csv,
+    flight_report_to_json,
+    grid_prj,
+    grid_to_asc,
+    hotspots_to_csv,
+    report_to_json,
+    track_to_csv,
+    track_to_geojson,
+    track_to_gpx,
+)
+from rcta.core.io_flight import trajectory_to_csv
 from rcta.core.io_radiacode import TrackParseError, load_track
 from rcta.core.profile import summarise
 from rcta.core.selection import Selection
 from rcta.core.spatial import GridParams, interpolate
 from rcta.gui import theme
-from rcta.gui.map_panel import MapPanel
-from rcta.gui.models import (AnomalyTableModel, DwellTableModel,
-                             HotspotTableModel, LegTableModel)
-from rcta.gui.panels import (AnalysisDock, DisplayDock, LogDock, SelectionDock,
-                             TrackDock)
 from rcta.gui.flight_panel import FlightPanel
+from rcta.gui.map_panel import MapPanel
+from rcta.gui.models import AnomalyTableModel, DwellTableModel, HotspotTableModel, LegTableModel
+from rcta.gui.panels import AnalysisDock, DisplayDock, LogDock, SelectionDock, TrackDock
 from rcta.gui.profile_panel import ProfilePanel
 from rcta.gui.series_panel import SeriesPanel
 

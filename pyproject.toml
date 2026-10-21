@@ -34,7 +34,7 @@ dependencies = ["numpy>=1.26", "scipy>=1.11",
 
 [project.optional-dependencies]
 gui = ["PySide6>=6.8", "pyqtgraph>=0.13.7"]
-dev = ["pytest>=7"]
+dev = ["pytest>=7", "ruff>=0.6"]
 
 [project.scripts]
 rcta = "rcta.gui.app:main"
@@ -52,3 +52,21 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+# pycodestyle, pyflakes, import order, bugbear, pyupgrade.
+select = ["E", "F", "W", "I", "B", "UP"]
+# zip() without strict= is everywhere and correct here; flagging each call
+# is noise, not a finding.
+ignore = ["B905"]
+
+[tool.ruff.lint.per-file-ignores]
+# The application stylesheet: one CSS rule per line reads better than wrapped.
+"src/rcta/gui/theme.py" = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["rcta"]

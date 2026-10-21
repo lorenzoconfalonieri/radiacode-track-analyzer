@@ -61,7 +61,7 @@ class TileKey:
     x: int
     y: int
 
-    def parent(self, levels: int = 1) -> "TileKey":
+    def parent(self, levels: int = 1) -> TileKey:
         return TileKey(self.z - levels, self.x >> levels, self.y >> levels)
 
 

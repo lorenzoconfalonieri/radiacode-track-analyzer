@@ -14,9 +14,15 @@ arrived. When the GUI needs a fetch off the main thread it hands the call to
 ``gui/worker.py``, which is the one module allowed to know about concurrency.
 """
 
-from rcta.net.flights import (FlightCache, FlightFetchError, FlightProvider,
-                              OpenSkyClient, credentials_from_env,
-                              fetch_trajectory, load_flight_providers)
+from rcta.net.flights import (
+                              FlightCache,
+                              FlightFetchError,
+                              FlightProvider,
+                              OpenSkyClient,
+                              credentials_from_env,
+                              fetch_trajectory,
+                              load_flight_providers,
+)
 
 __all__ = [
     "FlightCache",

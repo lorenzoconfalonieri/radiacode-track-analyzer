@@ -16,8 +16,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 pytest.importorskip("PySide6")
 
-from rcta.gui.tiles import (TileCache, TileKey, TileProvider, USER_AGENT,
-                            load_providers)
+from rcta.gui.tiles import USER_AGENT, TileCache, TileKey, TileProvider, load_providers
 
 
 @pytest.fixture

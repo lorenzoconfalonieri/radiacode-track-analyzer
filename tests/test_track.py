@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from rcta.core.track import Track, TrackMeta
+from rcta.core.track import Track
 
 
 def _track(**kw):
