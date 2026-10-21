@@ -376,6 +376,11 @@ correctness, tests, GUI usability, performance (measured), code quality.
   score (a ranking, not a significance), and evidence (strong, possible,
   weak).
 
+- 2026-10-21 **GUI:** the Legs table's headers carry tooltips. The
+  distance tooltip states that travel across dropouts is not included, so
+  the legs do not sum to the track total, which explains the discrepancy
+  pending the owner's decision on leg-end smoothing.
+
 ## Rejected
 
 - 2026-10-19 **Performance:** faster map recolouring at 100k samples

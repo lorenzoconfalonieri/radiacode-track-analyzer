@@ -2021,3 +2021,17 @@ def test_hotspot_headers_explain_score_and_evidence(app):
                                         _Qt.ItemDataRole.ToolTipRole)
     assert "not a significance" in tip("score")
     assert "strong" in tip("evidence") and "possible" in tip("evidence")
+
+
+def test_leg_headers_say_dropout_travel_is_not_in_the_distance(app):
+    from PySide6.QtCore import Qt as _Qt
+    from rcta.gui.models import LegTableModel
+    model = LegTableModel()
+    headers = [model.headerData(i, _Qt.Orientation.Horizontal)
+               for i in range(model.columnCount())]
+    tip = model.headerData(headers.index("dist (km)"),
+                           _Qt.Orientation.Horizontal, _Qt.ItemDataRole.ToolTipRole)
+    assert "not included" in tip
+    mean = [h for h in headers if h.startswith("mean")][0]
+    assert model.headerData(headers.index(mean), _Qt.Orientation.Horizontal,
+                            _Qt.ItemDataRole.ToolTipRole)

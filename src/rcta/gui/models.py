@@ -209,6 +209,18 @@ class LegTableModel(_BaseModel):
                                     else f"{r['gap_after_s']:.0f}"),
     ]
 
+    HEADER_TIPS = {
+        "dur (s)": "Elapsed time from the leg's first sample to its last.",
+        "dist (km)": "Distance travelled within the leg, on the smoothed "
+                     "route. Travel across the dropouts between legs is "
+                     "not included, so the legs do not sum to the track's "
+                     "total distance.",
+        "mean ({unit})": "Mean dose rate over the leg's readings; masked "
+                         "samples are left out.",
+        "gap after (s)": "Length of the dropout that ends this leg: the "
+                         "detector logged nothing for this long.",
+    }
+
     @staticmethod
     def rows_from(track, quality):
         """Build the leg rows from a track and its quality report."""
