@@ -1,3 +1,9 @@
+BACKLOG EXHAUSTED (2026-10-21): what remains is larger than one small
+change (a clock-time axis on the series and the Batch 3 features in
+IDEAS.md) or needs the owner: leg-end smoothing (changes published
+figures), the User-Agent contact (repo is private), and the Track
+summary layout.
+
 # Improvements
 
 Small, one-commit improvements (under ~100 lines each), worked one per
@@ -405,6 +411,10 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 ## Rejected
 
+- 2026-10-21 **GUI, no change:** an adaptive altitude bin for the Flight
+  panel. Unlike distance, altitude is physically bounded, so the shared
+  500 m default gives about 22 bins on any flight (0-11 km), and it matches
+  the CLI's default by design.
 - 2026-10-19 **Performance:** faster map recolouring at 100k samples
   (0.30 s per colour-map, scale or re-analysis change). The cost is
   pyqtgraph applying 100k per-point brushes. Passing an object array saves
