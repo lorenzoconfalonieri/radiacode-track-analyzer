@@ -390,6 +390,11 @@ correctness, tests, GUI usability, performance (measured), code quality.
   tests replaces seven copies of the two-line save-dialog stub. The two
   open-dialog spies and the call-recording stub stay, since they do more.
 
+- 2026-10-21 **Tests:** the GUI's JSON report must equal `rcta-cli analyze
+  --json` for the same track, field for field. An audit found the GUI,
+  `analyze --json` and `export --format json` already identical on the
+  walk; the test keeps the front ends from diverging again.
+
 ## Rejected
 
 - 2026-10-19 **Performance:** faster map recolouring at 100k samples

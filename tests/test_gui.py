@@ -2035,3 +2035,19 @@ def test_leg_headers_say_dropout_travel_is_not_in_the_distance(app):
     mean = [h for h in headers if h.startswith("mean")][0]
     assert model.headerData(headers.index(mean), _Qt.Orientation.Horizontal,
                             _Qt.ItemDataRole.ToolTipRole)
+
+
+def test_the_gui_json_report_is_the_cli_report(window, walk_path, tmp_path,
+                                               monkeypatch, capsys):
+    """Front ends must agree on the answer; the GUI once ran a different
+    n_boot from the CLI and quoted a different p-value."""
+    import json
+    from rcta.cli import main
+    cli = tmp_path / "cli.json"
+    assert main(["analyze", str(walk_path), "--json", str(cli)]) == 0
+    capsys.readouterr()
+    gui = tmp_path / "gui.json"
+    _answer_save_dialog(monkeypatch, gui)
+    assert window.load(str(walk_path))
+    window._export("json")
+    assert json.loads(gui.read_text()) == json.loads(cli.read_text())
