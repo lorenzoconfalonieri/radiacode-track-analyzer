@@ -51,6 +51,13 @@ def loaded(window, sample_path):
     return window
 
 
+def _answer_save_dialog(monkeypatch, path) -> None:
+    """Make every save dialog answer ``path`` ("" is Cancel)."""
+    from PySide6 import QtWidgets
+    monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName",
+                        staticmethod(lambda *a, **k: (str(path), "")))
+
+
 # ---- loading -------------------------------------------------------------
 
 
@@ -310,8 +317,7 @@ def test_the_heatmap_grid_exports_with_its_projection(loaded, tmp_path,
                                                       monkeypatch):
     from PySide6 import QtWidgets
     out = tmp_path / "grid.asc"
-    monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName",
-                        staticmethod(lambda *a, **k: (str(out), "")))
+    _answer_save_dialog(monkeypatch, str(out))
     loaded.compute_grid()
     loaded._export("grid")
     assert out.read_text().startswith("ncols ")
@@ -366,8 +372,7 @@ def test_purging_the_cache_reports_what_it_freed(loaded):
 def test_export_writes_the_file(loaded, tmp_path, monkeypatch, kind, check):
     from PySide6 import QtWidgets
     out = tmp_path / f"out.{kind}"
-    monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName",
-                        staticmethod(lambda *a, **k: (str(out), "")))
+    _answer_save_dialog(monkeypatch, str(out))
     loaded._export(kind)
     assert check in out.read_text()
     assert f"wrote {out}" in loaded.log.toPlainText()
@@ -375,8 +380,7 @@ def test_export_writes_the_file(loaded, tmp_path, monkeypatch, kind, check):
 
 def test_cancelling_the_export_dialog_writes_nothing(loaded, monkeypatch):
     from PySide6 import QtWidgets
-    monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName",
-                        staticmethod(lambda *a, **k: ("", "")))
+    _answer_save_dialog(monkeypatch, "")
     before = loaded.log.toPlainText()
     loaded._export("csv")
     assert loaded.log.toPlainText() == before
@@ -538,8 +542,7 @@ def test_an_export_blocked_by_provider_terms_says_so(loaded, tmp_path,
                                                      monkeypatch):
     from PySide6 import QtWidgets
     out = tmp_path / "map.png"
-    monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName",
-                        staticmethod(lambda *a, **k: (str(out), "")))
+    _answer_save_dialog(monkeypatch, str(out))
     loaded._set_provider("esri_imagery")
     loaded.map.set_basemap_enabled(True, 19)
     loaded._export_image()
@@ -577,8 +580,7 @@ def test_the_svg_carries_the_colour_bar_and_provenance_but_no_tiles(
     from PySide6 import QtWidgets
     calls = _count_basemap_paints(monkeypatch)
     out = tmp_path / "map.svg"
-    monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName",
-                        staticmethod(lambda *a, **k: (str(out), "")))
+    _answer_save_dialog(monkeypatch, str(out))
     loaded._export_svg()
     svg = out.read_text()
     assert not calls
@@ -961,8 +963,7 @@ def test_the_unit_change_reaches_the_flight_panel(joined):
 
 def test_the_flight_exports_need_a_join(loaded, tmp_path, monkeypatch):
     from PySide6 import QtWidgets
-    monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName",
-                        lambda *a, **k: (str(tmp_path / "out.csv"), ""))
+    _answer_save_dialog(monkeypatch, tmp_path / "out.csv")
     loaded._export("profile")
     assert not (tmp_path / "out.csv").exists()
     assert "no altitude joined yet" in loaded.log.toPlainText()
@@ -1136,8 +1137,7 @@ def test_the_trajectory_export_round_trips_back_in(joined, saved, tmp_path):
 
 def test_a_cancelled_dialog_writes_nothing(joined, monkeypatch, tmp_path):
     from PySide6 import QtWidgets
-    monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName",
-                        staticmethod(lambda *a, **k: ("", "")))
+    _answer_save_dialog(monkeypatch, "")
     joined.flight._export_buttons["samples"].click()
     assert list(tmp_path.iterdir()) == []
 

@@ -386,6 +386,10 @@ correctness, tests, GUI usability, performance (measured), code quality.
   walk), the same dose per sample, and a stated unit. The audit found them
   already consistent; the test keeps them so.
 
+- 2026-10-21 **Code quality:** one `_answer_save_dialog()` helper in the GUI
+  tests replaces seven copies of the two-line save-dialog stub. The two
+  open-dialog spies and the call-recording stub stay, since they do more.
+
 ## Rejected
 
 - 2026-10-19 **Performance:** faster map recolouring at 100k samples
