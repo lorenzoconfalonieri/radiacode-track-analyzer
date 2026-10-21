@@ -24,6 +24,9 @@ conda activate rcta
 pip install -e ".[gui,dev]"
 ```
 
+`python -m pytest` runs the suite and `ruff check src tests tools` the lint;
+CI runs both.
+
 The analysis core needs only numpy and scipy. PySide6 and pyqtgraph are an
 optional `gui` extra, so the core installs and runs headless. On Windows it
 also pulls in `tzdata`, because the OS ships no zone database and `--date` is
@@ -346,7 +349,7 @@ src/rcta/data/    bundled tables: airlines; airports, with their IANA
                   timezones; basemap and trajectory providers
 src/rcta/data/LICENSE
                   ODbL 1.0, for airports.json alone -- see Licence below
-tests/            1067 tests; run with pytest
+tests/            1159 tests; run with pytest
 tools/            maintenance scripts; not part of the package
 docs/FORMAT.md    the reverse-engineered .rctrk specification
 docs/FLIGHT.md    importing altitude for an airborne track
@@ -358,8 +361,10 @@ NOTICE            the one file that is not MIT, and why
 `tests/test_architecture.py` enforces the boundaries mechanically: no Qt or
 matplotlib in `core/`, network access confined to `net/` and `gui/tiles.py` and
 absent everywhere else, no Qt in `net/` so `rcta-cli flight` runs headless,
-threading confined to `gui/worker.py`, and a length floor on every `core/` and
-`net/` module docstring.
+threading confined to `gui/worker.py`, the layer direction (absolute imports
+only; `core/` imports nothing above it, `net/` never the GUI), and a length
+floor on every `core/` and `net/` module docstring. CI runs ruff and the full
+suite on Linux, macOS and Windows.
 
 ## Limitations
 

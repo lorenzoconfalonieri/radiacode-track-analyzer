@@ -34,4 +34,4 @@ jobs:
       - name: Lint
         run: ruff check src tests tools
       - name: Test
-        run: python -X faulthandler -m pytest -v -p no:cacheprovider
+        run: python -X faulthandler -m pytest -v -p no:cacheprovider --capture=sys

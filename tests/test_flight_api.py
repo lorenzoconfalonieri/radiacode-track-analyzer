@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import urllib.error
 from pathlib import Path
 
@@ -197,7 +198,10 @@ def test_the_cache_is_a_cache_location_not_application_data(monkeypatch):
     monkeypatch.setenv("RCTA_FLIGHT_CACHE", "/tmp/somewhere")
     assert cache_dir() == Path("/tmp/somewhere")
     monkeypatch.delenv("RCTA_FLIGHT_CACHE")
-    assert "ache" in str(cache_dir())            # Caches or .cache
+    # Caches (macOS), .cache or XDG_CACHE_HOME, or Windows' local, never
+    # roaming, application data -- the platform's place for disposable files.
+    expected = "Local" if os.name == "nt" else "ache"
+    assert expected in str(cache_dir())
 
 
 # ---- the happy path -------------------------------------------------------

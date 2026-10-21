@@ -396,6 +396,12 @@ device's recording periods; a combined significance across a hotspot's
 passes; QSettings for layout, recent files and basemap; drag and drop;
 sortable tables; a UTC clock-time axis; selection export; session files.
 
+Engineering, also done: ruff in `dev` and in CI; layer-direction rules in the
+architecture test (no relative imports, `core` imports nothing above it, `net`
+never imports the GUI); CI on Linux, macOS and Windows under Python 3.10 and
+3.12 (the CI part of 6.1); and `core/flight.py` split into flight-number
+parsing, the join and the profile behind a re-exporting facade.
+
 Measured and not adopted:
 
 - **An exact Poisson tail.** The scan's normal approximation divides by the
@@ -418,8 +424,6 @@ Still open:
 - **Closed windows are never freed.** Signal connections keep a closed
   `MainWindow` alive. Harmless with one window; a future "open in new
   window" would leak.
-- **Engineering:** ruff, layer-direction rules in the architecture test,
-  CI (6.1), and splitting `core/flight.py`.
 
 ---
 

@@ -1,8 +1,8 @@
 BACKLOG EXHAUSTED (2026-10-21): what remains is larger than one small
 change (a clock-time axis on the series and the Batch 3 features in
 IDEAS.md) or needs the owner: leg-end smoothing (changes published
-figures), the User-Agent contact (repo is private), and the Track
-summary layout.
+figures; deferred) and the Track summary layout. The User-Agent now names
+the real repository.
 
 # Improvements
 
