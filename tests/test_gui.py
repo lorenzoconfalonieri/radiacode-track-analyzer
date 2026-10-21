@@ -2051,3 +2051,16 @@ def test_the_gui_json_report_is_the_cli_report(window, walk_path, tmp_path,
     assert window.load(str(walk_path))
     window._export("json")
     assert json.loads(gui.read_text()) == json.loads(cli.read_text())
+
+
+def test_the_profile_bin_suits_the_track(loaded, walk_path):
+    """A fixed 100 m bin left the 1800 km flight's profile 84 % empty and,
+    drawn with gaps at empty bins, all but invisible."""
+    import numpy as np
+    from rcta.core.profile import resample_by_distance
+    flight_step = loaded.profile.step.value()
+    assert flight_step >= 5000.0
+    profile = resample_by_distance(loaded._track, step_m=flight_step)
+    assert np.isnan(profile.dose_rate).mean() < 0.3
+    assert loaded.load(str(walk_path))
+    assert 10.0 <= loaded.profile.step.value() <= 50.0

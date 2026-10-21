@@ -26,10 +26,25 @@ from rcta.core.profile import (correlate_speed_dose, distribution,
                                resample_by_distance)
 from rcta.core.dose import convert_dose_rate
 from rcta.gui import theme
+from rcta.gui.geo_axis import nice_distance
 
 Qt = QtCore.Qt
 
 __all__ = ["ProfilePanel"]
+
+
+def suggest_step(track) -> float:
+    """A distance bin that suits the track: about 150 bins over the route,
+    and never so fine that most bins are empty.
+
+    A fixed 100 m left the bundled 1800 km flight with 17 923 bins, 15 118 of
+    them empty; the profile, drawn with gaps at empty bins, was invisible.
+    """
+    along = track.distance_along_m
+    total = float(along[-1]) if along.size else 0.0
+    steps = np.diff(along)
+    spacing = float(np.median(steps[steps > 0])) if (steps > 0).any() else 0.0
+    return nice_distance(max(total / 150.0, 3.0 * spacing, 10.0))
 
 
 class ProfilePanel(QtWidgets.QWidget):
@@ -131,6 +146,12 @@ class ProfilePanel(QtWidgets.QWidget):
         with the report."""
         self._track = track
         self._show_plots(track is not None)
+        if track is not None:
+            blocked = self.step.blockSignals(True)
+            try:
+                self.step.setValue(suggest_step(track))
+            finally:
+                self.step.blockSignals(blocked)
         self._correlation = (correlation if correlation is not None or
                              track is None else correlate_speed_dose(track))
         self._refresh()

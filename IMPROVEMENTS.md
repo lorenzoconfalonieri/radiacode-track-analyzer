@@ -395,6 +395,14 @@ correctness, tests, GUI usability, performance (measured), code quality.
   `analyze --json` and `export --format json` already identical on the
   walk; the test keeps the front ends from diverging again.
 
+- 2026-10-21 **GUI:** the Profile panel picks its distance bin from the
+  track (about 150 bins, at least three sample spacings, rounded to a
+  1/2/5 value) instead of a fixed 100 m. The flight's profile had been 84 %
+  empty bins and practically invisible; at 10 km it shows climb, cruise and
+  descent, with 23 % empty (the real dropouts). The walk goes from 30 bins
+  to 150 bins of 20 m. Display only; the bin stays editable. The dark-theme
+  sweep of the Flight and Profile panels found nothing.
+
 ## Rejected
 
 - 2026-10-19 **Performance:** faster map recolouring at 100k samples
