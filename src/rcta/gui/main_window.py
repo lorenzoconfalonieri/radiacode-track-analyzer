@@ -430,6 +430,8 @@ class MainWindow(QtWidgets.QMainWindow):
             view_menu, "Zoom to &selection", self._zoom_to_selection))
         self._needs_selection.append(self._action(
             view_menu, "&Clear selection", self._on_selection_cleared, "Esc"))
+        self._action(view_menu, "Series in &clock time (UTC)",
+                     self.series.set_clock_time, checkable=True)
         self._action(view_menu, "&Select mode (or hold Shift)",
                      self.map.set_select_mode, "Ctrl+E", checkable=True)
         view_menu.addSeparator()

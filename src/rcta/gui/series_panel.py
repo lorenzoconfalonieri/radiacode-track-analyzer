@@ -37,6 +37,45 @@ __all__ = ["SeriesPanel"]
 MAX_RUN_BANDS = 64
 
 
+class TimeAxisItem(pg.AxisItem):
+    """Elapsed seconds, or the UTC clock time they correspond to."""
+
+    def __init__(self, orientation, **kwargs) -> None:
+        super().__init__(orientation, **kwargs)
+        self.enableAutoSIPrefix(False)
+        self.clock = False
+        self.origin_s = 0.0
+
+    #: Clock-time tick steps, seconds: round minutes and hours.
+    _CLOCK_STEPS = (10, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200,
+                    10800, 21600, 43200, 86400)
+
+    def tickValues(self, minVal, maxVal, size):
+        """In clock mode, ticks on round clock times, not round elapsed ones."""
+        if not self.clock or maxVal <= minVal:
+            return super().tickValues(minVal, maxVal, size)
+        target = (maxVal - minVal) / max(size / 110.0, 2.0)
+        major = next((s for s in self._CLOCK_STEPS if s >= target),
+                     self._CLOCK_STEPS[-1])
+        minor = next((s for s in reversed(self._CLOCK_STEPS) if s < major), major)
+        out = []
+        for step in (major, minor):
+            first = (np.ceil((self.origin_s + minVal) / step) * step
+                     - self.origin_s)
+            values = np.arange(first, maxVal + 1e-9, step)[:500]
+            out.append((step, values.tolist()))
+        return out
+
+    def tickStrings(self, values, scale, spacing):
+        if not self.clock:
+            return super().tickStrings(values, scale, spacing)
+        from datetime import datetime, timezone
+        fmt = "%H:%M:%S" if spacing < 60 else "%H:%M"
+        return [datetime.fromtimestamp(self.origin_s + float(v),
+                                       tz=timezone.utc).strftime(fmt)
+                for v in values]
+
+
 class SeriesPanel(QtWidgets.QWidget):
     """Time series with a region control and a significance strip."""
 
@@ -61,20 +100,24 @@ class SeriesPanel(QtWidgets.QWidget):
         self._glw = pg.GraphicsLayoutWidget()
         layout.addWidget(self._glw)
 
-        self.dose_plot = self._glw.addPlot(row=0, col=0)
+        self._time_axes = [TimeAxisItem("bottom") for _ in range(3)]
+        self.dose_plot = self._glw.addPlot(
+            row=0, col=0, axisItems={"bottom": self._time_axes[0]})
         self.dose_plot.showGrid(x=True, y=True, alpha=0.15)
         self.dose_plot.setLabel("left", "dose rate (nSv/h)")
         self.dose_plot.getAxis("left").enableAutoSIPrefix(False)
         self.dose_plot.getAxis("bottom").enableAutoSIPrefix(False)
         self.dose_plot.addLegend(offset=(-10, 10))
 
-        self.count_plot = self._glw.addPlot(row=1, col=0)
+        self.count_plot = self._glw.addPlot(
+            row=1, col=0, axisItems={"bottom": self._time_axes[1]})
         self.count_plot.showGrid(x=True, y=True, alpha=0.15)
         self.count_plot.setLabel("left", "count rate (cps)")
         self.count_plot.getAxis("left").enableAutoSIPrefix(False)
         self.count_plot.setXLink(self.dose_plot)
 
-        self.sig_plot = self._glw.addPlot(row=2, col=0)
+        self.sig_plot = self._glw.addPlot(
+            row=2, col=0, axisItems={"bottom": self._time_axes[2]})
         self.sig_plot.showGrid(x=True, y=True, alpha=0.15)
         self.sig_plot.setLabel("left", "sigma")
         self.sig_plot.setLabel("bottom", "elapsed (s)")
@@ -173,6 +216,8 @@ class SeriesPanel(QtWidgets.QWidget):
             return
 
         t = track.elapsed_s
+        for axis in self._time_axes:
+            axis.origin_s = float(track.time_s[0])
         self._curves["dose"].setData(t, self._dose(track.dose_rate))
         self._curves["count"].setData(t, track.count_rate)
         self._curves["dose_selected"].setData([], [])
@@ -192,6 +237,18 @@ class SeriesPanel(QtWidgets.QWidget):
 
         self.dose_plot.enableAutoRange()
         self._caption.setText("")
+
+    def set_clock_time(self, on: bool) -> None:
+        """Label the time axes in UTC clock time instead of elapsed seconds.
+
+        The data stay in elapsed seconds; only the tick labels change, so the
+        selection, hover and region logic are untouched.
+        """
+        for axis in self._time_axes:
+            axis.clock = bool(on)
+            axis.picture = None
+            axis.update()
+        self.sig_plot.setLabel("bottom", "time (UTC)" if on else "elapsed (s)")
 
     def set_unit(self, unit: str) -> None:
         """Display unit for the dose plot. Redraws; never emits."""

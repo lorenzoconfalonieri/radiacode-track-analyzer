@@ -2143,3 +2143,23 @@ def test_a_selection_exports_its_own_rows_with_the_tracks_values(
 def test_export_selection_waits_for_a_selection(loaded):
     action = _action(loaded, "Export s&election CSV...")
     assert not action.isEnabled()
+
+
+def test_the_series_can_show_utc_clock_time(loaded):
+    """Elapsed seconds made 'the reading at 21:15' impossible to find."""
+    from datetime import datetime, timezone
+    axis = loaded.series._time_axes[2]
+    assert axis.tickStrings([0.0, 600.0], 1.0, 600.0) == ["0", "600"]
+    _action(loaded, "Series in &clock time (UTC)").trigger()
+    start = datetime.fromtimestamp(loaded._track.time_s[0], tz=timezone.utc)
+    assert axis.tickStrings([0.0], 1.0, 600.0) == [start.strftime("%H:%M")]
+    assert "UTC" in loaded.series.sig_plot.getAxis("bottom").labelText
+
+
+def test_clock_ticks_fall_on_round_clock_times(loaded):
+    axis = loaded.series._time_axes[2]
+    axis.clock = True
+    origin = loaded._track.time_s[0]
+    (step, majors), _ = axis.tickValues(0.0, 7200.0, 900.0)
+    assert all(abs((origin + v) % step) < 1e-6 for v in majors)
+    axis.clock = False
