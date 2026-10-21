@@ -38,11 +38,10 @@ def window(app):
     from rcta.gui.main_window import MainWindow
     win = MainWindow(offline=True, synchronous=True)
     yield win
+    # Closing schedules the deletion (WA_DeleteOnClose); deliver it now.
+    # Left to interpreter exit, destroying ~150 windows is quadratic in
+    # PySide: it added minutes to every run after the last test.
     win.close()
-    # Delete, not just close. A closed window stays alive through its own
-    # signal connections, and destroying ~150 of them at interpreter exit is
-    # quadratic in PySide: it added minutes to every run after the last test.
-    win.deleteLater()
     QtCore.QCoreApplication.sendPostedEvents(None, QtCore.QEvent.Type.DeferredDelete)
 
 
@@ -2226,3 +2225,21 @@ def test_a_session_whose_track_is_gone_is_refused_with_a_reason(window):
     assert not window.apply_session(state)
     assert "could not be opened" in window.log.toPlainText()
     assert not window.apply_session({"something": "else"})
+
+
+def test_a_closed_window_is_freed(app, sample_path):
+    """A closed window used to live on, held by its own signal connections
+    with its track, analysis and plots, until the process exited."""
+    import gc
+    import weakref
+
+    from rcta.gui.main_window import MainWindow
+    win = MainWindow(offline=True, synchronous=True)
+    assert win.load(str(sample_path))
+    win.show()
+    ref = weakref.ref(win)
+    win.close()
+    del win
+    QtCore.QCoreApplication.sendPostedEvents(None, QtCore.QEvent.Type.DeferredDelete)
+    gc.collect()
+    assert ref() is None

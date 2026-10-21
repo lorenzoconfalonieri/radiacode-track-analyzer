@@ -417,6 +417,10 @@ its legs and dropouts add up to it. Held ends had also hidden a residual
 2-5 % overstatement on straight walks, which the README now states, with the
 corner cutting that pulls the other way.
 
+Closed windows, fixed: signal connections kept a closed `MainWindow` alive
+with its track and plots. It now sets `WA_DeleteOnClose`, and a test checks
+that a closed window is freed.
+
 Measured and not adopted:
 
 - **An exact Poisson tail.** The scan's normal approximation divides by the
@@ -433,9 +437,6 @@ Still open:
   (github.com/lorenzoconfalonieri/radiacode-track-analyzer), which reaches the
   owner's public profile even while the repository is private. Making the
   repository public, or adding a contact address, would make it fully useful.
-- **Closed windows are never freed.** Signal connections keep a closed
-  `MainWindow` alive. Harmless with one window; a future "open in new
-  window" would leak.
 
 ---
 

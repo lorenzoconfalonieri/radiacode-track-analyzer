@@ -140,6 +140,10 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None, *, offline: bool = False,
                  synchronous: bool = False, settings=None) -> None:
         super().__init__(parent)
+        # Closing destroys the window. Without this a closed window lived on,
+        # held by its own signal connections with its track, analysis and
+        # plots, until the process exited.
+        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         # Where the recent-file list persists. None keeps it in memory only,
         # which is what tests want: no test may write the user's settings.
         self._settings = settings
