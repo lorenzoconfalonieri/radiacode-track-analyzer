@@ -188,9 +188,13 @@ class AnalysisDock(QtWidgets.QWidget):
     def set_applied_window(self, applied_s: float) -> None:
         """Show the window the analysis used, if not the one in the box."""
         differs = abs(applied_s - self.window_s.value()) > 0.5
+        # Short enough for the dock's width; the reason is the tooltip.
         self.window_applied.setText(
-            f"applied: {applied_s:.0f} s, widened to fit the widest scan "
-            "window at this cadence (see the log)" if differs else "")
+            f"applied: {applied_s:.0f} s (widened)" if differs else "")
+        self.window_applied.setToolTip(
+            "The default window was widened to fit the widest scan window at "
+            "this logging cadence. Set a window explicitly to override; the "
+            "log has the details." if differs else "")
         self.window_applied.setVisible(differs)
 
     def integration_time(self):
