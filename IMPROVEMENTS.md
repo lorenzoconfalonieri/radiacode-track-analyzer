@@ -1,7 +1,7 @@
 BACKLOG EXHAUSTED (2026-10-21): what remains is larger than one small
 change (a clock-time axis on the series and the Batch 3 features in
-IDEAS.md) or needs the owner: leg-end smoothing (changes published
-figures; deferred) and the Track summary layout. The User-Agent now names
+IDEAS.md) or needs the owner: the Track summary layout. Leg-end
+smoothing was fixed on 2026-10-21 at the owner's request. The User-Agent now names
 the real repository.
 
 # Improvements
@@ -12,16 +12,6 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 ## Backlog
 
-- **Correctness, needs the owner's decision:** on the walk the Legs table
-  sums to 2.64 km and the dropouts to 0.09 km, but the track total is
-  2.99 km. Cause: per-leg smoothing holds each leg's end samples at the
-  first fully averaged position, so a leg loses its last few samples of
-  path, and the smoothed connector across each gap regains it (98 m across
-  the first gap against 12 m raw). The total is roughly right but the leg
-  distances understate. A fix (tapered or extrapolated leg ends) changes
-  the published 2.99 km, the correlation figures and the paper, so it is
-  not a loop change. The flight is unaffected: unsmoothed, legs plus gaps
-  equal its total exactly.
 - **GUI:** the Track summary (13 lines) shows about 9 in its dock. Instead
   of forcing height (rejected below), move it to a "Summary" tab in the
   bottom stack, or let the Track dock collapse to a one-line caption with

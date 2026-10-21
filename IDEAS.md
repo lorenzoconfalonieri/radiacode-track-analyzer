@@ -410,6 +410,13 @@ now ranks once; `rolling_trimmed_mean`, `spatial.interpolate` and the scan
 were measured at 19-26 ms, 24 ms and 16 ms warm on the flight and left
 alone (IMPROVEMENTS.md has the numbers).
 
+Leg distances on smoothed tracks, fixed: per-leg smoothing held each leg's
+end samples, so the walk's legs (2.64 km) and dropouts (0.09 km) fell short
+of its 2.99 km total. Ends are now point-reflected; the walk is 3.15 km and
+its legs and dropouts add up to it. Held ends had also hidden a residual
+2-5 % overstatement on straight walks, which the README now states, with the
+corner cutting that pulls the other way.
+
 Measured and not adopted:
 
 - **An exact Poisson tail.** The scan's normal approximation divides by the
@@ -422,9 +429,6 @@ Measured and not adopted:
 
 Still open:
 
-- **Leg distances on smoothed tracks.** Per-leg smoothing holds leg ends, so
-  a walk's legs (2.64 km) and dropouts (0.09 km) do not sum to its total
-  (2.99 km). Fixing it changes published figures; deferred by the owner.
 - **The User-Agent contact.** It now names the real repository
   (github.com/lorenzoconfalonieri/radiacode-track-analyzer), which reaches the
   owner's public profile even while the repository is private. Making the

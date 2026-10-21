@@ -207,9 +207,11 @@ def choose_smoothing_window(lat, lon, accuracy_m, *,
     Returns 1 when no smoothing is needed: a platform that moves well beyond
     its fix error between samples, such as a highway drive or a flight. Slow
     driving still gets a narrow window (30 m per fix at 8 m accuracy gives 3).
-    Validated at 1.00-1.03x of the true distance for walking (3, 8 and 20 m
-    accuracy), jogging, cycling, driving and flight, on both straight and
-    sharply cornered routes.
+    On straight synthetic walks the result is 1.02-1.05x the true distance
+    at 3, 8 and 20 m accuracy: what jitter survives the window only ever
+    lengthens the path. Turns pull the other way, because the window cuts
+    every corner: a right angle every 100 m at 8 m accuracy reads 5 % short,
+    one every 50 m about 20 %. Vehicle and flight tracks need no window.
     """
     lat = np.asarray(lat, dtype=float)
     lon = np.asarray(lon, dtype=float)
@@ -240,26 +242,34 @@ def choose_smoothing_window(lat, lon, accuracy_m, *,
 
 
 def smooth_positions(lat, lon, window: int):
-    """Centred moving average of a position series, endpoints held.
+    """Centred moving average of a position series, ends point-reflected.
 
-    Endpoints are held rather than tapered because a shrinking window there
-    would leave exactly the noisy short steps this is meant to remove.
+    The series is extended past each end by its point reflection about the
+    end fix (``2 * v[0] - v[k]``) before averaging. A straight path at
+    constant speed is then reproduced exactly up to the last sample, and the
+    end sample lands on its own fix.
+
+    Holding the ends at the first fully averaged position, as this used to,
+    froze the last ``window // 2`` samples of every leg in place: on the
+    walk the legs summed to 2.64 km of a 2.99 km total, and the connectors
+    across the dropouts picked up the missing path (0.35 km against a raw
+    0.09 km). Shrinking the window towards the ends is the other textbook
+    choice; it lets back exactly the noisy short steps the average removes.
     """
     window = int(window)
     lat = np.asarray(lat, dtype=float)
     lon = np.asarray(lon, dtype=float)
     if window <= 1 or lat.size <= window:
         return lat, lon
-
-    kernel = np.ones(window) / window
-    out_lat = np.convolve(lat, kernel, mode="same")
-    out_lon = np.convolve(lon, kernel, mode="same")
     half = window // 2
-    out_lat[:half] = out_lat[half]
-    out_lat[-half:] = out_lat[-half - 1]
-    out_lon[:half] = out_lon[half]
-    out_lon[-half:] = out_lon[-half - 1]
-    return out_lat, out_lon
+    kernel = np.ones(2 * half + 1) / (2 * half + 1)
+
+    def one(v):
+        head = 2.0 * v[0] - v[half:0:-1]
+        tail = 2.0 * v[-1] - v[-2:-half - 2:-1]
+        return np.convolve(np.concatenate([head, v, tail]), kernel, mode="valid")
+
+    return one(lat), one(lon)
 
 
 def point_segment_distance(px, py, ax, ay, bx, by):

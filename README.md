@@ -13,7 +13,7 @@ counting noise", which by eye are indistinguishable.
 
 ![a walking survey](docs/screenshot-walk.png)
 
-*A 2 h walk in Salt Lake City: 348 samples, 2.99 km, background 0.072 µSv/h,
+*A 2 h walk in Salt Lake City: 348 samples, 3.15 km, background 0.072 µSv/h,
 with one spot seen elevated on two separate passes.*
 
 ## Install
@@ -79,8 +79,11 @@ things follow that the obvious implementation gets wrong:
 - **Distance.** Raw summed GPS distance overstates a walk by **5.2×** at 8 m
   accuracy (measured against known truth; still 2.1× at 3 m). Positions are
   smoothed with an automatically chosen window before distance and speed are
-  measured, which lands within 3 % of truth across 3–20 m accuracy, on both
-  straight and sharply cornered routes. The window is reported, along with how
+  measured. On straight walks that leaves the distance 2–5 % long across
+  3–20 m accuracy; turns pull the other way, since the window cuts corners (a
+  right angle every 100 m at 8 m accuracy reads 5 % short). Each leg is
+  smoothed on its own, with its ends point-reflected rather than held, so the
+  legs and the dropouts add up to the total. The window is reported, along with how
   much of the raw path was jitter. Vehicle and flight tracks are detected as
   needing no correction and are left byte-identical.
 - **Speed.** Inherits the same error — a 1.4 m/s walk reads as 7 m/s uncorrected.

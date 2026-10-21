@@ -228,16 +228,23 @@ def test_a_window_wider_than_the_track_leaves_it_raw():
 
 
 def test_smoothing_is_centred_so_a_straight_line_stays_put():
-    """An off-centre kernel would shift every point along the track."""
+    """An off-centre kernel would shift every point along the track, and held
+    ends would freeze the last samples in place; reflected ends keep the
+    whole line, end fixes included."""
     from rcta.core.geo import smooth_positions
     lat = np.linspace(40.0, 40.01, 101)
     lon = np.linspace(-111.9, -111.89, 101)
     out_lat, out_lon = smooth_positions(lat, lon, 7)
-    np.testing.assert_allclose(out_lat[3:-3], lat[3:-3], rtol=0, atol=1e-12)
-    np.testing.assert_allclose(out_lon[3:-3], lon[3:-3], rtol=0, atol=1e-12)
-    # Endpoints are held at the first and last fully averaged value.
-    assert (out_lat[:3] == out_lat[3]).all()
-    assert (out_lat[-3:] == out_lat[-4]).all()
+    np.testing.assert_allclose(out_lat, lat, rtol=0, atol=1e-12)
+    np.testing.assert_allclose(out_lon, lon, rtol=0, atol=1e-12)
+
+
+def test_smoothing_keeps_the_ends_of_an_even_window_too():
+    from rcta.core.geo import smooth_positions
+    lat = np.linspace(40.0, 40.01, 50)
+    out_lat, _ = smooth_positions(lat, lat, 8)
+    assert out_lat.shape == lat.shape
+    np.testing.assert_allclose(out_lat, lat, rtol=0, atol=1e-12)
 
 
 def test_smoothing_removes_most_of_the_cross_track_noise():

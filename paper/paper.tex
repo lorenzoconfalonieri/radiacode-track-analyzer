@@ -108,7 +108,7 @@ was wrong tenfold.
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{screenshot-walk.png}
-\caption{A 2\,h walking survey: 348 samples, 2.99\,km, background 5.31\,cps
+\caption{A 2\,h walking survey: 348 samples, 3.15\,km, background 5.31\,cps
 (70.1\,nSv/h). One feature reaches $7.4\,\sigma$ on two independent passes; a
 second, seen once, is only \emph{possible} at $4.6\,\sigma$.}
 \label{fig:walk}
@@ -137,7 +137,7 @@ forty synthetic background tracks.
 \paragraph{Serial dependence.} The count rate has a lag-1 autocorrelation of
 0.9985, so correlations carry a Bartlett effective sample
 size~\cite{bartlett1946}. For speed against dose rate on the walk, $n=347$
-becomes $n_\text{eff}=126$ and $p=0.113$ becomes $p=0.343$; on the flight the
+becomes $n_\text{eff}=168$ and $p=0.084$ becomes $p=0.232$; on the flight the
 naive and corrected $p$-values differ by more than 270 orders of magnitude. The tool also
 states what no $p$-value can: on foot, slowing near something of interest
 couples speed to dwell time, so a surviving correlation is confounded.
@@ -148,8 +148,9 @@ Poisson background sits 2.0\,cps below the true mean, which over a 64-sample
 window is $5.3\,\sigma$ of detection manufactured by the estimator. Geometry
 misleads similarly. At 1.4\,m/s with 2\,s logging each step is 2.8\,m against
 an 8\,m fix, so raw summed GPS distance overstates a walk by $5.2\times$
-against known truth; smoothing within an automatically selected window lands
-within 3\,\% across 3--20\,m accuracy. Interpolated surfaces use
+against known truth; smoothing within an automatically selected window leaves
+a straight walk 2--5\,\% long across 3--20\,m accuracy, and cuts corners (a
+right angle every 100\,m at 8\,m accuracy reads 5\,\% short). Interpolated surfaces use
 Nadaraya--Watson~\cite{nadaraya1964} with two masks, since a one-dimensional
 path cannot support a filled map. Accumulated dose is reported twice ---
 80.9\,nSv over the 3{,}856\,s logged against 153.8\,nSv integrating across

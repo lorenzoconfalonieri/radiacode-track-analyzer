@@ -280,7 +280,7 @@ def test_the_walk_figures_quoted_in_the_paper_still_hold(walk_analysis):
     tripwire: if it fails, fix the paper and the README in the same commit."""
     a = walk_analysis
     assert a.track.n == 348
-    assert round(a.summary.distance_m / 1000.0, 2) == 2.99
+    assert round(a.summary.distance_m / 1000.0, 2) == 3.15
     assert round(a.background.median_count_rate, 2) == 5.31
     assert round(float(np.median(a.background.dose_rate)), 1) == 70.1
     sigmas = sorted((round(h.significance, 1) for h in a.hotspots), reverse=True)
@@ -289,13 +289,25 @@ def test_the_walk_figures_quoted_in_the_paper_still_hold(walk_analysis):
     assert round(a.dose.total_nsv, 1) == 80.9
     assert round(a.dose.naive_total_nsv, 1) == 153.8
     assert round(a.dose.covered_time_s) == 3856
-    assert round(a.speed_dose.n_effective) == 126
-    assert round(a.speed_dose.p_naive, 3) == 0.113
-    assert round(a.speed_dose.p_effective, 3) == 0.343
+    assert round(a.speed_dose.n_effective) == 168
+    assert round(a.speed_dose.p_naive, 3) == 0.084
+    assert round(a.speed_dose.p_effective, 3) == 0.232
     # Section 3: "the walk's single 80 s dwell reaches 12 nSv/h".
     assert len(a.dwells) == 1
     assert round(a.dwells[0].live_time_s) == 80
     assert round(a.dwells[0].mda_dose_rate) == 12
+
+
+def test_the_walk_legs_and_dropouts_add_up_to_its_distance(walk_analysis):
+    """Smoothing used to freeze each leg's last samples in place: the legs
+    summed to 2.64 km and the dropouts to 0.09 km of a 2.99 km walk, the
+    connectors across the gaps having picked up the missing path."""
+    a = walk_analysis
+    legs = a.quality.leg_index
+    same = legs[1:] == legs[:-1]
+    in_legs = float(a.track.segment_length_m[same].sum())
+    assert in_legs + a.quality.gap_distance_m == pytest.approx(
+        a.summary.distance_m, rel=0.01)
 
 
 def test_the_flight_detection_limits_quoted_in_the_paper_still_hold(sample):

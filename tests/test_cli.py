@@ -571,8 +571,8 @@ def test_info_reports_the_same_distance_as_analyze(capsys, walk_path):
     assert main(["analyze", walk, "--n-boot", "10"]) == 0
     analyze = capsys.readouterr().out
     line = next(line for line in info.splitlines() if line.startswith("distance"))
-    assert line.split(":")[1].split("(")[0].strip() == "2.99 km"
-    assert "2.99 km" in analyze
+    assert line.split(":")[1].split("(")[0].strip() == "3.15 km"
+    assert "3.15 km" in analyze
 
 
 # ---- every command survives masked markers --------------------------------
