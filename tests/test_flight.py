@@ -160,7 +160,8 @@ def test_an_unusable_zone_falls_back_to_utc_and_says_which(monkeypatch):
     It must be *said*, though: falling back to UTC silently is the exact
     behaviour the tz argument exists to remove.
     """
-    monkeypatch.setattr(F, "ZoneInfo", _raising_zoneinfo)
+    from rcta.core import flight_numbers
+    monkeypatch.setattr(flight_numbers, "ZoneInfo", _raising_zoneinfo)
     begin, _, warnings = F.search_window(
         DL2728_BEGIN, DL2728_END, "2026-09-11", tz="America/Denver")
     assert begin == DL2728_BEGIN                       # judged in UTC
@@ -168,7 +169,8 @@ def test_an_unusable_zone_falls_back_to_utc_and_says_which(monkeypatch):
 
 
 def _raising_zoneinfo(name):
-    raise F.ZoneInfoNotFoundError(name)
+    from zoneinfo import ZoneInfoNotFoundError
+    raise ZoneInfoNotFoundError(name)
 
 
 def test_the_shift_is_whole_days_of_86400_s_not_calendar_days():
