@@ -58,7 +58,10 @@ space the map wants. **Ctrl+1** through **Ctrl+8** switch straight to a panel
 in that order, reopening it if it was closed, and **Ctrl+PgDown** /
 **Ctrl+PgUp** (or **Ctrl+]** / **Ctrl+[**) step along the stack. The same
 actions are under *View → Panels* with their keys shown; the tab bar above
-the panel does the job with the mouse. *View → Series in clock time* labels
+the panel does the job with the mouse. *File → Save session* writes the track, every analysis
+setting, the reference span, the selection and the display choices to a
+`.rcta.json` file that *Open session* rebuilds exactly, for a figure you need
+to reproduce. *View → Series in clock time* labels
 the series in UTC instead of elapsed seconds. **Ctrl+0** zooms the map to the
 whole track, **Esc** clears the selection, and double-clicking a row in the
 Anomalies, Hotspots or Legs table zooms to it.

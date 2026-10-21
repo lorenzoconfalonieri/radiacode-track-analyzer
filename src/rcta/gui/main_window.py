@@ -16,6 +16,7 @@ selected.
 from __future__ import annotations
 
 import html
+import json
 import re
 import traceback
 from datetime import datetime, timezone
@@ -369,6 +370,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self._action(file_menu, "&Open track...", self.open_dialog, "Ctrl+O")
         self._recent_menu = file_menu.addMenu("Open &recent")
         self._rebuild_recent_menu()
+        self._action(file_menu, "Open sessio&n...", self._open_session_dialog)
+        self._needs_track.append(self._action(
+            file_menu, "Save session...", self._save_session_dialog))
         self._needs_track.append(self._action(
             file_menu, "Open flight &trajectory...",
             self._open_trajectory_dialog, "Ctrl+Shift+O"))
@@ -1557,6 +1561,7 @@ class MainWindow(QtWidgets.QMainWindow):
             "svg": f"{stem}-map.svg",
             "grid": f"{stem}-heatmap.asc",
             "selection": f"{stem}-selection.csv",
+            "session": f"{stem}.rcta.json",
         }
         return names.get(kind, "")
 
@@ -1636,6 +1641,107 @@ class MainWindow(QtWidgets.QMainWindow):
     def _about(self) -> None:
         QtWidgets.QMessageBox.about(self, "About Radiacode Track Analyzer",
                                     LIMITATIONS.format(version=__version__))
+
+    # ---- sessions -----------------------------------------------------------
+
+    _SESSION_VERSION = 1
+
+    def session_state(self) -> dict:
+        """Everything needed to rebuild this view: the track, every setting
+        that can change a number, the reference span, the selection, and how
+        it is displayed. Saved as JSON, so a figure can be reproduced later
+        exactly, or by someone else."""
+        a, d = self.analysis_dock, self.display_dock
+        runs = ([] if self._selection is None or self._selection.is_empty
+                else [list(r) for r in self._selection.runs(limit=10_000)])
+        return {
+            "rcta_session": self._SESSION_VERSION,
+            "track": str(Path(self._path).resolve()) if self._path else None,
+            "analysis": {
+                "background": a.background.currentText(),
+                "window_s": a.window_s.value(), "trim": a.trim.value(),
+                "integration_s": a.integration.value(),
+                "alpha": a.alpha.value(),
+                "bonferroni": a.bonferroni.isChecked(),
+                "max_accuracy_m": a.max_accuracy.value(),
+            },
+            "reference_span": (list(self._reference_span)
+                               if self._reference_span else None),
+            "selection_runs": runs,
+            "display": {
+                "field": d.field.currentText(),
+                "colormap": d.colormap.currentText(),
+                "scale": d.scale.currentText(),
+                "unit": d.unit.currentText(),
+                "basemap": self._provider_id,
+            },
+        }
+
+    def apply_session(self, state: dict) -> bool:
+        """Rebuild a saved view. Returns False if its track cannot be read."""
+        if state.get("rcta_session") != self._SESSION_VERSION:
+            self._warn("not an rcta session file, or one from a newer version")
+            return False
+        track = state.get("track")
+        if not track or not self.load(track):
+            self._warn(f"the session's track could not be opened: {track}")
+            return False
+        a, d = self.analysis_dock, self.display_dock
+        s = state.get("analysis", {})
+        a.auto_run.setChecked(False)          # one analysis at the end, not seven
+        a.window_s.setValue(s.get("window_s", a.window_s.value()))
+        a.trim.setValue(s.get("trim", a.trim.value()))
+        a.integration.setValue(s.get("integration_s", a.integration.value()))
+        a.alpha.setValue(s.get("alpha", a.alpha.value()))
+        a.bonferroni.setChecked(s.get("bonferroni", a.bonferroni.isChecked()))
+        a.max_accuracy.setValue(s.get("max_accuracy_m", a.max_accuracy.value()))
+        span = state.get("reference_span")
+        self._reference_span = tuple(span) if span else None
+        a.background.setCurrentText(s.get("background", "rolling"))
+        a.auto_run.setChecked(True)
+        self.analyse()
+        shown = state.get("display", {})
+        for combo, key in ((d.field, "field"), (d.colormap, "colormap"),
+                           (d.scale, "scale"), (d.unit, "unit")):
+            if shown.get(key):
+                combo.setCurrentText(shown[key])
+        if shown.get("basemap") in self._providers:
+            self._set_provider(shown["basemap"])
+        mask = np.zeros(self._track.n, dtype=bool)
+        for start, stop in state.get("selection_runs", []):
+            mask[int(start):int(stop)] = True
+        if mask.any():
+            self._broadcast(Selection(mask=mask, source="session"))
+        self.log.log(f"session restored: {Path(track).name}")
+        return True
+
+    def _save_session_dialog(self) -> None:
+        if self._analysis is None:
+            return
+        path, _ = QtWidgets.QFileDialog.getSaveFileName(
+            self, "Save session", self._suggested_export_path("session"),
+            "rcta session (*.rcta.json)")
+        if not path:
+            return
+        try:
+            Path(path).write_text(json.dumps(self.session_state(), indent=2),
+                                  encoding="utf-8")
+        except OSError as exc:
+            self.log.log(f"could not write {path}: {exc}", "error")
+            return
+        self.log.log(f"wrote session {path}")
+
+    def _open_session_dialog(self) -> None:
+        path, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self, "Open session", "", "rcta session (*.rcta.json);;All files (*)")
+        if not path:
+            return
+        try:
+            state = json.loads(Path(path).read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            self._warn(f"cannot read session {Path(path).name}: {exc}")
+            return
+        self.apply_session(state)
 
     # ---- remembered layout ------------------------------------------------
 

@@ -2163,3 +2163,45 @@ def test_clock_ticks_fall_on_round_clock_times(loaded):
     (step, majors), _ = axis.tickValues(0.0, 7200.0, 900.0)
     assert all(abs((origin + v) % step) < 1e-6 for v in majors)
     axis.clock = False
+
+
+# ---- sessions --------------------------------------------------------------
+
+
+def test_a_session_rebuilds_the_same_analysis_and_view(app, walk_path, tmp_path,
+                                                       monkeypatch):
+    import json
+    import numpy as np
+    from rcta.core.selection import Selection
+    from rcta.gui.main_window import MainWindow
+    first = MainWindow(offline=True, synchronous=True)
+    assert first.load(str(walk_path))
+    first.analysis_dock.alpha.setValue(0.01)
+    first.analysis_dock.max_accuracy.setValue(50.0)
+    first.display_dock.unit.setCurrentText("uSv/h")
+    mask = np.zeros(first._track.n, dtype=bool)
+    mask[30:80] = True
+    first._broadcast(Selection(mask=mask, source="test"))
+    out = tmp_path / "walk.rcta.json"
+    _answer_save_dialog(monkeypatch, out)
+    first._save_session_dialog()
+    state = json.loads(out.read_text(encoding="utf-8"))
+    assert state["rcta_session"] == 1 and state["track"].endswith(walk_path.name)
+
+    second = MainWindow(offline=True, synchronous=True)
+    assert second.apply_session(state)
+    assert second._analysis.params.scan.alpha == pytest.approx(0.01)
+    assert second._analysis.params.quality.max_accuracy_m == 50.0
+    assert second._unit == "uSv/h"
+    assert np.array_equal(second._selection.mask, mask)
+    assert len(second._analysis.significant) == len(first._analysis.significant)
+    for win in (first, second):
+        win.close()
+        win.deleteLater()
+
+
+def test_a_session_whose_track_is_gone_is_refused_with_a_reason(window):
+    state = {"rcta_session": 1, "track": "/nonexistent/walk.rctrk"}
+    assert not window.apply_session(state)
+    assert "could not be opened" in window.log.toPlainText()
+    assert not window.apply_session({"something": "else"})
