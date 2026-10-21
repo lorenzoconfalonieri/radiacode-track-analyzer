@@ -65,7 +65,7 @@ The walk supplies 348 samples / 2.99 km, the 5.31 cps background, the 7.36 and
 4.57 sigma features, the 126 effective samples and the two dose totals
 (80.9 vs 153.8 nSv). The flight supplies the MDA table and the 4.57 sigma
 Bonferroni threshold. The 5.2x raw-distance error, the 0.25-quantile bias, the
-0.9985 lag-1 autocorrelation and the 906-test count come from `README.md`,
+0.9985 lag-1 autocorrelation and the 1,067-test count come from `README.md`,
 `docs/FLIGHT.md` and the suite itself.
 
 All of the above were re-verified against a live run when the paper was

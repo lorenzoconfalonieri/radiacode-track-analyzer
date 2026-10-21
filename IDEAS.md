@@ -381,37 +381,43 @@ audience actually is.
 
 ### 6.5 From the October 2026 code review
 
-Fixed already: masked samples leaking zeros into the statistics, GPS glitches
-in distance and speed, a one-sided climb/descent test, the heatmap that was
+Fixed: masked samples leaking zeros into the statistics, GPS glitches in
+distance and speed, a one-sided climb/descent test, the heatmap that was
 computed but never drawn, a PNG export that carried tiles its provider
-forbids, and a Display unit most panels ignored. Still open:
+forbids, a Display unit most panels ignored, overlapping longitude labels,
+and the drifted README coverage figure. The paper's quoted figures are now
+pinned by tests, which covers the walk and flight part of 6.1.
 
-- **Longitude tick labels overlap** on a small extent: on the bundled walk the
-  degree-minute-second labels under the map run into one another.
-  `GeoAxisItem` needs to space ticks by label width, not only by value.
-- **Quoted figures drift.** The README claimed 90 % heatmap coverage on the
-  walk; the program gives 25 %. The figure dated from the initial commit,
-  which makes 6.1 more urgent.
+Built from the review's feature list (details in IMPROVEMENTS.md and git):
+stop-and-measure dwells (core, report, Dwells panel); `analyze
+--fail-on-detection` (exit 5) with a batch summary; a gps-transition flag
+for shelter and vehicles; a detector consistency check; legs split at the
+device's recording periods; a combined significance across a hotspot's
+passes; QSettings for layout, recent files and basemap; drag and drop;
+sortable tables; a UTC clock-time axis; selection export; session files.
+
+Measured and not adopted:
+
+- **An exact Poisson tail.** The scan's normal approximation divides by the
+  root of the gross counts and is never above the exact tail wherever it
+  reaches 1 sigma, so switching would only add detections. A test pins this.
+- **A local dose-per-count ratio.** In the bundled data the ratio does not
+  drift within a track; the walk's per-sample ratio is noisy, and a 31-sample
+  median moved its background by 6 %. Revisit with a real flight that has a
+  ground phase.
+
+Still open:
+
+- **Leg distances on smoothed tracks.** Per-leg smoothing holds leg ends, so
+  a walk's legs (2.64 km) and dropouts (0.09 km) do not sum to its total
+  (2.99 km). Fixing it changes published figures; deferred by the owner.
+- **The User-Agent contact.** It names a placeholder repository; the real
+  one is private. Needs a public contact before wider use.
 - **Closed windows are never freed.** Signal connections keep a closed
-  `MainWindow` alive. The test fixture now deletes each window; the app opens
-  only one, but a future "open in new window" would leak.
-- **Features proposed in the review:**
-  - Stop-and-measure dwells reported as long-live-time measurements.
-  - `--fail-on-detection` and a summary table for batch `analyze`.
-  - Shelter/vehicle transitions flagged from jumps in GPS accuracy.
-  - A local dose-per-count ratio instead of one track-wide median.
-  - An exact Poisson tail for windows with few counts.
-  - A detector consistency check (dose with zero counts, ratio jumps).
-  - The device's own recording periods used to split legs.
-  - QSettings, drag-and-drop, sortable tables and session files in the GUI.
-  - A combined significance across a hotspot's passes.
-- **Engineering left from the review:**
-  - A single version source.
-  - An install hint when the `[gui]` extra is missing.
-  - ruff, and layer-direction rules in the architecture test.
-  - Tests for the smoothing helpers.
-  - Vectorised `rolling_trimmed_mean` and `interpolate`.
-  - Splitting `core/flight.py`.
+  `MainWindow` alive. Harmless with one window; a future "open in new
+  window" would leak.
+- **Engineering:** ruff, layer-direction rules in the architecture test,
+  CI (6.1), and splitting `core/flight.py`.
 
 ---
 

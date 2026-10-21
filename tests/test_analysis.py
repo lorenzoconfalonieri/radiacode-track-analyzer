@@ -292,6 +292,10 @@ def test_the_walk_figures_quoted_in_the_paper_still_hold(walk_analysis):
     assert round(a.speed_dose.n_effective) == 126
     assert round(a.speed_dose.p_naive, 3) == 0.113
     assert round(a.speed_dose.p_effective, 3) == 0.343
+    # Section 3: "the walk's single 80 s dwell reaches 12 nSv/h".
+    assert len(a.dwells) == 1
+    assert round(a.dwells[0].live_time_s) == 80
+    assert round(a.dwells[0].mda_dose_rate) == 12
 
 
 def test_the_flight_detection_limits_quoted_in_the_paper_still_hold(sample):

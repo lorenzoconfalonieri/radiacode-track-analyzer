@@ -81,7 +81,7 @@ PySide6 and pyqtgraph are an optional extra, so the analysis core runs headless
 or in a notebook. The package separates \texttt{core/} (pure NumPy/SciPy, never
 imports Qt, never touches the network) from \texttt{net/} and \texttt{gui/},
 and those boundaries are enforced by a test module that inspects the import
-graph. The suite is 906 tests against ${\sim}13{,}800$ lines, and every
+graph. The suite is 1{,}067 tests against ${\sim}15{,}200$ lines, and every
 quantitative claim below is pinned by a regression test.
 
 \noindent\begin{minipage}{\columnwidth}\small
@@ -122,6 +122,8 @@ integration window in place of a null verdict --- on the bundled flight,
 1160\,nSv/h in a single 2\,s sample against 133\,nSv/h over 128\,s. This makes
 the Currie framework~\cite{currie1968} concrete for a moving detector and
 exposes the $\sqrt{t}$ trade-off between sensitivity and spatial resolution.
+Where the detector stood still, the samples are also tested as one long
+count: the walk's single 80\,s dwell reaches 12\,nSv/h.
 The same data show the energy-dependent dose response~\cite{knoll2010}:
 13\,nSv/h per cps on the ground against 51 at cruise, so the ratio is computed
 per track rather than assumed.
