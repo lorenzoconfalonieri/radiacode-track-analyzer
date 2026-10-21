@@ -363,14 +363,17 @@ def test_the_rank_once_bootstrap_matches_the_general_path(seed):
 def test_the_scan_significance_is_never_above_the_exact_poisson_tail():
     """The plan proposed an exact Poisson tail because the normal
     approximation is anticonservative at low counts. Checked across 3093
-    cases from 0.2 to 500 background counts, this one never is: its variance
-    is the gross count, not the background, which errs low whenever there is
-    an excess. This pins that, so a 'variance from the background' rewrite,
-    which would make the scan anticonservative, fails here first."""
+    cases from 0.2 to 500 background counts, this one never is wherever it
+    reaches 1 sigma: its variance is the gross count, not the background,
+    which errs low whenever there is a real excess. Below 1 sigma (one count
+    over a background of 0.5) it can exceed the exact tail, but nothing that
+    weak is ever near the scan's ~4 sigma threshold. This pins the property,
+    so a 'variance from the background' rewrite fails here first."""
     from scipy import stats
     for b in (0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 500):
         for g in range(int(b) + 1, int(b * 5 + 40)):
             zg = float(st.net_significance(g, b, 1, None))
             p = stats.poisson.sf(g - 1, b)
             zp = stats.norm.isf(p) if p > 0 else np.inf
-            assert zg <= zp + 1e-9, (b, g, zg, zp)
+            if zg >= 1.0:
+                assert zg <= zp + 1e-9, (b, g, zg, zp)

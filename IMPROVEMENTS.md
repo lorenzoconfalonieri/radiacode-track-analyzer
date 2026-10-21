@@ -416,7 +416,8 @@ correctness, tests, GUI usability, performance (measured), code quality.
   approximation is anticonservative at low counts, is false for this
   implementation. The variance is the gross count, and across 3093 cases
   (0.2-500 background counts) the approximation is never above the exact
-  tail; on the walk 7.36 against 8.54. Switching would only raise
+  tail wherever it reaches 1 sigma; on the walk 7.36 against 8.54. Below
+  1 sigma it can be, which no threshold comes near. Switching would only raise
   significances. A test now pins the conservativeness.
 - 2026-10-21 **GUI, no change:** an adaptive altitude bin for the Flight
   panel. Unlike distance, altitude is physically bounded, so the shared
