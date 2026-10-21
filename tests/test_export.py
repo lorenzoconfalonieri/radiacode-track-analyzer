@@ -490,3 +490,28 @@ def test_dose_columns_name_their_unit_in_every_csv():
     assert "peak_dose_rate_uSv_per_h" in header.split(",")
     assert hotspots_to_csv([], unit="uSv/h").startswith("lat,lon")
     assert "peak_dose_rate_uSv_per_h" in hotspots_to_csv([], unit="uSv/h")
+
+
+@pytest.mark.parametrize("unit", ["nSv/h", "uSv/h"])
+def test_csv_geojson_and_gpx_agree_on_every_sample(walk_path, unit):
+    """Three exporters, one track: the same samples, values and units."""
+    import csv
+    import io
+    import re
+    from rcta.core.io_radiacode import load_track
+    from rcta.core.io_export import track_to_csv, track_to_geojson, track_to_gpx
+    a = analyze_track(load_track(walk_path), AnalysisParams(n_boot=10))
+    t, q = a.track, a.quality
+    rows = list(csv.DictReader(io.StringIO(
+        track_to_csv(t, quality=q, background=a.background, unit=unit))))
+    column = f"dose_rate_{unit.replace('/', '_per_')}"
+    points = [f for f in json.loads(track_to_geojson(t, quality=q, unit=unit))
+              ["features"] if f["geometry"]["type"] == "Point"]
+    assert len(rows) == t.n
+    assert len(points) == int(t.position_mask.sum())
+    assert len(re.findall(r"<trkpt", track_to_gpx(t, quality=q))) == len(points)
+    for feature in points:
+        p = feature["properties"]
+        assert p["dose_rate_unit"] == unit
+        assert p["dose_rate"] == pytest.approx(float(rows[p["index"]][column]),
+                                               rel=1e-6)
