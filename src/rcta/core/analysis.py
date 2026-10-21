@@ -33,6 +33,7 @@ from rcta.core.anomalies import Anomaly, ScanParams, scan, scan_mda
 from rcta.core.background import (BackgroundEstimate, BackgroundParams,
                                   estimate_background)
 from rcta.core.dwell import Dwell, DwellParams, find_dwells
+from rcta.core.consistency import ConsistencyReport, check_consistency
 from rcta.core.dose import (DoseSummary, accumulated_dose,
                             format_accumulated_dose, format_dose_rate)
 from rcta.core.profile import (Bimodality, Correlation, SummaryStats,
@@ -83,6 +84,8 @@ class TrackAnalysis:
     warnings: tuple[str, ...] = ()
     #: Stationary stretches, each tested as one long count.
     dwells: tuple[Dwell, ...] = ()
+    #: Samples whose dose and count rates disagree.
+    consistency: ConsistencyReport | None = None
 
     @property
     def significant(self) -> tuple[Anomaly, ...]:
@@ -218,8 +221,9 @@ def analyze_track(track: Track, params: AnalysisParams | None = None, *,
     dose = accumulated_dose(track, quality=quality, unit=params.unit)
     summary = summarise(track, quality=quality)
 
+    consistency = check_consistency(track)
     warnings = list(track.meta.warnings) + list(quality.warnings) \
-        + list(background.warnings)
+        + list(background.warnings) + list(consistency.warnings)
     # The widened window is used everywhere, but the GUI's Window box and the
     # command line still show the default the user left alone; without this
     # line the only record of the window actually applied was in the JSON.
@@ -253,4 +257,5 @@ def analyze_track(track: Track, params: AnalysisParams | None = None, *,
         warnings=tuple(warnings),
         dwells=tuple(find_dwells(track, background, quality=quality,
                                  params=params.dwell)),
+        consistency=consistency,
     )

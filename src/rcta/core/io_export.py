@@ -517,6 +517,11 @@ def report_to_json(analysis, *, indent=2) -> str:
             "significant": a.is_significant,
             "flags": list(a.flags),
         } for a in analysis.anomalies],
+        "consistency": None if analysis.consistency is None else {
+            "dose_without_counts": list(analysis.consistency.dose_without_counts),
+            "counts_without_dose": list(analysis.consistency.counts_without_dose),
+            "ratio_jumps": list(analysis.consistency.ratio_jumps),
+        },
         "dwells": [{
             "start_index": d.start_index,
             "stop_index": d.stop_index,
