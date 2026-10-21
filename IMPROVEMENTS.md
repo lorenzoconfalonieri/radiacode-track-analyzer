@@ -411,6 +411,17 @@ correctness, tests, GUI usability, performance (measured), code quality.
 
 ## Rejected
 
+- 2026-10-21 **Correctness, reverted after measuring:** a local (31-sample
+  rolling median) dose-per-count ratio in place of the track-wide median
+  (Batch 3, item 20). The premise, that the ratio drifts 13 to 51 within a
+  track, does not hold in the bundled data: 13 is the walk and 51 the
+  flight, and the flight's ratio is 51-55 at every altitude. Within the
+  walk the instantaneous ratio scatters from 6.9 to 24.6, because the
+  device filters its dose channel differently from its counts. The local
+  median carried that noise in and moved the walk's background from 70.1
+  to 74.6 nSv/h, above the walk's own median dose rate of 71.85. Worth
+  revisiting with a real flight that has a ground phase, using a longer
+  window or a time-aligned ratio.
 - 2026-10-21 **Correctness, not needed:** an exact Poisson tail in place of
   the scan's normal approximation (Batch 3, item 21). Its premise, that the
   approximation is anticonservative at low counts, is false for this
