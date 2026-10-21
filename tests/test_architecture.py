@@ -185,3 +185,45 @@ def test_every_text_read_and_write_names_its_encoding():
                 continue
             offenders.append(f"{_rel(path)}:{node.lineno} {name}()")
     assert not offenders, "text I/O without an encoding: " + ", ".join(offenders)
+
+
+# ---- layer direction ---------------------------------------------------------
+
+
+def _imported_modules(path: Path) -> set[str]:
+    """Every rcta module ``path`` imports, as a dotted name."""
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    out: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            out.update(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
+            out.add(node.module)
+    return {m for m in out if m == "rcta" or m.startswith("rcta.")}
+
+
+@pytest.mark.parametrize("path", _sources(), ids=_rel)
+def test_no_relative_imports(path):
+    """Every rule here reads absolute imports; a relative one would slip a
+    forbidden dependency past all of them."""
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    relative = [node.lineno for node in ast.walk(tree)
+                if isinstance(node, ast.ImportFrom) and node.level > 0]
+    assert not relative, f"{_rel(path)} uses relative imports at lines {relative}"
+
+
+@pytest.mark.parametrize("path", _core_files(), ids=_rel)
+def test_core_depends_on_nothing_above_it(path):
+    """core is the bottom layer: gui, net and the CLI may use it, never the
+    reverse, or the analysis could not run headless and without a network."""
+    above = {m for m in _imported_modules(path)
+             if m.startswith(("rcta.gui", "rcta.net", "rcta.cli"))}
+    assert not above, f"{_rel(path)} imports {sorted(above)}"
+
+
+@pytest.mark.parametrize("path", _net_files(), ids=_rel)
+def test_net_does_not_depend_on_the_gui(path):
+    """The flight client must work from the CLI, where no GUI exists."""
+    above = {m for m in _imported_modules(path)
+             if m.startswith(("rcta.gui", "rcta.cli"))}
+    assert not above, f"{_rel(path)} imports {sorted(above)}"
