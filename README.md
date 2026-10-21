@@ -37,6 +37,7 @@ rcta sample-data/Track*.rctrk         # opening a file directly
 
 rcta-cli info    sample-data/Track*.rctrk
 rcta-cli analyze sample-data/Track*.rctrk --json report.json
+rcta-cli analyze surveys/*.rctrk --fail-on-detection  # exit 5 if anything is found
 rcta-cli export  "sample-data/Track 07 Sep 2026 14-30-57.rctrk" \
     --format geojson -o walk.geojson
 rcta-cli grid    "sample-data/Track 07 Sep 2026 14-30-57.rctrk" -o walk.asc

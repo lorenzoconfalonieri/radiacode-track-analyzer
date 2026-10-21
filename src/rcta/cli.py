@@ -10,6 +10,10 @@ therefore has a distinct exit code for each way it can honestly fail -- 3 when
 the trajectory could not be fetched, 4 when the trajectory that came back does
 not describe this track -- so a script can tell "no data" from "wrong flight",
 which a single non-zero status cannot express.
+
+``analyze --fail-on-detection`` adds one more: 5 when any track has a
+significant anomaly or a detected dwell, so a monitoring job can tell
+"found something" (5) from "could not run" (1-3) and "clean" (0).
 """
 
 from __future__ import annotations
@@ -166,7 +170,7 @@ def cmd_analyze(args) -> int:
         raise ValueError("--csv writes one track's anomaly table; "
                          "give a single track with it")
     params = _build_params(args)
-    reports = []
+    reports, rows = [], []
     for i, path in enumerate(args.paths):
         track = load_track(path)
         analysis = analyze_track(track, params)
@@ -177,6 +181,10 @@ def cmd_analyze(args) -> int:
         print(RULE)
         print(analysis.describe())
         reports.append(report_to_json(analysis))
+        rows.append((Path(path).name, analysis))
+    if len(rows) > 1:
+        print()
+        print(_summary_table(rows))
 
     if args.json:
         # One report for one track, as before; a JSON array for several, in
@@ -190,7 +198,32 @@ def cmd_analyze(args) -> int:
             anomalies_to_csv(analysis.anomalies, unit=args.unit),
             encoding="utf-8")
         print(f"wrote {args.csv}")
+    found = [name for name, a in rows if _has_detection(a)]
+    if args.fail_on_detection and found:
+        print(f"\ndetection in {len(found)} of {len(rows)} track(s): "
+              + ", ".join(found), file=sys.stderr)
+        return 5
     return 0
+
+
+def _has_detection(analysis) -> bool:
+    return bool(analysis.significant) or any(d.detected for d in analysis.dwells)
+
+
+def _summary_table(rows) -> str:
+    """One line per track, for a batch run that scrolled past."""
+    lines = [THIN, "  summary", THIN,
+             f"  {'track':38s} {'samples':>7s} {'km':>8s} {'dose nSv':>9s} "
+             f"{'anomalies':>9s} {'dwells':>6s}  verdict"]
+    for name, a in rows:
+        dwells = sum(d.detected for d in a.dwells)
+        verdict = "DETECTION" if _has_detection(a) else (
+            "nothing tested" if a.nothing_tested else "clean")
+        lines.append(
+            f"  {name[:38]:38s} {a.track.n:7d} "
+            f"{a.summary.distance_m / 1000.0:8.2f} {a.dose.total_nsv:9.1f} "
+            f"{len(a.significant):9d} {dwells:6d}  {verdict}")
+    return "\n".join(lines)
 
 
 def cmd_export(args) -> int:
@@ -536,6 +569,10 @@ def build_parser() -> argparse.ArgumentParser:
                          help="write a JSON report; an array of reports when "
                               "several tracks are given")
     analyze.add_argument("--csv", metavar="OUT", help="write the anomaly table")
+    analyze.add_argument("--fail-on-detection", action="store_true",
+                         help="exit with status 5 if any track has a "
+                              "significant anomaly or a detected dwell, for "
+                              "monitoring scripts")
     _add_analysis_flags(analyze)
     analyze.set_defaults(func=cmd_analyze)
 

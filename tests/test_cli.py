@@ -668,3 +668,25 @@ def test_a_zero_integration_time_is_refused_by_every_command(
         argv += ["--trajectory", str(sample_trajectory_path)]
     assert main(argv) == 1
     assert "integration_time_s must be positive" in capsys.readouterr().err
+
+
+def test_fail_on_detection_exits_5_only_when_something_is_found(
+        sample_path, walk_path, capsys):
+    """The walk has detections; the flight, a clean null result, does not."""
+    assert main(["analyze", str(sample_path), "--fail-on-detection",
+                 "--n-boot", "10"]) == 0
+    assert main(["analyze", str(walk_path), "--fail-on-detection",
+                 "--n-boot", "10"]) == 5
+    assert "detection in 1 of 1" in capsys.readouterr().err
+    # Without the flag a detection is not a failure.
+    assert main(["analyze", str(walk_path), "--n-boot", "10"]) == 0
+
+
+def test_a_batch_run_ends_with_one_summary_line_per_track(sample_path,
+                                                          walk_path, capsys):
+    assert main(["analyze", str(sample_path), str(walk_path),
+                 "--fail-on-detection", "--n-boot", "10"]) == 5
+    out = capsys.readouterr().out
+    summary = out[out.index("  summary"):].splitlines()
+    assert any(sample_path.name[:38] in l and "clean" in l for l in summary)
+    assert any(walk_path.name[:38] in l and "DETECTION" in l for l in summary)
