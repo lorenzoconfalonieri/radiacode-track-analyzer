@@ -21,7 +21,8 @@ from rcta.gui import theme
 
 Qt = QtCore.Qt
 
-__all__ = ["AnomalyTableModel", "HotspotTableModel", "LegTableModel"]
+__all__ = ["AnomalyTableModel", "DwellTableModel", "HotspotTableModel",
+           "LegTableModel"]
 
 
 def _iso(seconds: float) -> str:
@@ -191,6 +192,40 @@ class HotspotTableModel(_BaseModel):
                 "possible": "a single pass; no corroboration from a revisit",
                 "weak": "overlaps a feature flagged as a trend",
             }.get(hotspot.evidence)
+        return None
+
+
+class DwellTableModel(_BaseModel):
+    """Every stationary stretch, tested as one long count."""
+
+    COLUMNS = [
+        ("start", lambda d, u: _iso(d.start_time_s)),
+        ("dur (s)", lambda d, u: f"{d.duration_s:.0f}"),
+        ("live (s)", lambda d, u: f"{d.live_time_s:.0f}"),
+        ("samples", lambda d, u: str(d.n_samples)),
+        ("lat", lambda d, u: f"{d.lat:.5f}"),
+        ("lon", lambda d, u: f"{d.lon:.5f}"),
+        ("mean ({unit})", lambda d, u: _dose(d.mean_dose_rate, u)),
+        ("net ({unit})", lambda d, u: _dose(d.net_dose_rate, u, signed=True)),
+        ("sigma", lambda d, u: f"{d.significance:+.2f}"),
+        ("MDA ({unit})", lambda d, u: _dose(d.mda_dose_rate, u)),
+        ("result", lambda d, u: "detected" if d.detected else "below L_C"),
+    ]
+
+    HEADER_TIPS = {
+        "dur (s)": "Elapsed time stood still, first sample to last.",
+        "live (s)": "Counting time actually integrated: samples times the "
+                    "integration time. The detection limit follows this.",
+        "MDA ({unit})": "Smallest net dose rate this dwell would have "
+                        "detected, at 95 % probability. Usually far below "
+                        "a single moving sample's.",
+        "result": "Tested once against the background, Bonferroni-corrected "
+                  "across all the dwells of the track.",
+    }
+
+    def _decoration(self, dwell, index, role):
+        if role == Qt.ItemDataRole.ForegroundRole and dwell.detected:
+            return QtGui.QBrush(QtGui.QColor(theme.EVIDENCE_COLORS["strong"]))
         return None
 
 

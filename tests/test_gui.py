@@ -1330,7 +1330,8 @@ def test_the_bottom_panels_are_one_tabbed_stack(window):
     bar = _panel_tab_bar(window)
     assert bar is not None
     assert [bar.tabText(i) for i in range(bar.count())] == [
-        "Series", "Anomalies", "Hotspots", "Legs", "Profile", "Flight", "Log"]
+        "Series", "Anomalies", "Hotspots", "Legs", "Dwells", "Profile", "Flight",
+        "Log"]
 
 
 def test_the_tab_order_is_the_numbered_order(window):
@@ -2064,3 +2065,16 @@ def test_the_profile_bin_suits_the_track(loaded, walk_path):
     assert np.isnan(profile.dose_rate).mean() < 0.3
     assert loaded.load(str(walk_path))
     assert 10.0 <= loaded.profile.step.value() <= 50.0
+
+
+def test_the_dwells_table_lists_the_walks_dwell_and_selects_it(window, walk_path):
+    from PySide6.QtCore import QItemSelectionModel
+    assert window.load(str(walk_path))
+    assert window.dwell_model.rowCount() == 1
+    dwell = window._analysis.dwells[0]
+    proxy = window.dwell_view.model()
+    window.dwell_view.selectionModel().select(
+        proxy.index(0, 0), QItemSelectionModel.SelectionFlag.ClearAndSelect
+        | QItemSelectionModel.SelectionFlag.Rows)
+    assert window._selection.count == dwell.stop_index - dwell.start_index
+    assert window._selection.mask[dwell.start_index]

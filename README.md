@@ -52,8 +52,8 @@ rcta-cli flight  TRACK.rctrk --flight DL2618 --date 2026-09-07
 ### Moving around the window
 
 The bottom of the window is one tabbed stack — Series, Anomalies, Hotspots,
-Legs, Profile, Flight, Log — so only one of them competes for the vertical
-space the map wants. **Ctrl+1** through **Ctrl+7** switch straight to a panel
+Legs, Dwells, Profile, Flight, Log — so only one of them competes for the vertical
+space the map wants. **Ctrl+1** through **Ctrl+8** switch straight to a panel
 in that order, reopening it if it was closed, and **Ctrl+PgDown** /
 **Ctrl+PgUp** (or **Ctrl+]** / **Ctrl+[**) step along the stack. The same
 actions are under *View → Panels* with their keys shown; the tab bar above

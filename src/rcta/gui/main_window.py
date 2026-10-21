@@ -43,7 +43,8 @@ from rcta.core.selection import Selection
 from rcta.core.spatial import GridParams, interpolate
 from rcta.gui import theme
 from rcta.gui.map_panel import MapPanel
-from rcta.gui.models import AnomalyTableModel, HotspotTableModel, LegTableModel
+from rcta.gui.models import (AnomalyTableModel, DwellTableModel,
+                             HotspotTableModel, LegTableModel)
 from rcta.gui.panels import (AnalysisDock, DisplayDock, LogDock, SelectionDock,
                              TrackDock)
 from rcta.gui.flight_panel import FlightPanel
@@ -246,6 +247,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.leg_view = self._make_table(self.leg_model)
         leg_dock = self._add_dock("Legs", self.leg_view, bottom)
 
+        self.dwell_model = DwellTableModel()
+        self.dwell_view = self._make_table(self.dwell_model)
+        dwell_dock = self._add_dock("Dwells", self.dwell_view, bottom)
+
         self.profile = ProfilePanel()
         profile_dock = self._add_dock("Profile", self.profile, bottom)
 
@@ -260,7 +265,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # or numbers them reads this one list, so the tab order, the Panels
         # menu and Ctrl+1..7 can never drift apart.
         self._panel_docks = [series_dock, anomaly_dock, hotspot_dock, leg_dock,
-                             profile_dock, flight_dock, log_dock]
+                             dwell_dock, profile_dock, flight_dock, log_dock]
         # Tabs above the panel rather than below it: they are the handle for
         # the gesture the user makes most often down here, and at the bottom
         # of the window they sit under the panel content and read as a
@@ -540,11 +545,14 @@ class MainWindow(QtWidgets.QMainWindow):
             self._on_hotspot_row)
         self.leg_view.selectionModel().selectionChanged.connect(
             self._on_leg_row)
+        self.dwell_view.selectionModel().selectionChanged.connect(
+            self._on_dwell_row)
         # A selected row highlights its samples, but on a long flight they
         # can be far off-screen; a double-click also frames them.
         for view, handler in ((self.anomaly_view, self._on_anomaly_row),
                               (self.hotspot_view, self._on_hotspot_row),
-                              (self.leg_view, self._on_leg_row)):
+                              (self.leg_view, self._on_leg_row),
+                              (self.dwell_view, self._on_dwell_row)):
             view.setToolTip("Click a row to select its samples; "
                             "double-click to zoom the map to them.")
             view.doubleClicked.connect(
@@ -895,7 +903,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.anomaly_model.set_rows(analysis.anomalies)
         self.hotspot_model.set_rows(analysis.hotspots)
         self.leg_model.set_rows(LegTableModel.rows_from(track, analysis.quality))
-        for view in (self.anomaly_view, self.hotspot_view, self.leg_view):
+        self.dwell_model.set_rows(analysis.dwells)
+        for view in (self.anomaly_view, self.hotspot_view, self.leg_view,
+                     self.dwell_view):
             view.resizeColumnsToContents()
 
         if self._selection is None or self._selection.n != track.n:
@@ -1261,6 +1271,21 @@ class MainWindow(QtWidgets.QMainWindow):
                 mask[anomaly.start_index:anomaly.stop_index] = True
         self._broadcast(Selection(mask=mask, source="table"))
 
+    def _on_dwell_row(self, *_) -> None:
+        """Select the samples of the chosen dwells."""
+        if self._applying or self._track is None:
+            return
+        rows = self.dwell_view.selectionModel().selectedRows()
+        if not rows:
+            return
+        mask = np.zeros(self._track.n, dtype=bool)
+        for index in rows:
+            dwell = self.dwell_model.row_object(
+                self._source_row(self.dwell_view, index))
+            if dwell is not None:
+                mask[dwell.start_index:dwell.stop_index] = True
+        self._broadcast(Selection(mask=mask, source="table"))
+
     def _on_leg_row(self, *_) -> None:
         """Select every sample of the chosen legs, as the other tables do."""
         if self._applying or self._analysis is None:
@@ -1409,7 +1434,8 @@ class MainWindow(QtWidgets.QMainWindow):
         if self._analysis is not None:
             self.track_dock.set_text(self._analysis.track.describe(unit))
         for view in (self.flight, self.map, self.series, self.profile,
-                     self.anomaly_model, self.hotspot_model, self.leg_model):
+                     self.anomaly_model, self.hotspot_model, self.leg_model,
+                     self.dwell_model):
             view.set_unit(unit)
         if self._selection is not None:
             self._broadcast(self._selection)
