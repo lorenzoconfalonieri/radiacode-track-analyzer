@@ -67,6 +67,13 @@ class ScanParams:
     trend_flag_ratio: float = 0.5
     #: Windows whose GPS is mostly untrustworthy get a flag, not exclusion.
     poor_gps_fraction: float = 0.5
+    #: Flag "gps-transition" when the median GPS accuracy before, inside or
+    #: after a window differs by this factor and the worst is at least
+    #: ``transition_min_accuracy_m``. Walking indoors or into a vehicle
+    #: changes the shielding and the fix together, so the excess may be the
+    #: building or the car, not a source. Informational: never blocks.
+    transition_accuracy_ratio: float = 3.0
+    transition_min_accuracy_m: float = 30.0
 
     def __post_init__(self) -> None:
         if not self.scales or any(s < 1 for s in self.scales):
@@ -269,6 +276,8 @@ def _build(track, background, start, width, live, gross, back, support, sig,
         flags.append("trend")
     if (~track.position_mask[rows]).mean() > params.poor_gps_fraction:
         flags.append("poor-gps")
+    if _accuracy_transition(track, start, stop, params):
+        flags.append("gps-transition")
     if quality is not None and quality.gap_after.size:
         near = quality.gap_after[max(start - 1, 0):min(stop, quality.gap_after.size)]
         if near.size and near.any():
@@ -289,6 +298,23 @@ def _build(track, background, start, width, live, gross, back, support, sig,
         significance=sig, threshold_sigma=threshold, limits=limits,
         n_background=support, flags=tuple(flags),
     )
+
+
+def _accuracy_transition(track, start: int, stop: int, params) -> bool:
+    """Does the fix quality step sharply across this window?"""
+    span = max(stop - start, 3)
+    acc = track.accuracy_m
+    medians = []
+    for part in (acc[max(start - span, 0):start], acc[start:stop],
+                 acc[stop:stop + span]):
+        known = part[np.isfinite(part)]
+        if known.size:
+            medians.append(float(np.median(known)))
+    if len(medians) < 2:
+        return False
+    worst, best = max(medians), max(min(medians), 1e-9)
+    return (worst >= params.transition_min_accuracy_m
+            and worst / best >= params.transition_accuracy_ratio)
 
 
 def _is_trend(track, background, start, stop, ratio: float) -> bool:

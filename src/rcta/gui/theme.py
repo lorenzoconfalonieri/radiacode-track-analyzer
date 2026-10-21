@@ -104,6 +104,7 @@ FLAG_COLORS = {
     "trend": "#888888",
     "poor-gps": "#E69F00",
     "gap-adjacent": "#CC79A7",
+    "gps-transition": "#0072B2",
     "single-sample": "#56B4E9",
 }
 

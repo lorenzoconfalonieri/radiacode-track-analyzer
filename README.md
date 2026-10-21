@@ -112,7 +112,7 @@ minimum detectable dose rate, by window:
 
 1 candidate(s) excluded by flags:
      506 s  31.04148N  98.49739W  net   +1.59 cps (+81.51 nSv/h)    8.48 sigma
-       [trend, poor-gps, gap-adjacent]
+       [trend, poor-gps, gps-transition, gap-adjacent]
 ```
 
 There is nothing localised in this track. The one feature above threshold is

@@ -137,6 +137,12 @@ class AnomalyTableModel(_BaseModel):
                "must exceed to be called a detection at the chosen alpha.",
         "MDA (cps)": "Minimum detectable activity for this window, as a net "
                      "count rate, at 95 % detection probability.",
+        "flags": "trend: a local straight line explains the excess (blocks "
+                 "detection). poor-gps: most fixes unreliable. gap-adjacent: "
+                 "touches a dropout. single-sample: one reading. "
+                 "gps-transition: the fix quality steps sharply across it, as "
+                 "on walking indoors or into a vehicle, so the excess may be "
+                 "shielding rather than a source.",
     }
 
     def _decoration(self, anomaly, index, role):

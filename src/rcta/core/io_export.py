@@ -445,6 +445,8 @@ def report_to_json(analysis, *, indent=2) -> str:
                 "merge_overlapping": params.scan.merge_overlapping,
                 "trend_flag_ratio": params.scan.trend_flag_ratio,
                 "poor_gps_fraction": params.scan.poor_gps_fraction,
+                "transition_accuracy_ratio": params.scan.transition_accuracy_ratio,
+                "transition_min_accuracy_m": params.scan.transition_min_accuracy_m,
             },
             "dwell": {
                 "max_speed_m_s": params.dwell.max_speed_m_s,

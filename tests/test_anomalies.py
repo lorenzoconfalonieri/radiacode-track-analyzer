@@ -252,3 +252,29 @@ def test_no_detection_limit_is_quoted_for_a_scale_the_scan_never_tested():
     background = estimate_background(track)
     table = scan_mda(track, background, ScanParams(scales=(1, 2, 4, 8)))
     assert [width for width, _, _ in table] == [1, 2]
+
+
+def test_an_excess_where_the_gps_fix_collapses_is_flagged_as_a_transition():
+    """Walking indoors changes shielding and fix together; say so."""
+    import synthetic
+    from rcta.core.analysis import AnalysisParams, analyze_track
+    from rcta.core.track import Track
+    track, _ = synthetic.make(n=600, shuffle=False, sources=[(300, 40.0, 6)])
+    accuracy = np.full(track.n, 5.0)
+    accuracy[305:] = 60.0                       # indoors from here on
+    track = Track(time_s=track.time_s, lat=track.lat, lon=track.lon,
+                  accuracy_m=accuracy, dose_rate=track.dose_rate,
+                  count_rate=track.count_rate,
+                  integration_time_s=track.integration_time_s)
+    a = analyze_track(track, AnalysisParams(n_boot=10))
+    assert a.significant, "the injected source must still be detected"
+    assert "gps-transition" in a.significant[0].flags
+
+
+def test_steady_gps_raises_no_transition_flag():
+    import synthetic
+    from rcta.core.analysis import AnalysisParams, analyze_track
+    track, _ = synthetic.make(n=600, shuffle=False, sources=[(300, 40.0, 6)])
+    a = analyze_track(track, AnalysisParams(n_boot=10))
+    assert a.significant
+    assert all("gps-transition" not in x.flags for x in a.anomalies)
