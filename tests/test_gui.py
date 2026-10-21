@@ -2094,3 +2094,30 @@ def test_fetch_is_greyed_while_a_lookup_runs(loaded, monkeypatch, sample_path):
     loaded.flight.set_fetching(True)
     assert loaded.load(str(sample_path))     # a new track drops the lookup
     assert loaded.flight.fetch_button.isEnabled()
+
+
+def test_the_window_layout_and_basemap_survive_a_restart(app, tmp_path):
+    from PySide6 import QtCore as _QtCore
+    from rcta.gui.main_window import MainWindow
+    settings = _QtCore.QSettings(str(tmp_path / "rcta.ini"),
+                                 _QtCore.QSettings.Format.IniFormat)
+    first = MainWindow(offline=True, synchronous=True, settings=settings)
+    first.resize(1111, 777)
+    provider = next(pid for pid, p in first._providers.items() if p.available)
+    first._set_provider(provider)
+    first.close()
+    assert settings.value("window/geometry") is not None
+    assert settings.value("window/state") is not None
+    second = MainWindow(offline=True, synchronous=True, settings=settings)
+    # Exact pixel geometry is the platform's business offscreen; the basemap
+    # and the saved dock state are ours.
+    assert second._provider_id == provider
+    assert second.restoreState(settings.value("window/state"),
+                               second._LAYOUT_VERSION)
+    second.close()
+    for win in (first, second):
+        win.deleteLater()
+
+
+def test_a_window_without_settings_saves_nothing(window, tmp_path):
+    window.close()      # must not raise and must not touch QSettings()

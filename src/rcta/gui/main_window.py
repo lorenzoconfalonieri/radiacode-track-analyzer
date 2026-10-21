@@ -183,6 +183,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setAcceptDrops(True)
         self.statusBar().showMessage(
             "Open a .rctrk track file to begin (Ctrl+O, or drop it here)")
+        self._restore_layout()
 
     # ---- construction -----------------------------------------------------
 
@@ -1622,7 +1623,40 @@ class MainWindow(QtWidgets.QMainWindow):
         QtWidgets.QMessageBox.about(self, "About Radiacode Track Analyzer",
                                     LIMITATIONS.format(version=__version__))
 
+    # ---- remembered layout ------------------------------------------------
+
+    _LAYOUT_VERSION = 1          # bump when the dock set changes shape
+
+    def _restore_layout(self) -> None:
+        """Window size, dock arrangement and basemap from the last session.
+
+        Only with injected settings, so a test window never inherits the
+        user's layout. A layout saved for a different dock set is ignored
+        rather than half-applied.
+        """
+        if self._settings is None:
+            return
+        geometry = self._settings.value("window/geometry")
+        if geometry is not None:
+            self.restoreGeometry(geometry)
+        state = self._settings.value("window/state")
+        if state is not None:
+            self.restoreState(state, self._LAYOUT_VERSION)
+        provider = self._settings.value("display/basemap")
+        if provider and provider in self._providers \
+                and self._providers[provider].available:
+            self._set_provider(provider)
+
+    def _save_layout(self) -> None:
+        if self._settings is None:
+            return
+        self._settings.setValue("window/geometry", self.saveGeometry())
+        self._settings.setValue("window/state",
+                                self.saveState(self._LAYOUT_VERSION))
+        self._settings.setValue("display/basemap", self._provider_id or "")
+
     def closeEvent(self, event) -> None:
+        self._save_layout()
         self.tiles.cancel_all()
         self.jobs.shutdown()
         super().closeEvent(event)
