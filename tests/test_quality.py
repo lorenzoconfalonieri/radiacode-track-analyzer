@@ -262,3 +262,39 @@ def test_a_stricter_accuracy_threshold_masks_more(sample):
     _, loose = assess_with_report(sample, QualityParams(max_accuracy_m=200.0))
     _, strict = assess_with_report(sample, QualityParams(max_accuracy_m=20.0))
     assert strict.n_poor_accuracy > loose.n_poor_accuracy
+
+
+def _paused_track(pause_s=10.0, n=200, dt=2.0):
+    """Two recording periods, with a pause shorter than the gap threshold."""
+    from datetime import datetime, timezone
+    from rcta.core.track import Period, Track, TrackMeta
+    time_s = np.arange(n) * dt + 1_788_800_000.0
+    time_s[n // 2:] += pause_s
+    utc = lambda t: datetime.fromtimestamp(t, tz=timezone.utc)
+    periods = (Period(distance_m=100.0, start=utc(time_s[0]), end=utc(time_s[n // 2 - 1] + 1)),
+               Period(distance_m=100.0, start=utc(time_s[n // 2]), end=utc(time_s[-1] + 1)))
+    return Track(time_s=time_s, lat=np.linspace(30.0, 30.01, n),
+                 lon=np.full(n, -97.0), accuracy_m=np.full(n, 5.0),
+                 dose_rate=np.full(n, 90.0), count_rate=np.full(n, 7.0),
+                 meta=TrackMeta(title="paused", periods=periods))
+
+
+def test_a_short_device_pause_still_splits_the_legs():
+    """10 s is under the 30 s gap rule, but the device says it paused."""
+    track, report = assess_with_report(_paused_track(pause_s=10.0))
+    assert report.n_legs == 2
+    assert report.gap_after[99] and report.gap_after.sum() == 1
+
+
+def test_samples_outside_every_recording_period_are_reported():
+    from dataclasses import replace
+    track = _paused_track()
+    shifted = replace(track, time_s=track.time_s + 3600.0)
+    _, report = assess_with_report(shifted)
+    assert any("outside the device's own recording periods" in w
+               for w in report.warnings)
+
+
+def test_the_bundled_tracks_lie_inside_their_single_period(sample):
+    _, report = assess_with_report(sample)
+    assert not any("recording periods" in w for w in report.warnings)

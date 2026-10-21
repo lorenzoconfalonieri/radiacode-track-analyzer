@@ -182,6 +182,7 @@ def assess_with_report(track: Track,
             "the glitched fixes are excluded from geometry")
 
     gap_after = (track.dt_s > threshold) if track.dt_s.size else np.zeros(0, bool)
+    gap_after = gap_after | _period_breaks(track, warnings)
     n_gaps = int(gap_after.sum())
     legs = np.zeros(n, dtype=np.int64)
     if n_gaps:
@@ -202,6 +203,34 @@ def assess_with_report(track: Track,
     )
     return track.with_mask(position=position, geometry=~glitched,
                            legs=legs), report
+
+
+def _period_breaks(track: Track, warnings: list[str]) -> np.ndarray:
+    """Where the device itself paused and resumed recording, length n - 1.
+
+    The export lists its recording periods. A pause shorter than the gap
+    threshold would otherwise pass unnoticed, so distance, dose and the
+    rolling windows would run straight through it. A boundary between two
+    periods is a leg break whatever its length. Samples outside every period
+    mean the clock or the loader is wrong, and are reported, not dropped.
+    """
+    breaks = np.zeros(max(track.n - 1, 0), dtype=bool)
+    periods = sorted(track.meta.periods, key=lambda p: p.start)
+    if len(periods) == 0 or track.n < 2:
+        return breaks
+    starts = np.array([p.start.timestamp() for p in periods])
+    ends = np.array([p.end.timestamp() for p in periods])
+    which = np.searchsorted(starts, track.time_s, side="right") - 1
+    if len(periods) > 1:
+        breaks = which[1:] != which[:-1]
+    # A small tolerance: the device stamps a period's end after its last fix.
+    slack = 2.0 * float(np.median(track.dt_s)) if track.dt_s.size else 0.0
+    outside = (which < 0) | (track.time_s > ends[np.clip(which, 0, None)] + slack)
+    if outside.any():
+        warnings.append(
+            f"{int(outside.sum())} sample(s) fall outside the device's own "
+            "recording periods; its clock or this file may be inconsistent")
+    return breaks
 
 
 def _glitched_fixes(outlier: np.ndarray) -> np.ndarray:
