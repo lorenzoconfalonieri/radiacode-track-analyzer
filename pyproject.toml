@@ -33,7 +33,14 @@ dependencies = ["numpy>=1.26", "scipy>=1.11",
                 "tzdata; platform_system == 'Windows'"]
 
 [project.optional-dependencies]
-gui = ["PySide6>=6.8", "pyqtgraph>=0.13.7"]
+# PySide6 6.12.0 drops a reference to None on every QWidget it destroys (and
+# on calls passing None, such as sendPostedEvents(None, ...)). On Python 3.12
+# None is immortal and nothing happens; on 3.10 on Linux the count reaches
+# zero after about a dozen windows and the interpreter aborts with
+# "none_dealloc: deallocating None". 6.11.2 and earlier are clean.
+gui = ["PySide6>=6.8,!=6.12.0; python_version < '3.11'",
+       "PySide6>=6.8; python_version >= '3.11'",
+       "pyqtgraph>=0.13.7"]
 dev = ["pytest>=7", "ruff>=0.6"]
 
 [project.scripts]
