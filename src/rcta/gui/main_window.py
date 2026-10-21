@@ -396,6 +396,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self._needs_grid.append(self._action(
             file_menu, "Export heat&map grid (ASC)...",
             lambda: self._export("grid")))
+        self._needs_selection.append(self._action(
+            file_menu, "Export s&election CSV...",
+            lambda: self._export("selection")))
         file_menu.addSeparator()
         self._needs_track.append(self._action(
             file_menu, "Export map &image...", self._export_image))
@@ -1466,6 +1469,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.log.log("no altitude joined yet: fetch a flight or load a "
                          "trajectory in the Flight dock first", "warning")
             return
+        if kind == "selection" and (self._selection is None
+                                    or self._selection.is_empty):
+            self.log.log("nothing is selected", "warning")
+            return
         if kind == "grid" and self._grid is None:
             self.log.log("no heatmap yet: compute one first", "warning")
             return
@@ -1478,7 +1485,8 @@ class MainWindow(QtWidgets.QMainWindow):
                    "gpx": "GPX (*.gpx)", "json": "JSON (*.json)",
                    "samples": "CSV (*.csv)", "profile": "CSV (*.csv)",
                    "trajectory": "CSV (*.csv)", "report": "JSON (*.json)",
-                   "grid": "ESRI ASCII grid (*.asc)"}
+                   "grid": "ESRI ASCII grid (*.asc)",
+                   "selection": "CSV (*.csv)"}
         suggested = self._suggested_export_path(kind)
         path, _ = QtWidgets.QFileDialog.getSaveFileName(
             self, f"Export {kind}", suggested, filters[kind])
@@ -1504,6 +1512,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._join(), self._flight_profile(), unit=self._unit,
                 floor_m=float(self.flight.floor.value())),
             "grid": lambda: grid_to_asc(self._grid, unit=self._unit),
+            "selection": lambda: track_to_csv(
+                a.track, quality=a.quality, background=a.background,
+                unit=self._unit, mask=self._selection.mask),
         }
         try:
             Path(path).write_text(writers[kind](), encoding="utf-8")
@@ -1543,6 +1554,7 @@ class MainWindow(QtWidgets.QMainWindow):
             "image": f"{stem}-map.png",
             "svg": f"{stem}-map.svg",
             "grid": f"{stem}-heatmap.asc",
+            "selection": f"{stem}-selection.csv",
         }
         return names.get(kind, "")
 

@@ -2121,3 +2121,25 @@ def test_the_window_layout_and_basemap_survive_a_restart(app, tmp_path):
 
 def test_a_window_without_settings_saves_nothing(window, tmp_path):
     window.close()      # must not raise and must not touch QSettings()
+
+
+def test_a_selection_exports_its_own_rows_with_the_tracks_values(
+        loaded, tmp_path, monkeypatch):
+    import csv
+    import numpy as np
+    from rcta.core.selection import Selection
+    mask = np.zeros(loaded._track.n, dtype=bool)
+    mask[100:150] = True
+    loaded._broadcast(Selection(mask=mask, source="test"))
+    out = tmp_path / "sel.csv"
+    _answer_save_dialog(monkeypatch, out)
+    loaded._export("selection")
+    rows = list(csv.DictReader(out.open(encoding="utf-8")))
+    assert [int(r["index"]) for r in rows] == list(range(100, 150))
+    along = loaded._track.distance_along_m
+    assert float(rows[0]["distance_along_m"]) == pytest.approx(along[100], abs=0.1)
+
+
+def test_export_selection_waits_for_a_selection(loaded):
+    action = _action(loaded, "Export s&election CSV...")
+    assert not action.isEnabled()

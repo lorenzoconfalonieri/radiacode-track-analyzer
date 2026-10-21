@@ -112,8 +112,14 @@ _TRACK_COLUMNS = [
 ]
 
 
-def track_to_csv(track, *, quality=None, background=None, unit="nSv/h") -> str:
-    """One row per sample. The dose column carries its unit in the header."""
+def track_to_csv(track, *, quality=None, background=None, unit="nSv/h",
+                 mask=None) -> str:
+    """One row per sample. The dose column carries its unit in the header.
+
+    ``mask`` keeps only the selected samples. Every value -- distance along
+    the track, speed, leg, background -- is still the full track's, so a
+    selection exported here agrees row for row with the whole-track file.
+    """
     if unit not in DOSE_UNITS:
         raise ValueError(f"unknown dose unit {unit!r}")
     ctx = {
@@ -124,7 +130,9 @@ def track_to_csv(track, *, quality=None, background=None, unit="nSv/h") -> str:
     header = [name if name != "dose_rate" else f"dose_rate_{unit.replace('/', '_per_')}"
               for name, _ in _TRACK_COLUMNS]
     rows = [",".join(header)]
-    for i in range(track.n):
+    keep = (range(track.n) if mask is None
+            else np.flatnonzero(np.asarray(mask, dtype=bool)))
+    for i in keep:
         # A masked sample has no reading; its cells are blank, the same
         # convention the altitude profile uses for an empty bin.
         cells = (str(fn(track, i, ctx)) for _, fn in _TRACK_COLUMNS)
