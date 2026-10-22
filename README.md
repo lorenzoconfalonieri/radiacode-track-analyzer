@@ -1,4 +1,8 @@
-# Radiacode Track Analyzer
+<p align="center">
+  <img src="src/rcta/gui/icons/rcta.svg" width="112" alt="">
+</p>
+
+<h1 align="center">Radiacode Track Analyzer</h1>
 
 Analysis of GPS radiation tracks (`.rctrk`) from RadiaCode 100-series handheld
 CsI(Tl) scintillation detectors. Built to one principle: **the honest answer is
@@ -396,7 +400,8 @@ src/rcta/data/    bundled tables: airlines; airports, with their IANA
 src/rcta/data/LICENSE
                   ODbL 1.0, for airports.json alone -- see Licence below
 tests/            1167 tests; run with pytest
-tools/            maintenance scripts; not part of the package
+tools/            maintenance scripts (screenshots, social preview); not
+                  part of the package
 packaging/        PyInstaller spec, icons, .dmg and Windows installer scripts
 docs/FORMAT.md    the reverse-engineered .rctrk specification
 docs/FLIGHT.md    importing altitude for an airborne track
