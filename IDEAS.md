@@ -431,19 +431,16 @@ Measured and not adopted:
   median moved its background by 6 %. Revisit with a real flight that has a
   ground phase.
 
-Still open:
-
-- **The User-Agent contact.** It now names the real repository
-  (github.com/lorenzoconfalonieri/radiacode-track-analyzer), which reaches the
-  owner's public profile even while the repository is private. Making the
-  repository public, or adding a contact address, would make it fully useful.
+The User-Agent contact, resolved: it names the repository, which has been
+public since 2026-10-22.
 
 ---
 
 ## 7. Publication and community
 
-- **Make the repository public** before the arXiv submission; the paper links
-  to it.
+- ~~Make the repository public~~ done 2026-10-22, with the v0.1.0 desktop
+  release and the website at
+  https://lorenzoconfalonieri.github.io/radiacode-track-analyzer/.
 - **Archive a release on Zenodo** for a citable DOI.
 - **Submit to [JOSS](https://joss.theoj.org) as well.** It reviews the code,
   not just the paper, and its checklist (statement of need, tests,
