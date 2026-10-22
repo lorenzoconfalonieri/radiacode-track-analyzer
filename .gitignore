@@ -86,3 +86,6 @@ paper/pg*.png
 # arXiv upload staging (paper/Makefile: make arxiv)
 paper/arxiv/
 paper/arxiv.tar.gz
+
+# GitHub Pages build output (site/build.sh)
+_site/

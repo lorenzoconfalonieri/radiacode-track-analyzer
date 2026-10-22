@@ -403,6 +403,7 @@ tests/            1167 tests; run with pytest
 tools/            maintenance scripts (screenshots, social preview); not
                   part of the package
 packaging/        PyInstaller spec, icons, .dmg and Windows installer scripts
+site/             the project website (GitHub Pages); site/build.sh assembles it
 docs/FORMAT.md    the reverse-engineered .rctrk specification
 docs/FLIGHT.md    importing altitude for an airborne track
 sample-data/      two real acquisitions and one synthetic trajectory

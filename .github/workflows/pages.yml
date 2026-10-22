@@ -1,0 +1,44 @@
+# The project website, site/, deployed to GitHub Pages.
+#
+# Skipped while the repository is private: on a free plan Pages cannot
+# publish from a private repository, and a Pages site is public regardless.
+# Once the repository is public, enable Pages once (Settings -> Pages ->
+# Source: GitHub Actions) and run this from the Actions tab, or push a change
+# to the site.
+name: pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "docs/*.png"
+      - "src/rcta/gui/icons/rcta.svg"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: ${{ !github.event.repository.private }}
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: site/build.sh
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
