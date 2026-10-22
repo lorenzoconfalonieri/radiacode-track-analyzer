@@ -82,3 +82,7 @@ paper/*.aux
 paper/*.log
 paper/*.out
 paper/pg*.png
+
+# arXiv upload staging (paper/Makefile: make arxiv)
+paper/arxiv/
+paper/arxiv.tar.gz

@@ -21,6 +21,15 @@
 \graphicspath{{../docs/}}
 
 \setlength{\parskip}{0pt}
+\raggedbottom
+
+% Section headings one size down and closer to their text than article's
+% default; at two columns the default spacing costs a line or two each.
+\makeatletter
+\renewcommand\section{\@startsection{section}{1}{\z@}%
+  {-2.2ex \@plus -.6ex \@minus -.2ex}{1.0ex \@plus .2ex}%
+  {\normalfont\large\bfseries}}
+\makeatother
 \pagestyle{plain}
 
 % Two pages is the target, and floats plus the bibliography are where the
@@ -81,10 +90,10 @@ PySide6 and pyqtgraph are an optional extra, so the analysis core runs headless
 or in a notebook. The package separates \texttt{core/} (pure NumPy/SciPy, never
 imports Qt, never touches the network) from \texttt{net/} and \texttt{gui/},
 and those boundaries are enforced by a test module that inspects the import
-graph. The suite is 1{,}067 tests against ${\sim}15{,}200$ lines, and every
+graph. The suite is 1{,}167 tests against ${\sim}15{,}500$ lines, and every
 quantitative claim below is pinned by a regression test.
 
-\noindent\begin{minipage}{\columnwidth}\small
+\smallskip\noindent\begin{minipage}{\columnwidth}\small
 \begin{verbatim}
 rcta-cli info    TRACK.rctrk
 rcta-cli analyze TRACK.rctrk --json report.json
@@ -92,7 +101,7 @@ rcta-cli flight  TRACK.rctrk --flight DL2618 \
                  --date 2026-09-07
 rcta                       # desktop application
 \end{verbatim}
-\end{minipage}
+\end{minipage}\smallskip
 
 Two real acquisitions ship with the package --- a 2\,h walking survey
 (Fig.~\ref{fig:walk}) and a 2\,h\,42\,m flight --- so worked examples include
@@ -160,7 +169,7 @@ dropouts, 47\,\% apart --- and the program declines to choose.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.94\columnwidth]{screenshot-flight-fit.png}
+\includegraphics[width=0.86\columnwidth]{screenshot-flight-fit.png}
 \caption{Cosmic dose rate against altitude, log ordinate, climb and descent
 separate. A constant scale height is a straight line; bins below 3\,km bend
 away because terrestrial gamma is altitude-independent, hence the fit floor.}
@@ -195,9 +204,10 @@ detection limit scales directly with it, which makes it the largest systematic
 in the program, and the tool says so on every run. The jitter correction
 assumes independent fix errors, so in an urban canyon it is optimistic.
 
-Source, documentation and sample data:
-\url{https://github.com/lorenzoconfalonieri/radiacode-track-analyzer}. The
-software is MIT licensed; one bundled airport table carrying IANA timezones
+Source, documentation, sample data and prebuilt Windows and macOS
+applications:\\
+\url{https://github.com/lorenzoconfalonieri/radiacode-track-analyzer}\\
+The software is MIT licensed; one bundled airport table carrying IANA timezones
 from OurAirports (public domain) and OpenFlights (ODbL) is ODbL 1.0, and
 analyses made with \texttt{rcta} are Produced Works under that licence with no
 share-alike obligation. Trajectory data are provided by the OpenSky
@@ -205,7 +215,7 @@ Network~\cite{schafer2014}; basemap tiles by OpenStreetMap contributors and
 OpenTopoMap.
 
 \begin{thebibliography}{9}
-\footnotesize
+\scriptsize
 \setlength{\itemsep}{0pt}
 \setlength{\parskip}{0pt}
 \bibitem{currie1968} L.~A. Currie, ``Limits for qualitative detection and

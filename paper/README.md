@@ -9,7 +9,9 @@ the target moved to arXiv.
 
 - `paper.tex` — the whole paper. Standard `article` class, two columns, no
   `.bib` (the bibliography is inline), figures pulled from `../docs/`.
-- `Makefile` — `make` runs `pdflatex` twice; `make clean` removes the output.
+- `Makefile` — `make` runs `pdflatex` twice; `make arxiv` stages a flat copy
+  (figures beside the source), builds it once to prove it compiles alone, and
+  writes `arxiv.tar.gz` for upload; `make clean` removes the output.
 
 The source, `Makefile` and built `paper.pdf` are tracked; the LaTeX
 by-products (`.aux`, `.log`, `.out`) are in `.gitignore`.
