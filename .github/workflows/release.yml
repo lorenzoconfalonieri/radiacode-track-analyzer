@@ -1,0 +1,107 @@
+# Desktop builds: a Windows installer and portable zip, and macOS disk images
+# for Apple silicon and Intel. Each frozen bundle is smoke-tested (load,
+# analyse, export) before it is packaged.
+#
+# Push a tag matching the package version to publish a draft release:
+#   git tag v0.1.0 && git push origin v0.1.0
+# Or run it by hand from the Actions tab to get the builds as artifacts only.
+#
+# The builds are not code-signed; README "Installing the desktop builds" says
+# what that means for users.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: windows-x64
+          - os: macos-latest
+            target: macos-arm64
+          - os: macos-15-intel
+            target: macos-x86_64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: python -m pip install ".[gui]" pyinstaller pillow
+      - name: Version
+        id: version
+        shell: bash
+        run: |
+          version=$(python -c "import rcta; print(rcta.__version__)")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [[ "$GITHUB_REF_TYPE" == "tag" && "$GITHUB_REF_NAME" != "v$version" ]]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match rcta.__version__ $version"
+            exit 1
+          fi
+      - name: Icons
+        run: python packaging/make_icons.py
+      - name: Freeze
+        run: pyinstaller --noconfirm packaging/rcta.spec
+
+      - name: Smoke test (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          "dist/Radiacode Track Analyzer.app/Contents/MacOS/rcta" \
+            --smoke-test smoke "sample-data/Track 07 Sep 2026 14-30-57.rctrk"
+          test -s smoke/map.png && test -s smoke/map.svg
+      - name: Smoke test (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          # A windowed exe detaches from the console: wait for its exit code
+          # and check its output files instead of its (absent) stdout.
+          $p = Start-Process -FilePath "dist\rcta\rcta.exe" -Wait -PassThru `
+            -ArgumentList '--smoke-test', 'smoke', '"sample-data\Track 07 Sep 2026 14-30-57.rctrk"'
+          if ($p.ExitCode -ne 0) { throw "smoke test exited $($p.ExitCode)" }
+          if (-not (Test-Path smoke\map.png) -or -not (Test-Path smoke\map.svg)) {
+            throw "smoke test wrote no exports"
+          }
+
+      - name: Package (macOS)
+        if: runner.os == 'macOS'
+        run: packaging/make_dmg.sh "dist/rcta-${{ steps.version.outputs.version }}-${{ matrix.target }}.dmg"
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $v = "${{ steps.version.outputs.version }}"
+          iscc "/DAppVersion=$v" packaging\rcta.iss
+          Compress-Archive -Path dist\rcta -DestinationPath "dist\rcta-$v-windows-x64-portable.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rcta-${{ matrix.target }}
+          path: |
+            dist/*.dmg
+            dist/*-setup.exe
+            dist/*-portable.zip
+          if-no-files-found: error
+
+  release:
+    if: github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          generate_release_notes: true
+          files: artifacts/*

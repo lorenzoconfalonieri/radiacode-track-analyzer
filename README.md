@@ -18,13 +18,38 @@ with one spot seen elevated on two separate passes.*
 
 ## Install
 
+### Desktop builds
+
+Each [release](https://github.com/lorenzoconfalonieri/radiacode-track-analyzer/releases)
+carries ready-to-run builds; no Python needed.
+
+| Platform | File |
+|---|---|
+| Windows 10/11 | `rcta-<version>-windows-setup.exe` (installer), or the `-portable.zip` |
+| macOS, Apple silicon | `rcta-<version>-macos-arm64.dmg` |
+| macOS, Intel | `rcta-<version>-macos-x86_64.dmg` |
+
+The builds are not code-signed, so both systems warn the first time:
+
+- **macOS** says the app "cannot be opened" or is from an unidentified
+  developer. Drag it to Applications, try to open it once, then go to
+  *System Settings → Privacy & Security* and click *Open Anyway*. Or, in a
+  terminal: `xattr -dr com.apple.quarantine "/Applications/Radiacode Track Analyzer.app"`.
+- **Windows** SmartScreen says it "protected your PC": click *More info*,
+  then *Run anyway*.
+
+The command-line tool, `rcta-cli`, is not in these builds; install the
+package for it.
+
+### From source
+
 ```sh
 conda env create -f environment.yml
 conda activate rcta
 pip install -e ".[gui,dev]"
 ```
 
-`python -m pytest` runs the suite and `ruff check src tests tools` the lint;
+`python -m pytest` runs the suite and `ruff check src tests tools packaging` the lint;
 CI runs both.
 
 The analysis core needs only numpy and scipy. PySide6 and pyqtgraph are an
@@ -342,6 +367,23 @@ The map is fully usable with **no basemap at all** — degree axes, a graticule,
 and a latitude-qualified scale bar — so tile problems can never block analysis.
 `View ▸ Basemap ▸ Work offline` is a first-class mode, not just an error state.
 
+## Building the desktop apps
+
+`.github/workflows/release.yml` builds them on GitHub's runners. Pushing a
+tag that matches `rcta.__version__` publishes a draft release with all
+three; running the workflow by hand from the Actions tab gives the builds as
+artifacts only. Each frozen bundle has to load, analyse and export a sample
+track before it is packaged. To build locally, on the platform you are
+building for:
+
+```sh
+pip install ".[gui]" pyinstaller pillow
+python packaging/make_icons.py
+pyinstaller --noconfirm packaging/rcta.spec   # dist/rcta/ or dist/*.app
+packaging/make_dmg.sh dist/rcta.dmg           # macOS
+iscc /DAppVersion=0.1.0 packaging\rcta.iss    # Windows, needs Inno Setup
+```
+
 ## Layout
 
 ```
@@ -353,8 +395,9 @@ src/rcta/data/    bundled tables: airlines; airports, with their IANA
                   timezones; basemap and trajectory providers
 src/rcta/data/LICENSE
                   ODbL 1.0, for airports.json alone -- see Licence below
-tests/            1161 tests; run with pytest
+tests/            1167 tests; run with pytest
 tools/            maintenance scripts; not part of the package
+packaging/        PyInstaller spec, icons, .dmg and Windows installer scripts
 docs/FORMAT.md    the reverse-engineered .rctrk specification
 docs/FLIGHT.md    importing altitude for an airborne track
 sample-data/      two real acquisitions and one synthetic trajectory

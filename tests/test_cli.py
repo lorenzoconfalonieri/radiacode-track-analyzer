@@ -527,6 +527,20 @@ def test_the_gui_version_needs_no_qt(monkeypatch, capsys):
     assert __version__ in capsys.readouterr().out
 
 
+def test_the_release_smoke_test_loads_analyses_and_exports(walk_path, tmp_path):
+    from rcta.gui import app
+    assert app.main(["rcta", "--smoke-test", str(tmp_path), str(walk_path)]) == 0
+    assert (tmp_path / "map.png").stat().st_size > 0
+    assert "<svg" in (tmp_path / "map.svg").read_text(encoding="utf-8")
+
+
+def test_the_release_smoke_test_fails_on_a_bad_track(tmp_path):
+    from rcta.gui import app
+    bad = tmp_path / "bad.rctrk"
+    bad.write_text("not a track", encoding="utf-8")
+    assert app.main(["rcta", "--smoke-test", str(tmp_path), str(bad)]) == 1
+
+
 def test_the_version_is_defined_once():
     """pyproject, the GPX creator and the About box used to repeat it."""
     import inspect
